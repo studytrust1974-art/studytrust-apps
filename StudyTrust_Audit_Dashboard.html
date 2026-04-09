@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudyTrust Audit Tracker</title>
+<!--
+  ════════════════════════════════════════════════════════
+  STUDYTRUST AUDIT TRACKER  v4  — Microsoft Graph Edition
+  Works from: locally, SharePoint, any web host
+  ════════════════════════════════════════════════════════
+
+  IT PERSON SETUP  (one-time, ~20 minutes):
+  ─────────────────────────────────────────
+  1. Register app in Azure AD (portal.azure.com):
+       Azure Active Directory → App registrations → New registration
+       Name:             StudyTrust Audit Dashboard
+       Account types:    Single tenant (your organisation only)
+       Redirect URI:     Single-page application → [URL of this file]
+                         (add http://localhost for local testing)
+
+  2. Add API permissions → Microsoft Graph → Delegated:
+         Sites.ReadWrite.All   (SharePoint list read/write)
+         User.Read             (sign-in identity)
+     → Grant admin consent
+
+  3. Copy the Application (client) ID and paste below:
+
+  4. Create 8 SharePoint Lists using the 📋 Column Guide
+     button inside the dashboard. Lists needed:
+       AuditConfig · AuditPlanning · AuditExecution
+       AuditRecommendations · AuditSampling · AuditTeams
+       AuditRegister · AuditRequests
+     Column names and types are shown in the guide.
+
+  5. Open this file in a browser — sign in with Microsoft
+     when prompted, and the dashboard connects automatically.
+  ════════════════════════════════════════════════════════
+-->
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.27.0/lib/msal-browser.min.js"></script>
+<style>
+:root{
+  --st:#226397;--st-d:#185080;--st-l:#e6f1fb;--st-m:#b5d4f4;
+  --grey:#414042;--bg:#f2f4f7;--border:#dde3ea;
+  --ok:#3B6D11;--ok-bg:#EAF3DE;
+  --prog:#854F0B;--prog-bg:#FAEEDA;
+  --att:#A32D2D;--att-bg:#FCEBEB;
+  --ns:#5F5E5A;--ns-bg:#F1EFE8;
+  --late:#7B1C1C;--late-bg:#FDECEA;--late-border:#E53935;
+  --new:#0F6E56;--new-bg:#E1F5EE;--new-border:#1D9E75;
+  --aud:#3C3489;--aud-bg:#EEEDFE;
+  --rad:8px;--rad-lg:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:Aptos,Calibri,'Segoe UI',Arial,sans-serif}
+body{background:var(--bg);color:#1a1a1a;font-size:13px;min-height:100vh}
+
+/* ── SIGN IN SCREEN ── */
+#signin-screen{position:fixed;inset:0;background:var(--st);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
+#signin-screen.hidden{display:none}
+.signin-card{background:#fff;border-radius:16px;padding:36px 40px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.signin-logo{background:var(--st);color:#fff;width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;margin:0 auto 16px;letter-spacing:-1px}
+.signin-card h2{font-size:18px;font-weight:700;color:var(--st);margin-bottom:6px}
+.signin-card p{font-size:13px;color:#666;margin-bottom:24px;line-height:1.5}
+.btn-signin{background:var(--st);color:#fff;border:none;border-radius:8px;padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:10px}
+.btn-signin:hover{background:var(--st-d)}
+.btn-signin:disabled{opacity:.6;cursor:not-allowed}
+.signin-note{font-size:11px;color:rgba(255,255,255,.6);margin-top:16px;text-align:center}
+.signin-error{background:#FCEBEB;border:1px solid #E57373;border-radius:8px;padding:10px 14px;font-size:12px;color:#7B1C1C;margin-top:14px;display:none;text-align:left;line-height:1.5}
+.signin-error.show{display:block}
+
+/* ── LOADING OVERLAY ── */
+#loading-overlay{position:fixed;inset:0;background:rgba(34,99,151,.9);z-index:8000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+#loading-overlay.hidden{display:none}
+.spinner{width:40px;height:40px;border:4px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading-msg{color:#fff;font-size:14px;font-weight:500}
+
+/* ── SAVE TOAST ── */
+#toast{position:fixed;bottom:20px;right:20px;background:#1a1a1a;color:#fff;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:500;z-index:5000;opacity:0;transition:opacity .25s;pointer-events:none;max-width:320px}
+#toast.show{opacity:1}
+#toast.ok{background:var(--ok)}
+#toast.err{background:var(--att)}
+
+/* ── HEADER ── */
+#hdr{background:var(--st);color:#fff;padding:11px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+#hdr-brand h1{font-size:16px;font-weight:700;line-height:1.1}
+#hdr-brand p{font-size:11px;opacity:.75;margin-top:1px}
+#hdr-center{display:flex;align-items:center;gap:7px;flex:1;flex-wrap:wrap}
+.hdr-sel{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:6px;padding:5px 9px;font-size:12px;cursor:pointer}
+.hdr-sel option{color:#1a1a1a;background:#fff}
+.hdr-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;white-space:nowrap;font-weight:500}
+.hdr-btn:hover{background:rgba(255,255,255,.28)}
+#role-toggle{display:flex;background:rgba(0,0,0,.2);border-radius:20px;overflow:hidden}
+.role-opt{border:none;background:transparent;color:rgba(255,255,255,.65);padding:5px 13px;font-size:11px;cursor:pointer;font-weight:500;border-radius:20px}
+.role-opt.active{background:#fff;color:var(--st);font-weight:700}
+#notif-btn{position:relative;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:50%;width:32px;height:32px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#notif-count{position:absolute;top:-4px;right:-4px;background:#e53935;color:#fff;border-radius:10px;font-size:9px;font-weight:700;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+.deadline-pill{background:rgba(255,255,255,.18);border-radius:20px;padding:5px 12px;font-size:11px;white-space:nowrap;border:1px solid rgba(255,255,255,.25)}
+.deadline-pill strong{display:block;font-size:15px;font-weight:700;line-height:1}
+.deadline-pill.warn{background:rgba(255,120,0,.35)}
+.deadline-pill.urgent{background:rgba(220,0,0,.35);animation:pulse 1.5s ease infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+#user-pill{background:rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;font-size:11px;display:flex;align-items:center;gap:5px}
+
+/* ── ROLE BANNER ── */
+#role-banner{padding:5px 18px;font-size:12px;font-weight:600;text-align:center}
+.admin-mode{background:#fff3cd;color:#856404;border-bottom:1px solid #ffc107}
+.auditor-mode{background:var(--aud-bg);color:var(--aud);border-bottom:1px solid #AFA9EC}
+
+/* ── NOTIFICATION PANEL ── */
+#notif-panel{display:none;position:fixed;top:58px;right:14px;width:350px;max-height:70vh;background:#fff;border-radius:var(--rad-lg);border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:200;flex-direction:column;overflow:hidden}
+#notif-panel.open{display:flex}
+#notif-hdr{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--st-l)}
+#notif-hdr h3{font-size:13px;font-weight:700;color:var(--st)}
+#notif-list{overflow-y:auto;flex:1;padding:6px 0}
+.ni{padding:8px 15px;border-bottom:.5px solid #f0f0f0}
+.ni-title{font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:2px}
+.ni-meta{font-size:11px;color:#777}
+.ni-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-right:3px}
+.ni-badge.late{background:var(--late-bg);color:var(--late)}
+.ni-badge.new{background:var(--new-bg);color:var(--new)}
+.ni-badge.req{background:var(--aud-bg);color:var(--aud)}
+
+/* ── TABS ── */
+#tab-bar{background:#fff;border-bottom:2px solid var(--st);display:flex;flex-wrap:wrap;padding:0 14px;position:sticky;top:54px;z-index:40;gap:1px}
+.tab-btn{border:none;background:none;cursor:pointer;padding:8px 13px;font-size:12px;font-weight:500;color:#666;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;display:flex;align-items:center;gap:4px}
+.tab-btn.active{color:var(--st);border-bottom-color:var(--st)}
+.tab-btn:hover{color:var(--st)}
+.tc{background:var(--st-l);color:var(--st);border-radius:10px;font-size:10px;font-weight:700;padding:1px 5px}
+.tc.req{background:var(--aud-bg);color:var(--aud)}
+
+/* ── CONTENT ── */
+#content{padding:16px 18px;max-width:1500px;margin:0 auto}
+.section{display:none}.section.active{display:block}
+
+/* ── CARDS ── */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px;margin-bottom:16px}
+.card{background:#fff;border-radius:var(--rad-lg);border:.5px solid var(--border);padding:13px 15px;text-align:center}
+.card .cl{font-size:10px;color:#777;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.card .cv{font-size:24px;font-weight:700}
+.card .cs{font-size:11px;color:#888;margin-top:2px}
+.c-ok .cv{color:var(--ok)}.c-prog .cv{color:var(--prog)}.c-att .cv{color:var(--att)}.c-late .cv{color:var(--late)}.c-st .cv{color:var(--st)}.c-aud .cv{color:var(--aud)}
+
+/* ── PROGRESS ── */
+.pw{margin-bottom:16px}
+.pl{display:flex;justify-content:space-between;font-size:12px;color:#555;margin-bottom:4px}
+.pb{height:9px;background:#e0e5ec;border-radius:5px;overflow:hidden}
+.pf{height:100%;background:var(--st);border-radius:5px;transition:width .4s}
+
+/* ── SECTION HEADER ── */
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;flex-wrap:wrap;gap:7px}
+.sh h2{font-size:14px;font-weight:700;color:var(--st)}
+.sa{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.btn{border-radius:6px;padding:5px 11px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid var(--border);background:#fff;color:#444}
+.btn:hover{background:#f5f7fa}
+.btn-p{background:var(--st);color:#fff;border-color:var(--st)}.btn-p:hover{background:var(--st-d)}
+.btn-a{background:var(--aud-bg);color:var(--aud);border-color:#AFA9EC}
+
+/* ── FILTER BAR ── */
+.fb{display:flex;gap:7px;margin-bottom:11px;flex-wrap:wrap;align-items:center}
+.fb input,.fb select{border:.5px solid #ccc;border-radius:6px;padding:5px 9px;font-size:12px;color:#333;background:#fff}
+.fb input{flex:1;min-width:130px;max-width:240px}
+
+/* ── TABLE ── */
+.tw{overflow-x:auto;border-radius:var(--rad-lg);border:.5px solid var(--border);background:#fff}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--st);color:#fff;padding:7px 9px;text-align:left;font-weight:700;font-size:11px;white-space:nowrap;position:sticky;top:0;z-index:2}
+th.n{width:30px;text-align:center}
+tbody tr{border-bottom:.5px solid #edf0f3}
+tbody tr:hover{background:#f8fafc}
+tbody tr.rl{background:#FFF5F5;border-left:3px solid var(--late-border)}
+tbody tr.rn{border-left:3px solid var(--new-border)}
+td{padding:6px 8px;vertical-align:top;line-height:1.45}
+td.n{text-align:center;color:#aaa;font-size:11px;font-weight:700}
+td.dc{min-width:170px;max-width:270px}
+
+/* ── INLINE CONTROLS ── */
+.ie{border:1px solid #d8dde5;border-radius:4px;padding:3px 5px;font-size:11px;background:#fff;color:#333;max-width:100%}
+.ie:focus{outline:none;border-color:var(--st);box-shadow:0 0 0 2px var(--st-l)}
+.id{width:107px}.it{width:86px}.il{width:115px;color:var(--st)}.is{cursor:pointer}
+
+/* ── STATUS BADGE ── */
+.sb{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap;border:none;cursor:pointer}
+.sb-Completed{background:var(--ok-bg);color:var(--ok)}
+.sb-In-progress{background:var(--prog-bg);color:var(--prog)}
+.sb-Requires-Attention{background:var(--att-bg);color:var(--att)}
+.sb-Not-Started{background:var(--ns-bg);color:var(--ns)}
+.bl{display:inline-flex;align-items:center;gap:2px;background:var(--late-bg);color:var(--late);border:1px solid var(--late-border);border-radius:9px;font-size:9px;font-weight:800;padding:1px 5px}
+.bn{display:inline-flex;align-items:center;gap:2px;background:var(--new-bg);color:var(--new);border:1px solid var(--new-border);border-radius:9px;font-size:9px;font-weight:800;padding:1px 5px}
+
+/* ── LINK BUTTON ── */
+.lb{display:inline-flex;align-items:center;gap:3px;color:var(--st);font-size:11px;text-decoration:none;font-weight:600;padding:2px 5px;border-radius:4px;border:1px solid var(--st-m);background:var(--st-l)}
+.lb:hover{background:var(--st-m)}
+.lb.empty{color:#aaa;border-color:#e0e0e0;background:#f9f9f9}
+
+/* ── DASHBOARD ── */
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+@media(max-width:700px){.dg{grid-template-columns:1fr}}
+.dc2{background:#fff;border-radius:var(--rad-lg);border:.5px solid var(--border);padding:14px 16px}
+.dc2 h3{font-size:11px;font-weight:700;color:var(--grey);margin-bottom:9px;text-transform:uppercase;letter-spacing:.5px}
+.pr{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.pn{font-size:11px;color:#444;width:136px;flex-shrink:0}
+.pb2{flex:1;height:6px;background:#e8ecf0;border-radius:3px;overflow:hidden}
+.pf2{height:100%;border-radius:3px}
+.pp{font-size:11px;color:#666;width:30px;text-align:right;flex-shrink:0}
+.tli{display:flex;gap:9px;margin-bottom:9px;align-items:flex-start}
+.tld{width:8px;height:8px;border-radius:50%;margin-top:3px;flex-shrink:0}
+.tld.done{background:var(--ok)}.tld.act{background:var(--st);box-shadow:0 0 0 3px var(--st-l)}.tld.fut{background:#ccc}
+.tlt{font-size:12px;color:#333}.tldt{font-size:11px}
+
+/* ── REQUEST FORM ── */
+.rf{background:#fff;border-radius:var(--rad-lg);border:.5px solid var(--border);padding:14px 16px;margin-bottom:14px}
+.rf h3{font-size:13px;font-weight:700;color:var(--aud);margin-bottom:11px}
+.fr{display:flex;gap:9px;margin-bottom:9px;flex-wrap:wrap}
+.fg{display:flex;flex-direction:column;gap:3px;flex:1;min-width:130px}
+.fg label{font-size:11px;font-weight:600;color:#555}
+.fg input,.fg select,.fg textarea{border:1px solid #ccc;border-radius:6px;padding:6px 8px;font-size:12px;color:#333;font-family:inherit}
+.fg textarea{min-height:65px;resize:vertical}
+
+/* ── AUDITOR DOC CATEGORY ── */
+.dcat{background:#fff;border-radius:var(--rad-lg);border:.5px solid var(--border);margin-bottom:12px;overflow:hidden}
+.dcath{background:var(--st-l);padding:9px 15px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.dcath h3{font-size:12px;font-weight:700;color:var(--st)}
+.dcatb{display:none}.dcatb.open{display:block}
+
+/* ── MODALS ── */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center}
+.ov.open{display:flex}
+.modal{background:#fff;border-radius:var(--rad-lg);padding:20px;max-width:520px;width:93%;max-height:90vh;overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,.25)}
+.modal h3{font-size:14px;font-weight:700;color:var(--st);margin-bottom:12px;padding-bottom:9px;border-bottom:1px solid var(--border)}
+.mr{display:flex;gap:9px;margin-bottom:9px;flex-wrap:wrap}
+.mg{flex:1;min-width:130px;display:flex;flex-direction:column;gap:3px}
+.mg label{font-size:11px;font-weight:600;color:#555}
+.mg input,.mg select,.mg textarea{border:1px solid #ccc;border-radius:6px;padding:6px 8px;font-size:12px;color:#333;font-family:inherit}
+.mg textarea{min-height:80px;resize:vertical}
+.mg small{font-size:10px;color:#888;line-height:1.4}
+.ma{display:flex;justify-content:flex-end;gap:7px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)}
+.mn{font-size:11px;color:#555;background:#f8f9fa;border-radius:6px;padding:8px 10px;margin-bottom:11px;line-height:1.55;border-left:3px solid var(--st-m)}
+
+/* ── SEED BANNER ── */
+#seed-banner{display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:var(--rad-lg);padding:12px 16px;margin-bottom:16px;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+#seed-banner.show{display:flex}
+
+/* ── SP COLUMN GUIDE ── */
+.cg{background:#f8f9fa;border:1px solid var(--border);border-radius:7px;padding:10px 12px;font-size:11px;line-height:2.1;font-family:monospace;margin-bottom:10px}
+.cg span{display:inline-block;background:var(--st-l);color:var(--st);border-radius:4px;padding:0 4px;margin:1px;font-weight:700}
+.cg em{color:#888;font-style:normal}
+</style>
+</head>
+<body>
+
+<!-- ═══ SIGN IN SCREEN ═══ -->
+<div id="signin-screen">
+  <div class="signin-card">
+    <div class="signin-logo">ST</div>
+    <h2>StudyTrust Audit Tracker</h2>
+    <p>Sign in with your Microsoft 365 account to access the audit dashboard and SharePoint data.</p>
+    <button class="btn-signin" id="signin-btn" onclick="doSignIn()">
+      <svg width="18" height="18" viewBox="0 0 21 21" fill="none"><rect width="10" height="10" fill="#F25022"/><rect x="11" width="10" height="10" fill="#7FBA00"/><rect y="11" width="10" height="10" fill="#00A4EF"/><rect x="11" y="11" width="10" height="10" fill="#FFB900"/></svg>
+      Sign in with Microsoft
+    </button>
+    <div class="signin-error" id="signin-error"></div>
+  </div>
+  <div class="signin-note">Your data is stored in SharePoint · studietrust.sharepoint.com</div>
+</div>
+
+<!-- ═══ LOADING OVERLAY ═══ -->
+<div id="loading-overlay" class="hidden">
+  <div class="spinner"></div>
+  <div id="loading-msg">Loading…</div>
+</div>
+
+<!-- ═══ SAVE TOAST ═══ -->
+<div id="toast"></div>
+
+<!-- ═══ HEADER ═══ -->
+<div id="hdr">
+  <div id="hdr-brand"><h1>StudyTrust Audit Tracker</h1><p id="hdr-sub">Document Management &amp; Audit Preparation System</p></div>
+  <div id="hdr-center">
+    <select id="year-sel" class="hdr-sel" onchange="switchYear(this.value)"></select>
+    <button class="hdr-btn" onclick="openM('m-add-year')">⊕ Add Year</button>
+    <button class="hdr-btn" onclick="openYearCfg()">⚙ Year Settings</button>
+    <div id="role-toggle">
+      <button class="role-opt active" id="r-admin" onclick="setRole('admin')">🔑 Admin</button>
+      <button class="role-opt" id="r-auditor" onclick="setRole('auditor')">🔍 Auditor</button>
+    </div>
+    <button id="notif-btn" onclick="toggleNotif()">🔔<span id="notif-count" style="display:none">0</span></button>
+    <div id="user-pill">👤 <span id="user-name">…</span></div>
+    <button class="hdr-btn" onclick="exportBackup()">⬇ Backup</button>
+    <button class="hdr-btn" onclick="openM('m-restore')">⬆ Restore</button>
+    <button class="hdr-btn" onclick="openM('m-guide')">📋 Column Guide</button>
+    <button class="hdr-btn" onclick="window.print()">🖨</button>
+  </div>
+  <div class="deadline-pill" id="dl-pill"><strong id="dl-val">—</strong><span id="dl-lbl">days to deadline</span></div>
+</div>
+
+<!-- ROLE BANNER -->
+<div id="role-banner" class="admin-mode">Admin Mode — Changes save live to SharePoint</div>
+
+<!-- NOTIFICATION PANEL -->
+<div id="notif-panel">
+  <div id="notif-hdr"><h3 id="notif-title">Notifications</h3><button class="btn" onclick="toggleNotif()" style="padding:3px 7px;font-size:11px">✕</button></div>
+  <div id="notif-list"></div>
+</div>
+
+<!-- TAB BAR -->
+<div id="tab-bar"></div>
+
+<!-- ═══ CONTENT ═══ -->
+<div id="content">
+
+  <div id="seed-banner">
+    <div><strong style="color:#856404">No data yet for this year.</strong> <span style="font-size:12px;color:#666;margin-left:6px">Seed with the standard StudyTrust checklist?</span></div>
+    <button class="btn btn-p" onclick="seedYear()">Seed Standard Checklist →</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="sec-dashboard" class="section active">
+    <div class="card-grid" id="dash-cards"></div>
+    <div class="pw"><div class="pl"><span>Overall Completion</span><span id="ov-pct">0%</span></div><div class="pb"><div class="pf" id="ov-fill" style="width:0%"></div></div></div>
+    <div class="dg">
+      <div class="dc2"><h3>Progress by Phase</h3><div id="phase-bars"></div></div>
+      <div class="dc2"><h3>Key Deadlines</h3><div id="timeline"></div></div>
+    </div>
+    <div class="dc2" style="margin-bottom:12px"><h3>Items Requiring Attention</h3><div id="att-list" style="margin-top:7px"></div></div>
+    <div class="dc2"><h3>Late Items — Past Compliance Date</h3><div id="late-list" style="margin-top:7px"></div></div>
+  </div>
+
+  <!-- PLANNING -->
+  <div id="sec-planning" class="section">
+    <div class="sh"><h2>Planning — Document Preparation</h2>
+      <div class="sa"><span id="plan-pct" style="font-size:11px;color:#888">0%</span><button class="btn btn-p" onclick="addRow('planning')">+ Add</button><button class="btn" onclick="exportCsv('planning')">CSV</button></div>
+    </div>
+    <div class="fb">
+      <input type="text" id="f-planning-q" placeholder="Search…" oninput="filterTab('planning')">
+      <select id="f-planning-s" onchange="filterTab('planning')"><option value="">All Statuses</option></select>
+      <select id="f-planning-p" onchange="filterTab('planning')"><option value="">All Persons</option></select>
+      <select id="f-planning-l" onchange="filterTab('planning')"><option value="">All Items</option><option value="late">Late Only</option><option value="nodoc">No Link Yet</option></select>
+    </div>
+    <div class="tw"><table><thead><tr>
+      <th class="n">#</th><th style="min-width:195px">Description</th><th>Compliance Date</th>
+      <th>Date Uploaded</th><th>Status</th><th>Responsible</th><th>Shadower</th>
+      <th>Document Name</th><th>Document Link (URL)</th><th>Notes</th>
+    </tr></thead><tbody id="body-planning"></tbody></table></div>
+  </div>
+
+  <!-- EXECUTION -->
+  <div id="sec-execution" class="section">
+    <div class="sh"><h2>Execution — Deliverable Listing</h2>
+      <div class="sa"><span id="exec-pct" style="font-size:11px;color:#888">0%</span><button class="btn btn-p" onclick="addRow('execution')">+ Add</button><button class="btn" onclick="exportCsv('execution')">CSV</button></div>
+    </div>
+    <div class="fb">
+      <input type="text" id="f-execution-q" placeholder="Search…" oninput="filterTab('execution')">
+      <select id="f-execution-s" onchange="filterTab('execution')"><option value="">All Statuses</option></select>
+      <select id="f-execution-l" onchange="filterTab('execution')"><option value="">All Items</option><option value="late">Late Only</option><option value="nodoc">No Link Yet</option></select>
+    </div>
+    <div class="tw"><table><thead><tr>
+      <th class="n">#</th><th style="min-width:195px">Description</th><th>Compliance Date</th>
+      <th>Date Uploaded</th><th>Status</th><th>Responsible</th><th>Shadower</th>
+      <th>Document Name</th><th>Document Link (URL)</th><th>Notes</th>
+    </tr></thead><tbody id="body-execution"></tbody></table></div>
+  </div>
+
+  <!-- RECOMMENDATIONS -->
+  <div id="sec-recommendations" class="section">
+    <div class="sh"><h2>Prior Year Recommendations</h2>
+      <div class="sa"><span id="rec-pct" style="font-size:11px;color:#888">0%</span>
+        <button class="btn btn-a" onclick="openImportRecs()">⬆ Import to Planning</button>
+        <button class="btn btn-p" onclick="addRow('recommendations')">+ Add</button>
+        <button class="btn" onclick="exportCsv('recommendations')">CSV</button>
+      </div>
+    </div>
+    <div class="fb">
+      <input type="text" id="f-recommendations-q" placeholder="Search…" oninput="filterTab('recommendations')">
+      <select id="f-recommendations-s" onchange="filterTab('recommendations')"><option value="">All Statuses</option></select>
+    </div>
+    <div class="tw"><table><thead><tr>
+      <th class="n">#</th><th style="min-width:155px">Weakness</th><th style="min-width:175px">Recommendation</th>
+      <th>Compliance Date</th><th>Status</th><th>Responsible</th><th>Shadower</th>
+      <th>Document Name</th><th>Document Link</th><th>Comments</th>
+    </tr></thead><tbody id="body-recommendations"></tbody></table></div>
+  </div>
+
+  <!-- SAMPLING -->
+  <div id="sec-sampling" class="section">
+    <div class="sh"><h2>Sampling</h2><button class="btn btn-p" onclick="addRow('sampling')">+ Add</button></div>
+    <div class="tw"><table><thead><tr>
+      <th class="n">#</th><th>Description</th><th>Requested By</th><th>Date Requested</th>
+      <th>Date Uploaded</th><th>Status</th><th>Responsible</th><th>Document Name</th><th>Document Link</th>
+    </tr></thead><tbody id="body-sampling"></tbody></table></div>
+  </div>
+
+  <!-- TEAMS ACCESS -->
+  <div id="sec-teams" class="section">
+    <div class="sh"><h2>Auditors — Teams / SharePoint Access</h2><button class="btn btn-p" onclick="addRow('teams')">+ Add</button></div>
+    <div class="tw"><table><thead><tr>
+      <th class="n">#</th><th>Email Address</th><th>Requested By</th><th>Date Requested</th>
+      <th>Date Connected</th><th>Status</th><th>Responsible</th><th>Remarks</th>
+    </tr></thead><tbody id="body-teams"></tbody></table></div>
+  </div>
+
+  <!-- DOCUMENT REGISTER -->
+  <div id="sec-register" class="section">
+    <div class="sh"><h2>Document Request Register</h2><button class="btn btn-p" onclick="addRow('register')">+ Add</button></div>
+    <div class="tw"><table><thead><tr>
+      <th class="n">#</th><th>Date</th><th style="min-width:175px">Document Requested</th><th>Requester</th>
+      <th>Requested From</th><th>Submitter</th><th>Date Submitted</th><th>Document Name</th><th>Document Link</th><th>Comment</th>
+    </tr></thead><tbody id="body-register"></tbody></table></div>
+  </div>
+
+  <!-- AUDITOR REQUESTS (admin view) -->
+  <div id="sec-aud-requests" class="section">
+    <div class="sh"><h2>Auditor Document Requests</h2><button class="btn" onclick="exportCsv('auditorRequests')">CSV</button></div>
+    <div class="tw"><table><thead><tr>
+      <th class="n">#</th><th>Date</th><th>From</th><th style="min-width:190px">Description</th>
+      <th>Urgency</th><th>Status</th><th>Assigned To</th><th>Date Resolved</th><th>Response Link</th><th>Notes</th>
+    </tr></thead><tbody id="body-aud-requests"></tbody></table></div>
+  </div>
+
+  <!-- ═══ AUDITOR VIEW ═══ -->
+  <div id="sec-aud-overview" class="section">
+    <div class="card-grid" id="aud-cards"></div>
+    <div id="new-banner" style="background:var(--new-bg);border:1px solid var(--new-border);border-radius:var(--rad-lg);padding:13px 16px;margin-bottom:14px;display:none">
+      <div style="font-weight:700;color:var(--new);font-size:13px;margin-bottom:5px">🆕 New Documents Since Audit Start</div>
+      <div id="new-list" style="font-size:12px"></div>
+    </div>
+    <div class="dc2"><h3>Document Availability by Phase</h3><div id="aud-phases" style="margin-top:7px"></div></div>
+  </div>
+
+  <div id="sec-aud-docs" class="section">
+    <div class="sh"><h2>Available Documents</h2>
+      <div class="sa">
+        <input type="text" id="aud-q" placeholder="Search…" oninput="renderAudDocs()" style="border:.5px solid #ccc;border-radius:6px;padding:5px 9px;font-size:12px">
+        <select id="aud-phase" onchange="renderAudDocs()" style="border:.5px solid #ccc;border-radius:6px;padding:5px 8px;font-size:12px">
+          <option value="">All Phases</option><option value="planning">Planning</option><option value="execution">Execution</option>
+        </select>
+      </div>
+    </div>
+    <div id="aud-doc-list"></div>
+  </div>
+
+  <div id="sec-aud-my-requests" class="section">
+    <div class="rf">
+      <h3>📋 Submit a Document Request</h3>
+      <div class="fr">
+        <div class="fg"><label>Your Name</label><input type="text" id="req-name" placeholder="e.g. Denelcia Chetty"></div>
+        <div class="fg"><label>Urgency</label><select id="req-urgency"><option>Normal</option><option>High</option><option>Urgent</option></select></div>
+      </div>
+      <div class="fr"><div class="fg" style="flex:2;min-width:100%"><label>Document / Information Needed</label>
+        <textarea id="req-desc" placeholder="Describe what you need and which audit item it relates to…"></textarea>
+      </div></div>
+      <div style="text-align:right"><button class="btn btn-p" onclick="submitRequest()">Submit Request →</button></div>
+    </div>
+    <div class="sh" style="margin-top:14px"><h2>My Submitted Requests</h2></div>
+    <div id="my-req-list"></div>
+  </div>
+
+</div><!-- /content -->
+
+<!-- ═══════════ MODALS ═══════════ -->
+
+<!-- ADD YEAR -->
+<div class="ov" id="m-add-year"><div class="modal">
+  <h3>Add New Audit Year</h3>
+  <div class="mn">Creates a new year. Optionally copies planning template from another year (statuses reset) and imports prior year recommendations as new planning tasks.</div>
+  <div class="mr"><div class="mg"><label>Year (e.g. 2026)</label><input type="text" id="ny-id" placeholder="2026" maxlength="4"></div><div class="mg"><label>Display Label</label><input type="text" id="ny-label" placeholder="FY 2026 (June 2027 Audit)"></div></div>
+  <div class="mr"><div class="mg"><label>FY End Date</label><input type="date" id="ny-fyend"></div><div class="mg"><label>Internal ST Deadline</label><input type="date" id="ny-deadline"></div></div>
+  <div class="mr"><div class="mg"><label>Audit Start Date<br><small>NEW badge shows for docs uploaded on/after this date</small></label><input type="date" id="ny-auditstart"></div><div class="mg"><label>Shadower Deadline</label><input type="date" id="ny-shadower"></div></div>
+  <div class="mr"><div class="mg"><label>Audit Firm</label><input type="text" id="ny-firm" placeholder="TPCSA"></div><div class="mg"><label>Copy Template From</label><select id="ny-from"><option value="">Standard Template</option></select></div></div>
+  <div class="mr"><div class="mg"><label style="display:flex;align-items:center;gap:5px;font-weight:400"><input type="checkbox" id="ny-recs"> Import prior year Recommendations as Planning items</label></div></div>
+  <div class="ma"><button class="btn" onclick="closeM('m-add-year')">Cancel</button><button class="btn btn-p" onclick="addYear()">Create Year →</button></div>
+</div></div>
+
+<!-- YEAR CONFIG -->
+<div class="ov" id="m-year-cfg"><div class="modal">
+  <h3>Year Settings — <span id="yc-ttl"></span></h3>
+  <div class="mr"><div class="mg"><label>Display Label</label><input type="text" id="yc-label"></div><div class="mg"><label>Audit Firm</label><input type="text" id="yc-firm"></div></div>
+  <div class="mr"><div class="mg"><label>FY End Date</label><input type="date" id="yc-fyend"></div><div class="mg"><label>Internal Deadline</label><input type="date" id="yc-deadline"></div></div>
+  <div class="mr"><div class="mg"><label>Audit Start Date<br><small>Documents uploaded from this date onwards show as NEW to auditors</small></label><input type="date" id="yc-auditstart"></div><div class="mg"><label>Shadower Deadline</label><input type="date" id="yc-shadower"></div></div>
+  <div class="ma"><button class="btn" onclick="closeM('m-year-cfg')">Cancel</button><button class="btn btn-p" onclick="saveYearCfg()">Save to SharePoint</button></div>
+</div></div>
+
+<!-- IMPORT RECS -->
+<div class="ov" id="m-import-recs"><div class="modal">
+  <h3>Import Recommendations as Planning Items</h3>
+  <div class="mn">Copies the selected year's Recommendations into the Planning tab of the target year as new tasks. Existing items are not changed.</div>
+  <div class="mr"><div class="mg"><label>Copy FROM year</label><select id="ir-from"></select></div><div class="mg"><label>Copy TO year</label><select id="ir-to"></select></div></div>
+  <div class="mr"><div class="mg"><label>Compliance Date for imported items (optional)</label><input type="date" id="ir-due"></div></div>
+  <div class="ma"><button class="btn" onclick="closeM('m-import-recs')">Cancel</button><button class="btn btn-p" onclick="importRecs()">Import →</button></div>
+</div></div>
+
+<!-- RESTORE -->
+<div class="ov" id="m-restore"><div class="modal">
+  <h3>Restore from JSON Backup</h3>
+  <div class="mn">Paste a JSON backup. Items will be posted to SharePoint — existing items are not deleted. Use this after a list clear or when setting up a fresh site.</div>
+  <div class="mg"><textarea id="restore-data" style="min-height:130px;width:100%;border:1px solid #ccc;border-radius:6px;padding:8px;font-family:monospace;font-size:11px;margin-top:5px" placeholder="Paste JSON backup here…"></textarea></div>
+  <div class="ma"><button class="btn" onclick="closeM('m-restore')">Cancel</button><button class="btn btn-p" onclick="doRestore()">Restore to SharePoint</button></div>
+</div></div>
+
+<!-- COLUMN GUIDE -->
+<div class="ov" id="m-guide"><div class="modal" style="max-width:620px">
+  <h3>SharePoint List Column Reference</h3>
+  <div class="mn">Create each list in SharePoint with these exact column names and types. The internal name (used by the API) is set at creation — copy the name exactly.</div>
+  <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditConfig</p>
+  <div class="cg"><span>Year</span><em> Text</em> · <span>Label</span><em> Text</em> · <span>FYEnd</span><em> Date</em> · <span>Deadline</span><em> Date</em> · <span>AuditStart</span><em> Date</em> · <span>Shadower</span><em> Date</em> · <span>Firm</span><em> Text</em></div>
+  <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditPlanning &amp; AuditExecution (same columns)</p>
+  <div class="cg"><span>Year</span><em> Text</em> · <span>ItemDesc</span><em> Multi-text</em> · <span>DueDate</span><em> Date</em> · <span>Uploaded</span><em> Date</em> · <span>Status</span><em> Choice*</em> · <span>Responsible</span><em> Text</em> · <span>Shadower</span><em> Text</em> · <span>DocName</span><em> Text</em> · <span>DocLink</span><em> Text (paste full URL)</em> · <span>Notes</span><em> Multi-text</em></div>
+  <p style="font-size:10px;color:#888;margin:3px 0 8px">*Status choices: Completed · In progress · Requires Attention · Not Started</p>
+  <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditRecommendations</p>
+  <div class="cg"><span>Year</span> · <span>Weakness</span><em> Multi-text</em> · <span>Recommendation</span><em> Multi-text</em> · <span>DueDate</span><em> Date</em> · <span>Status</span><em> Choice</em> · <span>Responsible</span><em> Text</em> · <span>Shadower</span><em> Text</em> · <span>DocName</span><em> Text</em> · <span>DocLink</span><em> Text</em> · <span>Comments</span><em> Multi-text</em></div>
+  <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditSampling</p>
+  <div class="cg"><span>Year</span> · <span>ItemDesc</span><em> Multi-text</em> · <span>RequestedBy</span><em> Text</em> · <span>DateRequested</span><em> Date</em> · <span>Uploaded</span><em> Date</em> · <span>Status</span><em> Choice</em> · <span>Responsible</span><em> Text</em> · <span>DocName</span><em> Text</em> · <span>DocLink</span><em> Text</em></div>
+  <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditTeams</p>
+  <div class="cg"><span>Year</span> · <span>Email</span><em> Text</em> · <span>RequestedBy</span><em> Text</em> · <span>DateRequested</span><em> Date</em> · <span>DateConnected</span><em> Date</em> · <span>Status</span><em> Choice</em> · <span>Responsible</span><em> Text</em> · <span>Remarks</span><em> Text</em></div>
+  <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditRegister</p>
+  <div class="cg"><span>Year</span> · <span>DateRequested</span><em> Date</em> · <span>Document</span><em> Multi-text</em> · <span>Requester</span><em> Text</em> · <span>RequestedFrom</span><em> Text</em> · <span>Submitter</span><em> Text</em> · <span>DateSubmitted</span><em> Date</em> · <span>DocName</span><em> Text</em> · <span>DocLink</span><em> Text</em> · <span>Comment</span><em> Multi-text</em></div>
+  <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditRequests</p>
+  <div class="cg"><span>Year</span> · <span>RequestDate</span><em> Date</em> · <span>RequestedBy</span><em> Text</em> · <span>Description</span><em> Multi-text</em> · <span>Urgency</span><em> Choice (Normal·High·Urgent)</em> · <span>Status</span><em> Choice (Pending·In progress·Resolved)</em> · <span>AssignedTo</span><em> Text</em> · <span>DateResolved</span><em> Date</em> · <span>ResponseLink</span><em> Text</em> · <span>Notes</span><em> Multi-text</em></div>
+  <div class="ma"><button class="btn btn-p" onclick="closeM('m-guide')">Close</button></div>
+</div></div>
+
+<!-- ════════════════════ JAVASCRIPT ════════════════════ -->
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════
+//  ▶▶  IT PERSON: PASTE YOUR CLIENT ID HERE  ◀◀
+// ═══════════════════════════════════════════════
+const CLIENT_ID = '2dbd4565-a84e-49a6-a475-5f485414637d';
+//
+//  Get this from Azure Portal → App registrations → your app → Overview
+//  It looks like: a1b2c3d4-5678-90ab-cdef-1234567890ab
+//
+//  If your Microsoft 365 tenant name is NOT "studietrust",
+//  update the authority URL in MSAL_CONFIG below too.
+// ═══════════════════════════════════════════════
+
+const SP_SITE_HOST = 'studietrust.sharepoint.com';
+const SP_SITE_PATH = '/sites/StudyTrustAuditTracker';
+const GRAPH_BASE   = 'https://graph.microsoft.com/v1.0';
+
+const MSAL_CONFIG = {
+  auth: {
+    clientId:    CLIENT_ID,
+    authority:   'https://login.microsoftonline.com/studietrust.onmicrosoft.com',
+    redirectUri: 'https://studytrust1974-art.github.io/studytrust-apps/StudyTrust_Audit_Dashboard.html'
+  },
+  cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: true }
+};
+
+const GRAPH_SCOPES = ['Sites.ReadWrite.All', 'User.Read'];
+
+// ── SharePoint list names ──
+const LISTS = {
+  config:'AuditConfig', planning:'AuditPlanning', execution:'AuditExecution',
+  recommendations:'AuditRecommendations', sampling:'AuditSampling', teams:'AuditTeams',
+  register:'AuditRegister', auditorRequests:'AuditRequests'
+};
+
+// ── Field mapping: app key → SharePoint column name ──
+const F = {
+  planning:        { desc:'ItemDesc', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', notes:'Notes' },
+  execution:       { desc:'ItemDesc', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', notes:'Notes' },
+  recommendations: { weakness:'Weakness', recommendation:'Recommendation', dueDate:'DueDate', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', comments:'Comments' },
+  sampling:        { desc:'ItemDesc', requestedBy:'RequestedBy', dateRequested:'DateRequested', uploaded:'Uploaded', status:'Status', responsible:'Responsible', docName:'DocName', docLink:'DocLink' },
+  teams:           { email:'Email', requestedBy:'RequestedBy', dateRequested:'DateRequested', dateConnected:'DateConnected', status:'Status', responsible:'Responsible', remarks:'Remarks' },
+  register:        { dateRequested:'DateRequested', doc:'Document', requester:'Requester', requestedFrom:'RequestedFrom', submitter:'Submitter', dateSubmitted:'DateSubmitted', docName:'DocName', docLink:'DocLink', comment:'Comment' },
+  auditorRequests: { date:'RequestDate', requestedBy:'RequestedBy', description:'Description', urgency:'Urgency', status:'Status', assignedTo:'AssignedTo', dateResolved:'DateResolved', responseLink:'ResponseLink', notes:'Notes' },
+  config:          { id:'Year', label:'Label', fyEnd:'FYEnd', deadline:'Deadline', auditStart:'AuditStart', shadower:'Shadower', firm:'Firm' }
+};
+
+const DATE_FIELDS = new Set(['dueDate','uploaded','dateRequested','dateConnected','dateSubmitted','dateResolved','date','fyEnd','deadline','auditStart','shadower','FYEnd','Deadline','AuditStart','Shadower','DateRequested','DateConnected','DateSubmitted','DateResolved','RequestDate','Uploaded']);
+
+// ════════════════════════════════════════════════
+// MSAL & GRAPH AUTH
+// ════════════════════════════════════════════════
+let msalApp, graphToken, graphSiteId;
+
+async function initMsal() {
+  if (CLIENT_ID === 'PASTE_CLIENT_ID_HERE') {
+    throw new Error('The Application (client) ID has not been set. Open this HTML file in a text editor and paste your Azure AD Client ID where it says PASTE_CLIENT_ID_HERE.');
+  }
+  msalApp = new msal.PublicClientApplication(MSAL_CONFIG);
+  await msalApp.initialize();
+  const redirect = await msalApp.handleRedirectPromise();
+  if (redirect) graphToken = redirect.accessToken;
+  const accounts = msalApp.getAllAccounts();
+  if (accounts.length > 0) {
+    try {
+      const r = await msalApp.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] });
+      graphToken = r.accessToken;
+      document.getElementById('user-name').textContent = accounts[0].name || accounts[0].username;
+      return true; // already signed in
+    } catch(e) { graphToken = null; }
+  }
+  return false; // needs sign in
+}
+
+async function doSignIn() {
+  const btn = document.getElementById('signin-btn');
+  const errEl = document.getElementById('signin-error');
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+  errEl.classList.remove('show');
+  try {
+    const result = await msalApp.acquireTokenPopup({ scopes: GRAPH_SCOPES });
+    graphToken = result.accessToken;
+    document.getElementById('user-name').textContent = result.account?.name || result.account?.username || 'Signed in';
+    document.getElementById('signin-screen').classList.add('hidden');
+    await loadAndRender();
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 21 21" fill="none"><rect width="10" height="10" fill="#F25022"/><rect x="11" width="10" height="10" fill="#7FBA00"/><rect y="11" width="10" height="10" fill="#00A4EF"/><rect x="11" y="11" width="10" height="10" fill="#FFB900"/></svg> Sign in with Microsoft';
+    let msg = e.message || 'Sign in failed.';
+    if (e.errorCode === 'popup_window_error') msg = 'Pop-up was blocked. Please allow pop-ups for this site in your browser settings, then try again.';
+    if (e.errorCode === 'user_cancelled') msg = 'Sign-in was cancelled. Click the button to try again.';
+    if (msg.includes('PASTE_CLIENT_ID')) msg = 'The Client ID is not set. Please ask your IT person to open this file in a text editor and paste the Azure AD Client ID.';
+    errEl.textContent = msg;
+    errEl.classList.add('show');
+  }
+}
+
+async function getToken() {
+  if (graphToken) return graphToken;
+  const accounts = msalApp.getAllAccounts();
+  if (!accounts.length) throw new Error('Not signed in. Please refresh the page and sign in.');
+  const r = await msalApp.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] });
+  graphToken = r.accessToken;
+  return graphToken;
+}
+
+// ════════════════════════════════════════════════
+// MICROSOFT GRAPH API CALLS
+// ════════════════════════════════════════════════
+async function graphFetch(url, opts = {}) {
+  const token = await getToken();
+  const fullUrl = url.startsWith('http') ? url : GRAPH_BASE + url;
+  const r = await fetch(fullUrl, {
+    ...opts,
+    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', Accept: 'application/json', ...(opts.headers || {}) }
+  });
+  if (!r.ok && r.status !== 204) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Graph API error HTTP ${r.status} — ${url.split('?')[0]}`);
+  }
+  return r.status === 204 ? null : r.json();
+}
+
+async function getSiteId() {
+  if (graphSiteId) return graphSiteId;
+  const d = await graphFetch(`/sites/${SP_SITE_HOST}:${SP_SITE_PATH}`);
+  graphSiteId = d.id;
+  return graphSiteId;
+}
+
+// GET list items — fetches all, filters by year client-side (avoids SP indexing requirement)
+async function spGet(listName, year) {
+  const siteId = await getSiteId();
+  let url = `/sites/${siteId}/lists/${listName}/items?$expand=fields&$top=5000`;
+  let items = [];
+  while (url) {
+    const d = await graphFetch(url);
+    items = items.concat(d.value || []);
+    url = d['@odata.nextLink'] || null;
+  }
+  return year ? items.filter(x => x.fields?.Year === year) : items;
+}
+
+// POST new item
+async function spPost(listName, fields) {
+  const siteId = await getSiteId();
+  return graphFetch(`/sites/${siteId}/lists/${listName}/items`, { method: 'POST', body: JSON.stringify({ fields }) });
+}
+
+// PATCH existing item
+async function spPatch(listName, itemId, fields) {
+  const siteId = await getSiteId();
+  await graphFetch(`/sites/${siteId}/lists/${listName}/items/${itemId}`, { method: 'PATCH', body: JSON.stringify({ fields }) });
+}
+
+// ════════════════════════════════════════════════
+// FIELD CONVERSION HELPERS
+// ════════════════════════════════════════════════
+// App item → SP fields object (for POST/PATCH body)
+function toSpFields(tab, item, year) {
+  const map = F[tab] || {};
+  const out = {};
+  if (year) out.Year = year;
+  for (const [ak, sk] of Object.entries(map)) {
+    const v = item[ak];
+    out[sk] = DATE_FIELDS.has(ak) ? (v ? v + 'T00:00:00Z' : null) : (v || null);
+  }
+  return out;
+}
+
+// SP Graph item → app item
+function fromSpItem(tab, sp) {
+  const map = F[tab] || {};
+  const fields = sp.fields || {};
+  const item = { _spId: sp.id, id: sp.id };
+  for (const [ak, sk] of Object.entries(map)) {
+    let v = fields[sk];
+    if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) v = v.substring(0, 10);
+    item[ak] = v || '';
+  }
+  return item;
+}
+
+// ════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════
+const STATUSES = ['Completed','In progress','Requires Attention','Not Started'];
+let years = [], currentYear = '2025', currentRole = 'admin', currentYearCfg = {};
+let appData = { planning:[], execution:[], recommendations:[], sampling:[], teams:[], register:[], auditorRequests:[] };
+
+// ════════════════════════════════════════════════
+// LOAD DATA
+// ════════════════════════════════════════════════
+async function loadYears() {
+  const rows = await spGet(LISTS.config, null);
+  years = rows.map(sp => {
+    const f = sp.fields || {};
+    return { _spId:sp.id, id:f.Year||'', label:f.Label||'FY '+f.Year,
+      fyEnd:(f.FYEnd||'').substring(0,10), deadline:(f.Deadline||'').substring(0,10),
+      auditStart:(f.AuditStart||'').substring(0,10), shadower:(f.Shadower||'').substring(0,10), firm:f.Firm||'' };
+  });
+  if (!years.length) {
+    await spPost(LISTS.config,{Year:'2024',Label:'FY 2024 (June 2025 Audit)',Deadline:'2025-05-31T00:00:00Z',AuditStart:'2025-06-15T00:00:00Z',Shadower:'2025-06-30T00:00:00Z',FYEnd:'2024-12-31T00:00:00Z',Firm:'TPCSA'});
+    await spPost(LISTS.config,{Year:'2025',Label:'FY 2025 (June 2026 Audit)',Deadline:'2026-05-31T00:00:00Z',AuditStart:'2026-06-15T00:00:00Z',Shadower:'2026-06-30T00:00:00Z',FYEnd:'2025-12-31T00:00:00Z',Firm:'TPCSA'});
+    return loadYears();
+  }
+  years.sort((a,b) => b.id.localeCompare(a.id));
+}
+
+async function loadData(year) {
+  setLoad('Loading FY ' + year + ' from SharePoint…');
+  const [plan,exec,recs,samp,tms,reg,reqs] = await Promise.all([
+    spGet(LISTS.planning,year), spGet(LISTS.execution,year), spGet(LISTS.recommendations,year),
+    spGet(LISTS.sampling,year), spGet(LISTS.teams,year), spGet(LISTS.register,year), spGet(LISTS.auditorRequests,year)
+  ]);
+  appData = {
+    planning:        plan.map(s=>fromSpItem('planning',s)),
+    execution:       exec.map(s=>fromSpItem('execution',s)),
+    recommendations: recs.map(s=>fromSpItem('recommendations',s)),
+    sampling:        samp.map(s=>fromSpItem('sampling',s)),
+    teams:           tms.map(s=>fromSpItem('teams',s)),
+    register:        reg.map(s=>fromSpItem('register',s)),
+    auditorRequests: reqs.map(s=>fromSpItem('auditorRequests',s))
+  };
+  currentYearCfg = years.find(y=>y.id===year) || {};
+  document.getElementById('seed-banner').classList[appData.planning.length===0?'add':'remove']('show');
+}
+
+// ════════════════════════════════════════════════
+// FIELD UPDATE (called from onchange)
+// ════════════════════════════════════════════════
+async function upd(tab, spId, field, value) {
+  const item = appData[tab].find(x=>x._spId===spId);
+  if (!item) return;
+  item[field] = value;
+  updateAll();
+  const spField = (F[tab]||{})[field] || field;
+  const spValue = DATE_FIELDS.has(field) ? (value?value+'T00:00:00Z':null) : (value||null);
+  try {
+    await spPatch(LISTS[tab], spId, { [spField]: spValue });
+    toast('Saved ✓','ok');
+  } catch(e) { toast('Save failed: '+e.message,'err'); }
+}
+
+// ════════════════════════════════════════════════
+// ADD ROW
+// ════════════════════════════════════════════════
+async function addRow(tab) {
+  const blank = {
+    planning:        {desc:'New item',dueDate:'',uploaded:'',status:'Not Started',responsible:'',shadower:'',docName:'',docLink:'',notes:''},
+    execution:       {desc:'New item',dueDate:'',uploaded:'',status:'Not Started',responsible:'',shadower:'',docName:'',docLink:'',notes:''},
+    recommendations: {weakness:'',recommendation:'',dueDate:'',status:'Not Started',responsible:'',shadower:'',docName:'',docLink:'',comments:''},
+    sampling:        {desc:'New sample',requestedBy:'',dateRequested:'',uploaded:'',status:'Not Started',responsible:'',docName:'',docLink:''},
+    teams:           {email:'',requestedBy:'',dateRequested:'',dateConnected:'',status:'Not Started',responsible:'',remarks:''},
+    register:        {dateRequested:td(),doc:'New request',requester:'',requestedFrom:'',submitter:'',dateSubmitted:'',docName:'',docLink:'',comment:''},
+    auditorRequests: {date:td(),requestedBy:'',description:'',urgency:'Normal',status:'Pending',assignedTo:'',dateResolved:'',responseLink:'',notes:''}
+  }[tab];
+  toast('Adding…');
+  try {
+    const created = await spPost(LISTS[tab], toSpFields(tab, blank, currentYear));
+    blank._spId = created.id; blank.id = created.id;
+    appData[tab].push(blank);
+    renderAll();
+    toast('Added ✓','ok');
+  } catch(e) { toast('Failed: '+e.message,'err'); }
+}
+
+// ════════════════════════════════════════════════
+// SEED STANDARD CHECKLIST
+// ════════════════════════════════════════════════
+const PT=[
+  {desc:'Copy of all founding documents (MOI, Notice of incorporation)',responsible:'Dirk',shadower:'Simon'},
+  {desc:'NPO certificate if applicable',responsible:'Dirk',shadower:'Simon'},
+  {desc:'PBO Certificate if applicable',responsible:'Dirk',shadower:'Simon'},
+  {desc:'Organisational profile document highlighting what the organisation does',responsible:'Murray/Dirk',shadower:'Simon'},
+  {desc:'Copies of any contracts/agreements',responsible:'Pule/Alphonse',shadower:'Renias'},
+  {desc:'Narrative highlighting each financial year and key milestones achieved',responsible:'Murray/Dirk',shadower:'Simon'},
+  {desc:'Minutes of all director meetings',responsible:'Murray/Dirk',shadower:'Simon'},
+  {desc:'Minutes of all management meetings',responsible:'Dirk',shadower:'Simon'},
+  {desc:'Company organogram',responsible:'Dirk',shadower:'Engelinah'},
+  {desc:'List of service providers – name, service, terms',responsible:'Lerato',shadower:'Hope'},
+  {desc:'Summary of systems and processes – revenue',responsible:'Phila',shadower:'Renias'},
+  {desc:'Summary of systems and processes – payments',responsible:'Phila',shadower:'Renias'},
+  {desc:'Summary of system processes – procurement',responsible:'Alphonse',shadower:'Dirk/Pule'},
+  {desc:'Summary of systems processes – payroll',responsible:'Murray',shadower:'Dirk'},
+  {desc:'Monthly management accounts',responsible:'Renias/Phila',shadower:'Lerato/Hope'},
+  {desc:'Entire year\'s management accounts',responsible:'Renias/Phila',shadower:'Lerato/Hope'},
+  {desc:'Who reviews the management accounts and what review is performed',responsible:'Renias',shadower:'Phila'},
+  {desc:'All bank accounts – confirm all accounts and investments',responsible:'Dirk',shadower:'Phila'},
+  {desc:'Authorised signatories for each bank account',responsible:'Dirk',shadower:'Phila'},
+  {desc:'Short-term investment schedules',responsible:'Dirk/Murray',shadower:'Phila'},
+  {desc:'Long-term investment schedules',responsible:'Dirk/Murray',shadower:'Phila'},
+  {desc:'Schedule of all grants/donations received',responsible:'Renias/Phila',shadower:'Alphonse'},
+  {desc:'Schedule of bursaries awarded',responsible:'Alphonse',shadower:'Hope'},
+  {desc:'Copy of all funder reports submitted',responsible:'Alphonse',shadower:'Renias'},
+  {desc:'Copy of board/trustee resolutions',responsible:'Murray/Dirk',shadower:'Simon'},
+  {desc:'Constitution/MOI amendments if any',responsible:'Dirk',shadower:'Simon'},
+  {desc:'NPC annual returns filed with CIPC',responsible:'Dirk',shadower:'Simon'},
+  {desc:'NPO annual report filed with DSD',responsible:'Dirk',shadower:'Simon'},
+  {desc:'PBO annual return filed with SARS',responsible:'Phila',shadower:'Renias'},
+  {desc:'IT14SD filed with SARS',responsible:'Phila',shadower:'Renias'},
+  {desc:'SARS tax clearance certificate',responsible:'Dirk',shadower:'Phila'},
+  {desc:'Revenue recognition policy',responsible:'Renias',shadower:'Phila'},
+  {desc:'Expenditure/payment policy',responsible:'Phila',shadower:'Renias'},
+  {desc:'Asset management policy',responsible:'Lerato',shadower:'Simon'},
+  {desc:'HR/Personnel policy',responsible:'Engelinah',shadower:'Dirk'},
+  {desc:'Procurement policy',responsible:'Alphonse',shadower:'Dirk'},
+  {desc:'IT/Systems access and security policy',responsible:'Simon',shadower:'Dirk'},
+  {desc:'Fraud prevention/whistleblower policy',responsible:'Dirk',shadower:'Murray'},
+  {desc:'Petty cash policy and reconciliation',responsible:'Lerato/Hope',shadower:'Phila'},
+  {desc:'Credit card policy and reconciliation',responsible:'Lerato/Hope',shadower:'Phila'},
+  {desc:'Beneficial ownership declaration – Masters Office',responsible:'Dirk',shadower:'Murray'},
+  {desc:'Certificate of Good Standing from SARS',responsible:'Dirk',shadower:'Phila'},
+  {desc:'Internal audit or independent review mechanisms',responsible:'Murray/Dirk',shadower:'Phila'},
+  {desc:'Board involvement in day-to-day running',responsible:'Murray',shadower:'Dirk'},
+  {desc:'Schedule of S18A certificates issued',responsible:'Renias/Phila',shadower:'Dirk'},
+  {desc:'Leave policy – days, accumulation, payout',responsible:'Dirk',shadower:'Engelinah'},
+  {desc:'Performance framework for personnel',responsible:'Dirk',shadower:'Engelinah'},
+  {desc:'Monthly reconciliations prepared',responsible:'Lerato/Hope',shadower:'Phila'},
+  {desc:'Explanation for account balance movements >10% since prior year',responsible:'Renias/Phila',shadower:'Lerato/Hope'},
+  {desc:'Prior year auditors management report letter',responsible:'Renias',shadower:'Alphonse'},
+  {desc:'Prior year audit adjustment schedule',responsible:'Renias/Phila',shadower:'Lerato/Hope'},
+  {desc:'Electronic authorisation – bank confirmations via confirmations@adaptit.co.za',responsible:'Dirk',shadower:'Phila'},
+  {desc:'Short-term insurance documentation',responsible:'Dirk',shadower:'Simon'},
+  {desc:'Professional indemnity insurance documentation',responsible:'Dirk',shadower:'Phila'},
+  {desc:'UIF documentation',responsible:'Dirk',shadower:'Engelinah'}
+];
+const ET=[
+  {desc:'Bank statements for each month of the year under audit (PDF or CSV)',responsible:'Dirk',shadower:'Lerato/Hope'},
+  {desc:'Bank statements for 2 months post year end',responsible:'Dirk',shadower:'Lerato/Hope'},
+  {desc:'Detailed fixed asset register reconciling to Trial Balance',responsible:'Lerato',shadower:'Alphonse/Simon'},
+  {desc:'All VAT returns for periods under audit',responsible:'Phila',shadower:'Lerato'},
+  {desc:'All EMP 201 for each month for periods under audit',responsible:'Phila',shadower:'Lerato'},
+  {desc:'EMP 501 for the relevant period',responsible:'Phila',shadower:'Dirk'},
+  {desc:'SARS statement of account for employee tax (EMPSA)',responsible:'Phila',shadower:'Lerato'},
+  {desc:'SARS statement of account for VAT (VATSA)',responsible:'Phila',shadower:'Lerato'},
+  {desc:'Bank reconciliation for December (year end)',responsible:'Renias',shadower:'Lerato/Hope'},
+  {desc:'Grant/donor agreements signed for the year',responsible:'Alphonse/Pule',shadower:'Renias'},
+  {desc:'Deferred revenue computation',responsible:'Renias',shadower:'Hope'},
+  {desc:'Schedule of accruals for financial year end',responsible:'Phila',shadower:'Lerato'},
+  {desc:'Leave pay accrual – recon and leave forms',responsible:'Phila',shadower:'Engelinah'},
+  {desc:'Payroll reports for each month – per employee and monthly totals',responsible:'Phila',shadower:'Dirk'},
+  {desc:'Schedule of appointments of personnel for the year',responsible:'Engelinah',shadower:'Dirk'},
+  {desc:'Schedule of terminations/resignations for the year',responsible:'Engelinah',shadower:'Dirk'},
+  {desc:'Schedule of directors/trustee remuneration',responsible:'Phila',shadower:'Dirk'},
+  {desc:'Access to: supplier invoices, statements, employment contracts, leave forms',responsible:'Lerato/Engelinah',shadower:'Hope/Dirk'},
+  {desc:'Names of authorised signatories for each bank account',responsible:'Dirk',shadower:'Phila'},
+  {desc:'Bank list completed for bank confirmation via confirmation.com',responsible:'Dirk',shadower:'Phila'},
+  {desc:'Bank statements – ABSA Income Enhancer unit trust (year + 2 months)',responsible:'Dirk',shadower:'Murray'}
+];
+
+async function seedYear() {
+  setLoad('Seeding ' + (PT.length+ET.length) + ' items into SharePoint…');
+  try {
+    for (const t of PT) await spPost(LISTS.planning, toSpFields('planning',{...t,dueDate:'',uploaded:'',status:'Not Started',docName:'',docLink:'',notes:''},currentYear));
+    for (const t of ET) await spPost(LISTS.execution, toSpFields('execution',{...t,dueDate:'',uploaded:'',status:'Not Started',docName:'',docLink:'',notes:''},currentYear));
+    await loadData(currentYear); renderAll(); toast('Checklist seeded ✓','ok');
+  } catch(e) { toast('Seed error: '+e.message,'err'); } finally { hideLoad(); }
+}
+
+// ════════════════════════════════════════════════
+// YEAR MANAGEMENT
+// ════════════════════════════════════════════════
+async function addYear() {
+  const id = document.getElementById('ny-id').value.trim();
+  if (!id||!/^\d{4}$/.test(id)) { alert('Please enter a valid 4-digit year.'); return; }
+  if (years.find(y=>y.id===id)) { alert('This year already exists.'); return; }
+  const f = {
+    Year:id, Label:document.getElementById('ny-label').value||'FY '+id, Firm:document.getElementById('ny-firm').value||'TPCSA',
+    FYEnd:     document.getElementById('ny-fyend').value     ?document.getElementById('ny-fyend').value+'T00:00:00Z':null,
+    Deadline:  document.getElementById('ny-deadline').value  ?document.getElementById('ny-deadline').value+'T00:00:00Z':null,
+    AuditStart:document.getElementById('ny-auditstart').value?document.getElementById('ny-auditstart').value+'T00:00:00Z':null,
+    Shadower:  document.getElementById('ny-shadower').value  ?document.getElementById('ny-shadower').value+'T00:00:00Z':null
+  };
+  setLoad('Creating FY '+id+' in SharePoint…');
+  try {
+    await spPost(LISTS.config, f);
+    const copyFrom = document.getElementById('ny-from').value;
+    const importR  = document.getElementById('ny-recs').checked;
+    if (copyFrom) {
+      const srcP = await spGet(LISTS.planning, copyFrom);
+      for (const sp of srcP) {
+        const it = fromSpItem('planning',sp);
+        it.status='Not Started'; it.uploaded=''; it.dueDate=''; it.docName=''; it.docLink='';
+        await spPost(LISTS.planning, toSpFields('planning',it,id));
+      }
+      const srcE = await spGet(LISTS.execution, copyFrom);
+      for (const sp of srcE) {
+        const it = fromSpItem('execution',sp);
+        it.status='Not Started'; it.uploaded=''; it.dueDate=''; it.docName=''; it.docLink='';
+        await spPost(LISTS.execution, toSpFields('execution',it,id));
+      }
+      if (importR) {
+        const srcR = await spGet(LISTS.recommendations, copyFrom);
+        for (const sp of srcR) {
+          const r = fromSpItem('recommendations',sp);
+          await spPost(LISTS.planning, toSpFields('planning',{desc:'[Rec FY'+copyFrom+'] '+r.recommendation,dueDate:'',uploaded:'',status:'Not Started',responsible:r.responsible,shadower:r.shadower,docName:'',docLink:'',notes:'Weakness: '+r.weakness},id));
+        }
+      }
+    }
+    closeM('m-add-year'); await loadYears(); populateYearDDs(); await switchYear(id);
+    toast('FY '+id+' created ✓','ok');
+  } catch(e) { toast('Error: '+e.message,'err'); } finally { hideLoad(); }
+}
+
+function openYearCfg() {
+  const c=currentYearCfg;
+  document.getElementById('yc-ttl').textContent=c.label||'FY '+currentYear;
+  ['label','firm','fyend','deadline','auditstart','shadower'].forEach(k=>{
+    const el=document.getElementById('yc-'+k);
+    if(el) el.value=c[k==='fyend'?'fyEnd':k==='auditstart'?'auditStart':k]||'';
+  });
+  openM('m-year-cfg');
+}
+
+async function saveYearCfg() {
+  const cfg=years.find(y=>y.id===currentYear); if(!cfg) return;
+  cfg.label=document.getElementById('yc-label').value; cfg.firm=document.getElementById('yc-firm').value;
+  cfg.fyEnd=document.getElementById('yc-fyend').value; cfg.deadline=document.getElementById('yc-deadline').value;
+  cfg.auditStart=document.getElementById('yc-auditstart').value; cfg.shadower=document.getElementById('yc-shadower').value;
+  const fields={Label:cfg.label,Firm:cfg.firm};
+  ['FYEnd','Deadline','AuditStart','Shadower'].forEach((sk,i)=>{
+    const v=[cfg.fyEnd,cfg.deadline,cfg.auditStart,cfg.shadower][i];
+    fields[sk]=v?v+'T00:00:00Z':null;
+  });
+  try {
+    await spPatch(LISTS.config, cfg._spId, fields);
+    currentYearCfg=cfg; closeM('m-year-cfg'); populateYearDDs(); updateAll();
+    toast('Settings saved ✓','ok');
+  } catch(e) { toast('Save failed: '+e.message,'err'); }
+}
+
+async function switchYear(y) {
+  currentYear=y; setLoad('Loading FY '+y+'…');
+  try { await loadData(y); document.getElementById('year-sel').value=y; document.getElementById('hdr-sub').textContent=currentYearCfg.label||'FY '+y; renderAll(); }
+  finally { hideLoad(); }
+}
+
+// ════════════════════════════════════════════════
+// IMPORT RECOMMENDATIONS
+// ════════════════════════════════════════════════
+function openImportRecs() {
+  const fs=document.getElementById('ir-from'), ft=document.getElementById('ir-to');
+  fs.innerHTML=years.map(y=>`<option value="${y.id}"${y.id===currentYear?' selected':''}>${y.label}</option>`).join('');
+  ft.innerHTML=years.map(y=>`<option value="${y.id}"${y.id!==currentYear?' selected':''}>${y.label}</option>`).join('');
+  openM('m-import-recs');
+}
+
+async function importRecs() {
+  const fy=document.getElementById('ir-from').value, ty=document.getElementById('ir-to').value, due=document.getElementById('ir-due').value;
+  if(fy===ty){alert('Source and target must be different.');return;}
+  setLoad('Importing recommendations…');
+  try {
+    const src=await spGet(LISTS.recommendations,fy);
+    if(!src.length){alert('No recommendations in FY '+fy+'.');return;}
+    for(const sp of src){
+      const r=fromSpItem('recommendations',sp);
+      await spPost(LISTS.planning,toSpFields('planning',{desc:'[Rec FY'+fy+'] '+r.recommendation,dueDate:due||'',uploaded:'',status:'Not Started',responsible:r.responsible,shadower:r.shadower,docName:'',docLink:'',notes:'Weakness: '+r.weakness},ty));
+    }
+    closeM('m-import-recs');
+    if(ty===currentYear){await loadData(currentYear);renderAll();}
+    toast(src.length+' recommendations imported to FY '+ty+' Planning ✓','ok');
+  } catch(e){toast('Import error: '+e.message,'err');}finally{hideLoad();}
+}
+
+// ════════════════════════════════════════════════
+// AUDITOR REQUEST SUBMISSION
+// ════════════════════════════════════════════════
+async function submitRequest() {
+  const name=document.getElementById('req-name').value.trim();
+  const desc=document.getElementById('req-desc').value.trim();
+  const urg=document.getElementById('req-urgency').value;
+  if(!desc){alert('Please describe what you need.');return;}
+  const item={date:td(),requestedBy:name||'Auditor',description:desc,urgency:urg,status:'Pending',assignedTo:'',dateResolved:'',responseLink:'',notes:''};
+  try {
+    const cr=await spPost(LISTS.auditorRequests,toSpFields('auditorRequests',item,currentYear));
+    item._spId=cr.id; item.id=cr.id;
+    appData.auditorRequests.push(item);
+    document.getElementById('req-name').value='';
+    document.getElementById('req-desc').value='';
+    renderAudReqs(); renderMyReqs(); updateNotif();
+    toast('Request submitted ✓','ok');
+    alert('Request submitted. The audit team will see it in their Auditor Requests tab.');
+  } catch(e){toast('Submit failed: '+e.message,'err');}
+}
+
+// ════════════════════════════════════════════════
+// BACKUP / RESTORE (JSON export for safety)
+// ════════════════════════════════════════════════
+function exportBackup() {
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify({version:4,exportDate:new Date().toISOString(),spSite:SP_SITE_HOST+SP_SITE_PATH,years,data:appData},null,2)],{type:'application/json'}));
+  a.download='StudyTrust_AuditBackup_FY'+currentYear+'_'+td()+'.json'; a.click();
+}
+
+async function doRestore() {
+  let pkg; try{pkg=JSON.parse(document.getElementById('restore-data').value.trim());}catch(e){alert('Invalid JSON: '+e.message);return;}
+  if(!confirm('Post all backup items into SharePoint for FY '+currentYear+'? Existing items are NOT deleted.')) return;
+  setLoad('Restoring to SharePoint…');
+  try {
+    const d=pkg.data||pkg;
+    for(const [tab,items] of Object.entries(d)){
+      if(!LISTS[tab]||!Array.isArray(items)) continue;
+      for(const item of items) await spPost(LISTS[tab],toSpFields(tab,item,currentYear));
+    }
+    closeM('m-restore'); await loadData(currentYear); renderAll(); toast('Restore complete ✓','ok');
+  } catch(e){toast('Restore error: '+e.message,'err');}finally{hideLoad();}
+}
+
+// ════════════════════════════════════════════════
+// CSV EXPORT
+// ════════════════════════════════════════════════
+function exportCsv(tab) {
+  const C={
+    planning:{h:['#','Description','Compliance Date','Uploaded','Status','Responsible','Shadower','Document Name','Link','Notes'],f:['id','desc','dueDate','uploaded','status','responsible','shadower','docName','docLink','notes']},
+    execution:{h:['#','Description','Compliance Date','Uploaded','Status','Responsible','Shadower','Document Name','Link','Notes'],f:['id','desc','dueDate','uploaded','status','responsible','shadower','docName','docLink','notes']},
+    recommendations:{h:['#','Weakness','Recommendation','Compliance Date','Status','Responsible','Shadower','Document Name','Link','Comments'],f:['id','weakness','recommendation','dueDate','status','responsible','shadower','docName','docLink','comments']},
+    auditorRequests:{h:['#','Date','From','Description','Urgency','Status','Assigned','Resolved','Link','Notes'],f:['id','date','requestedBy','description','urgency','status','assignedTo','dateResolved','responseLink','notes']}
+  }[tab];
+  if(!C) return;
+  const csv=[C.h.join(','),...appData[tab].map(r=>C.f.map(k=>'"'+String(r[k]||'').replace(/"/g,'""')+'"').join(','))].join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='StudyTrust_'+tab+'_FY'+currentYear+'.csv'; a.click();
+}
+
+// ════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════
+const td=()=>new Date().toISOString().slice(0,10);
+const isLate=i=>i.dueDate&&i.dueDate<td()&&i.status!=='Completed';
+const isNew=i=>currentYearCfg.auditStart&&i.uploaded&&i.uploaded>=currentYearCfg.auditStart;
+const esc=t=>String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const daysUntil=d=>d?Math.ceil((new Date(d)-new Date())/86400000):null;
+
+let toastTmr;
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='show'+(type?' '+type:'');
+  clearTimeout(toastTmr); toastTmr=setTimeout(()=>t.className='',2800);
+}
+function setLoad(msg){document.getElementById('loading-msg').textContent=msg||'Loading…';document.getElementById('loading-overlay').classList.remove('hidden');}
+function hideLoad(){document.getElementById('loading-overlay').classList.add('hidden');}
+
+// ════════════════════════════════════════════════
+// INLINE CONTROLS  — use string _spId for Graph API
+// ════════════════════════════════════════════════
+function fld(tab,spId,field,val,type,w){
+  const cls=type==='date'?'ie id':type==='url'?'ie il':'ie it';
+  const st=w?`style="width:${w}"`:'';
+  const v=esc(val||'');
+  return `<input type="${type==='url'?'url':type==='date'?'date':'text'}" class="${cls}" ${st} value="${v}" onchange="upd('${tab}','${spId}','${field}',this.value)" title="${v}">`;
+}
+function selFld(tab,spId,field,val){
+  const c=(val||'Not Started').replace(/\s+/g,'-');
+  return `<select class="ie is sb sb-${c}" onchange="upd('${tab}','${spId}','${field}',this.value);this.className='ie is sb sb-'+this.value.replace(/\\s+/g,'-')">`
+    +STATUSES.map(s=>`<option value="${s}"${s===val?' selected':''}>${s}</option>`).join('')+'</select>';
+}
+function lBtn(name,url){return url?`<a class="lb" href="${esc(url)}" target="_blank">📄 ${esc(name||'Open')}</a>`:`<span class="lb empty">No link yet</span>`;}
+
+// ════════════════════════════════════════════════
+// RENDER FUNCTIONS
+// ════════════════════════════════════════════════
+function renderPE(tab){
+  const body=document.getElementById('body-'+tab); if(!body) return;
+  body.innerHTML=appData[tab].map((r,i)=>{
+    const lt=isLate(r),nw=isNew(r);
+    return`<tr class="${lt?'rl':nw?'rn':''}" data-status="${esc(r.status)}" data-person="${esc(r.responsible)}">
+      <td class="n">${i+1}</td>
+      <td class="dc">${esc(r.desc||'')}${lt?'<br><span class="bl">⚠ LATE</span>':''}</td>
+      <td>${fld(tab,r._spId,'dueDate',r.dueDate,'date')}</td>
+      <td>${fld(tab,r._spId,'uploaded',r.uploaded,'date')}${nw?'<br><span class="bn">🆕 NEW</span>':''}</td>
+      <td>${selFld(tab,r._spId,'status',r.status)}</td>
+      <td>${fld(tab,r._spId,'responsible',r.responsible,'text','78px')}</td>
+      <td>${fld(tab,r._spId,'shadower',r.shadower,'text','78px')}</td>
+      <td>${fld(tab,r._spId,'docName',r.docName,'text','108px')}</td>
+      <td>${fld(tab,r._spId,'docLink',r.docLink,'url','115px')}</td>
+      <td>${fld(tab,r._spId,'notes',r.notes,'text','115px')}</td>
+    </tr>`;
+  }).join('');
+  populateFilters(tab); updatePct(tab);
+}
+
+function renderRecs(){
+  const body=document.getElementById('body-recommendations'); if(!body) return;
+  body.innerHTML=appData.recommendations.map((r,i)=>{
+    const lt=isLate(r);
+    return`<tr class="${lt?'rl':''}" data-status="${esc(r.status)}">
+      <td class="n">${i+1}</td><td class="dc">${esc(r.weakness||'')}</td><td class="dc">${esc(r.recommendation||'')}</td>
+      <td>${fld('recommendations',r._spId,'dueDate',r.dueDate,'date')}${lt?'<br><span class="bl">⚠ LATE</span>':''}</td>
+      <td>${selFld('recommendations',r._spId,'status',r.status)}</td>
+      <td>${fld('recommendations',r._spId,'responsible',r.responsible,'text','78px')}</td>
+      <td>${fld('recommendations',r._spId,'shadower',r.shadower,'text','78px')}</td>
+      <td>${fld('recommendations',r._spId,'docName',r.docName,'text','108px')}</td>
+      <td>${fld('recommendations',r._spId,'docLink',r.docLink,'url','108px')}</td>
+      <td>${fld('recommendations',r._spId,'comments',r.comments,'text','125px')}</td>
+    </tr>`;
+  }).join('');
+  updatePct('recommendations');
+}
+
+function renderSampling(){
+  const body=document.getElementById('body-sampling'); if(!body) return;
+  body.innerHTML=appData.sampling.map((r,i)=>`<tr>
+    <td class="n">${i+1}</td><td class="dc">${esc(r.desc||'')}</td>
+    <td>${fld('sampling',r._spId,'requestedBy',r.requestedBy,'text','78px')}</td>
+    <td>${fld('sampling',r._spId,'dateRequested',r.dateRequested,'date')}</td>
+    <td>${fld('sampling',r._spId,'uploaded',r.uploaded,'date')}</td>
+    <td>${selFld('sampling',r._spId,'status',r.status)}</td>
+    <td>${fld('sampling',r._spId,'responsible',r.responsible,'text','78px')}</td>
+    <td>${fld('sampling',r._spId,'docName',r.docName,'text','108px')}</td>
+    <td>${fld('sampling',r._spId,'docLink',r.docLink,'url','108px')}</td>
+  </tr>`).join('');
+}
+
+function renderTeams(){
+  const body=document.getElementById('body-teams'); if(!body) return;
+  body.innerHTML=appData.teams.map((r,i)=>`<tr>
+    <td class="n">${i+1}</td><td>${fld('teams',r._spId,'email',r.email,'text','210px')}</td>
+    <td>${fld('teams',r._spId,'requestedBy',r.requestedBy,'text','78px')}</td>
+    <td>${fld('teams',r._spId,'dateRequested',r.dateRequested,'date')}</td>
+    <td>${fld('teams',r._spId,'dateConnected',r.dateConnected,'date')}</td>
+    <td>${selFld('teams',r._spId,'status',r.status)}</td>
+    <td>${fld('teams',r._spId,'responsible',r.responsible,'text','78px')}</td>
+    <td>${fld('teams',r._spId,'remarks',r.remarks,'text','115px')}</td>
+  </tr>`).join('');
+}
+
+function renderRegister(){
+  const body=document.getElementById('body-register'); if(!body) return;
+  body.innerHTML=appData.register.map((r,i)=>`<tr>
+    <td class="n">${i+1}</td>
+    <td>${fld('register',r._spId,'dateRequested',r.dateRequested,'date')}</td>
+    <td class="dc">${esc(r.doc||'')}</td>
+    <td>${fld('register',r._spId,'requester',r.requester,'text','78px')}</td>
+    <td>${fld('register',r._spId,'requestedFrom',r.requestedFrom,'text','85px')}</td>
+    <td>${fld('register',r._spId,'submitter',r.submitter,'text','78px')}</td>
+    <td>${fld('register',r._spId,'dateSubmitted',r.dateSubmitted,'date')}</td>
+    <td>${fld('register',r._spId,'docName',r.docName,'text','108px')}</td>
+    <td>${fld('register',r._spId,'docLink',r.docLink,'url','108px')}</td>
+    <td>${fld('register',r._spId,'comment',r.comment,'text','115px')}</td>
+  </tr>`).join('');
+}
+
+function renderAudReqs(){
+  const body=document.getElementById('body-aud-requests'); if(!body) return;
+  body.innerHTML=appData.auditorRequests.map((r,i)=>`<tr>
+    <td class="n">${i+1}</td><td style="white-space:nowrap;color:#666">${esc(r.date||'')}</td>
+    <td>${esc(r.requestedBy||'')}</td><td class="dc">${esc(r.description||'')}</td>
+    <td><span class="${r.urgency==='Urgent'?'bl':r.urgency==='High'?'ni-badge req':''}">${esc(r.urgency||'Normal')}</span></td>
+    <td>${selFld('auditorRequests',r._spId,'status',r.status||'Pending')}</td>
+    <td>${fld('auditorRequests',r._spId,'assignedTo',r.assignedTo,'text','85px')}</td>
+    <td>${fld('auditorRequests',r._spId,'dateResolved',r.dateResolved,'date')}</td>
+    <td>${fld('auditorRequests',r._spId,'responseLink',r.responseLink,'url','108px')}</td>
+    <td>${fld('auditorRequests',r._spId,'notes',r.notes,'text','115px')}</td>
+  </tr>`).join('');
+}
+
+// ── AUDITOR VIEW ──
+function renderAudOverview(){
+  const all=[...appData.planning,...appData.execution];
+  const newDocs=all.filter(x=>isNew(x)&&x.docLink);
+  const ready=all.filter(x=>x.status==='Completed'&&x.docLink).length;
+  const pend=all.filter(x=>x.status!=='Completed').length;
+  const pReqs=appData.auditorRequests.filter(x=>x.status==='Pending').length;
+  document.getElementById('aud-cards').innerHTML=`
+    <div class="card c-ok"><div class="cl">Documents Ready</div><div class="cv">${ready}</div><div class="cs">With file links</div></div>
+    <div class="card c-prog"><div class="cl">Pending</div><div class="cv">${pend}</div><div class="cs">Not yet uploaded</div></div>
+    <div class="card c-st"><div class="cl">New Since Audit Start</div><div class="cv">${newDocs.length}</div><div class="cs">${currentYearCfg.auditStart||'Not set'}</div></div>
+    <div class="card c-aud"><div class="cl">My Requests</div><div class="cv">${appData.auditorRequests.length}</div><div class="cs">${pReqs} pending</div></div>`;
+  const banner=document.getElementById('new-banner');
+  document.getElementById('new-list').innerHTML=newDocs.slice(0,8).map(x=>`<div style="margin-bottom:4px">📄 <a href="${esc(x.docLink)}" target="_blank" style="color:var(--new);font-weight:600">${esc(x.docName||x.desc)}</a> — ${esc(x.uploaded)}</div>`).join('')+(newDocs.length>8?`<div style="font-size:11px;color:#666">…and ${newDocs.length-8} more</div>`:'');
+  banner.style.display=newDocs.length?'block':'none';
+  document.getElementById('aud-phases').innerHTML=[{n:'Planning',t:'planning',c:'#226397'},{n:'Execution',t:'execution',c:'#1d9e75'}].map(p=>{
+    const arr=appData[p.t],done=arr.filter(x=>x.status==='Completed'&&x.docLink).length,pct=arr.length?Math.round(done/arr.length*100):0;
+    return`<div class="pr"><div class="pn">${p.n}</div><div class="pb2"><div class="pf2" style="width:${pct}%;background:${p.c}"></div></div><div class="pp">${pct}%</div></div><div style="font-size:10px;color:#888;margin:0 0 7px 143px">${done}/${arr.length} with links</div>`;
+  }).join('');
+}
+
+function renderAudDocs(){
+  const q=(document.getElementById('aud-q')||{}).value||'';
+  const phase=(document.getElementById('aud-phase')||{}).value||'';
+  const phases=phase?[{n:phase,t:phase}]:[{n:'Planning',t:'planning'},{n:'Execution',t:'execution'}];
+  const container=document.getElementById('aud-doc-list'); if(!container) return;
+  container.innerHTML='';
+  phases.forEach(p=>{
+    const arr=appData[p.t].filter(x=>!q||(x.desc||'').toLowerCase().includes(q.toLowerCase())||(x.docName||'').toLowerCase().includes(q.toLowerCase()));
+    const d=document.createElement('div'); d.className='dcat';
+    const ready=arr.filter(x=>x.status==='Completed').length;
+    d.innerHTML=`<div class="dcath" onclick="this.nextElementSibling.classList.toggle('open')"><h3>${p.n.charAt(0).toUpperCase()+p.n.slice(1)} (${ready}/${arr.length} ready)</h3><span style="font-size:11px;color:var(--st)">▾ expand</span></div>
+    <div class="dcatb open"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>
+      ${['#','Description','Status','Document','Date Uploaded'].map(h=>`<th style="background:var(--st);color:#fff;padding:6px 9px;font-size:11px">${h}</th>`).join('')}
+    </tr></thead><tbody>${arr.map((r,i)=>{
+      const nw=isNew(r);
+      return`<tr class="${nw?'rn':''}" style="border-bottom:.5px solid #edf0f3">
+        <td style="padding:6px 8px;text-align:center;color:#aaa;font-size:11px">${i+1}</td>
+        <td style="padding:6px 8px;max-width:280px">${esc(r.desc||'')}${nw?'<br><span class="bn">🆕 NEW</span>':''}</td>
+        <td style="padding:6px 8px"><span class="sb sb-${(r.status||'Not-Started').replace(/\s+/g,'-')}">${esc(r.status||'Not Started')}</span></td>
+        <td style="padding:6px 8px">${lBtn(r.docName,r.docLink)}</td>
+        <td style="padding:6px 8px;color:#666">${esc(r.uploaded||'—')}</td>
+      </tr>`;
+    }).join('')}</tbody></table></div>`;
+    container.appendChild(d);
+  });
+}
+
+function renderMyReqs(){
+  const el=document.getElementById('my-req-list'); if(!el) return;
+  const arr=appData.auditorRequests;
+  if(!arr.length){el.innerHTML='<div style="color:#888;font-size:12px;padding:12px">No requests submitted yet.</div>';return;}
+  el.innerHTML='<div class="tw"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
+    +['#','Date','Request','Urgency','Status','Response'].map(h=>`<th style="background:var(--aud);color:#fff;padding:6px 9px;font-size:11px">${h}</th>`).join('')
+    +'</tr></thead><tbody>'
+    +arr.map((r,i)=>`<tr style="border-bottom:.5px solid #edf0f3">
+      <td style="padding:6px 8px;text-align:center;color:#aaa;font-size:11px">${i+1}</td>
+      <td style="padding:6px 8px;color:#666;white-space:nowrap">${esc(r.date||'')}</td>
+      <td style="padding:6px 8px;max-width:230px">${esc(r.description||'')}</td>
+      <td style="padding:6px 8px"><span class="${r.urgency==='Urgent'?'bl':''}">${esc(r.urgency)}</span></td>
+      <td style="padding:6px 8px"><span class="sb sb-${(r.status||'').replace(/\s+/g,'-')}">${esc(r.status)}</span></td>
+      <td style="padding:6px 8px">${r.responseLink?`<a href="${esc(r.responseLink)}" target="_blank" class="lb">📄 View</a>`:esc(r.notes||'Awaiting response')}</td>
+    </tr>`).join('')
+    +'</tbody></table></div>';
+}
+
+// ════════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════════
+function cntS(arr){return{ok:arr.filter(x=>x.status==='Completed').length,ip:arr.filter(x=>x.status==='In progress').length,at:arr.filter(x=>x.status==='Requires Attention').length,tot:arr.length};}
+
+function updateDash(){
+  const all=[...appData.planning,...appData.execution,...appData.recommendations];
+  const c=cntS(all), pct=c.tot?Math.round(c.ok/c.tot*100):0;
+  const lateAll=all.filter(x=>isLate(x)), pReqs=(appData.auditorRequests||[]).filter(x=>x.status==='Pending').length;
+  document.getElementById('dash-cards').innerHTML=`
+    <div class="card c-st"><div class="cl">Total Items</div><div class="cv">${c.tot}</div><div class="cs">All phases</div></div>
+    <div class="card c-ok"><div class="cl">Completed</div><div class="cv">${c.ok}</div><div class="cs">${pct}%</div></div>
+    <div class="card c-prog"><div class="cl">In Progress</div><div class="cv">${c.ip}</div></div>
+    <div class="card c-att"><div class="cl">Needs Attention</div><div class="cv">${c.at}</div></div>
+    <div class="card c-late"><div class="cl">Late Items</div><div class="cv">${lateAll.length}</div><div class="cs">Past compliance date</div></div>
+    <div class="card c-aud"><div class="cl">Auditor Requests</div><div class="cv">${pReqs}</div><div class="cs">Pending</div></div>`;
+  document.getElementById('ov-pct').textContent=pct+'%';
+  document.getElementById('ov-fill').style.width=pct+'%';
+  const phsCfg=[{n:'Planning',t:'planning',c:'#226397'},{n:'Execution',t:'execution',c:'#1d9e75'},{n:'Recommendations',t:'recommendations',c:'#ba7517'}];
+  document.getElementById('phase-bars').innerHTML=phsCfg.map(p=>{
+    const pc=cntS(appData[p.t]),pp=pc.tot?Math.round(pc.ok/pc.tot*100):0;
+    return`<div class="pr"><div class="pn">${p.n}</div><div class="pb2"><div class="pf2" style="width:${pp}%;background:${p.c}"></div></div><div class="pp">${pp}%</div></div><div style="font-size:10px;color:#888;margin:0 0 7px 143px">${pc.ok}/${pc.tot}</div>`;
+  }).join('');
+  const cfg=currentYearCfg, t=td();
+  document.getElementById('timeline').innerHTML=[{l:'Internal ST Deadline',d:cfg.deadline},{l:'Audit Starts',d:cfg.auditStart},{l:'Shadower Deadline',d:cfg.shadower}].map(x=>`<div class="tli"><div class="tld ${x.d&&x.d<t?'done':'act'}"></div><div><div class="tlt">${x.l}</div><div class="tldt" style="${x.d&&x.d>=t?'color:var(--st);font-weight:600':'color:#888'}">${x.d||'Not set'}</div></div></div>`).join('');
+  const attItems=all.filter(x=>x.status==='Requires Attention').slice(0,8);
+  document.getElementById('att-list').innerHTML=attItems.length?'<table style="width:100%;border-collapse:collapse;font-size:12px"><tbody>'+attItems.map(x=>`<tr style="border-bottom:.5px solid #eee"><td style="padding:4px 7px;max-width:300px">${esc((x.desc||x.weakness||'').substring(0,80))}…</td><td style="padding:4px 7px"><span class="sb sb-Requires-Attention">Requires Attention</span></td><td style="padding:4px 7px;color:#555;white-space:nowrap">${esc(x.responsible||'')}</td></tr>`).join('')+'</tbody></table>':'<p style="color:var(--ok);font-size:12px">No items requiring attention.</p>';
+  document.getElementById('late-list').innerHTML=lateAll.length?'<table style="width:100%;border-collapse:collapse;font-size:12px"><tbody>'+lateAll.slice(0,8).map(x=>`<tr style="border-bottom:.5px solid #eee;background:#FFF5F5"><td style="padding:4px 7px;max-width:300px">${esc((x.desc||x.weakness||'').substring(0,80))}…</td><td style="padding:4px 7px;color:var(--late);font-size:11px;font-weight:700;white-space:nowrap">Due: ${esc(x.dueDate)}</td><td style="padding:4px 7px;color:#555;white-space:nowrap">${esc(x.responsible||'')}</td></tr>`).join('')+'</tbody></table>':'<p style="color:var(--ok);font-size:12px">No late items.</p>';
+}
+
+function updatePct(tab){
+  const m={planning:'plan-pct',execution:'exec-pct',recommendations:'rec-pct'};
+  const el=document.getElementById(m[tab]); if(!el) return;
+  const c=cntS(appData[tab]); el.textContent=(c.tot?Math.round(c.ok/c.tot*100):0)+'%';
+}
+
+// ════════════════════════════════════════════════
+// NOTIFICATIONS
+// ════════════════════════════════════════════════
+function updateNotif(){
+  const all=[...appData.planning,...appData.execution,...appData.recommendations];
+  const items=[];let count=0;
+  if(currentRole==='admin'){
+    const late=all.filter(x=>isLate(x)),reqs=(appData.auditorRequests||[]).filter(x=>x.status==='Pending');
+    count=late.length+reqs.length;
+    late.slice(0,5).forEach(x=>items.push({type:'late',text:(x.desc||x.weakness||'').substring(0,58),meta:'Past compliance date — '+x.dueDate}));
+    reqs.slice(0,5).forEach(x=>items.push({type:'req',text:(x.description||'').substring(0,58),meta:'From '+x.requestedBy+' — '+x.date}));
+  } else {
+    const nw=all.filter(x=>isNew(x));count=nw.length;
+    nw.slice(0,8).forEach(x=>items.push({type:'new',text:(x.docName||x.desc||'').substring(0,58),meta:'Uploaded '+x.uploaded}));
+  }
+  const nc=document.getElementById('notif-count');
+  nc.style.display=count>0?'flex':'none'; nc.textContent=count>99?'99+':count;
+  document.getElementById('notif-title').textContent='Notifications ('+count+')';
+  document.getElementById('notif-list').innerHTML=items.length?items.map(it=>`<div class="ni"><div class="ni-title"><span class="ni-badge ${it.type}">${it.type==='late'?'LATE':it.type==='new'?'NEW':'REQUEST'}</span>${esc(it.text)}…</div><div class="ni-meta">${esc(it.meta)}</div></div>`).join(''):'<div style="padding:18px;text-align:center;color:#888;font-size:12px">No notifications</div>';
+  document.querySelectorAll('[data-req]').forEach(el=>el.textContent=(appData.auditorRequests||[]).filter(x=>x.status==='Pending').length);
+}
+
+function toggleNotif(){document.getElementById('notif-panel').classList.toggle('open');}
+
+// ════════════════════════════════════════════════
+// COUNTDOWN
+// ════════════════════════════════════════════════
+function updateCountdown(){
+  const dl=currentYearCfg.deadline,pill=document.getElementById('dl-pill');
+  const val=document.getElementById('dl-val'),lbl=document.getElementById('dl-lbl');
+  if(!dl){val.textContent='—';lbl.textContent='Set deadline in Year Settings';return;}
+  const d=daysUntil(dl);val.textContent=Math.abs(d);
+  lbl.textContent=d<0?`days past deadline (${dl})`:`days to deadline (${dl})`;
+  pill.className='deadline-pill'+(d<0?' urgent':d<30?' warn':'');
+}
+
+// ════════════════════════════════════════════════
+// FILTERS
+// ════════════════════════════════════════════════
+function populateFilters(tab){
+  const sf=document.getElementById('f-'+tab+'-s');
+  if(sf) sf.innerHTML='<option value="">All Statuses</option>'+STATUSES.map(s=>`<option value="${s}">${s}</option>`).join('');
+  const pf=document.getElementById('f-'+tab+'-p');
+  if(pf){const ps=[...new Set(appData[tab].map(x=>x.responsible).filter(Boolean))].sort();pf.innerHTML='<option value="">All Persons</option>'+ps.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');}
+}
+
+function filterTab(tab){
+  const q=(document.getElementById('f-'+tab+'-q')||{}).value||'';
+  const sf=(document.getElementById('f-'+tab+'-s')||{}).value||'';
+  const pf=(document.getElementById('f-'+tab+'-p')||{}).value||'';
+  const lf=(document.getElementById('f-'+tab+'-l')||{}).value||'';
+  document.querySelectorAll('#body-'+tab+' tr').forEach(row=>{
+    const txt=row.textContent.toLowerCase(),st=row.dataset.status||'',pe=row.dataset.person||'';
+    const ltRow=row.classList.contains('rl');
+    let docLink=''; row.querySelectorAll('input[type=url]').forEach(i=>{if(i.value)docLink=i.value;});
+    row.style.display=((!q||txt.includes(q.toLowerCase()))&&(!sf||st===sf)&&(!pf||pe.includes(pf))&&(lf!=='late'||ltRow)&&(lf!=='nodoc'||!docLink))?'':'none';
+  });
+}
+
+// ════════════════════════════════════════════════
+// TABS & ROLE
+// ════════════════════════════════════════════════
+const ADMIN_TABS=[{id:'dashboard',lb:'Dashboard'},{id:'planning',lb:'Planning'},{id:'execution',lb:'Execution'},{id:'recommendations',lb:'Recommendations'},{id:'sampling',lb:'Sampling'},{id:'teams',lb:'Teams Access'},{id:'register',lb:'Doc Register'},{id:'aud-requests',lb:'Auditor Requests',badge:true}];
+const AUDITOR_TABS=[{id:'aud-overview',lb:'Overview'},{id:'aud-docs',lb:'Documents'},{id:'aud-my-requests',lb:'My Requests'}];
+
+function buildTabBar(){
+  const tabs=currentRole==='admin'?ADMIN_TABS:AUDITOR_TABS;
+  document.getElementById('tab-bar').innerHTML=tabs.map((t,i)=>
+    `<button class="tab-btn${i===0?' active':''}" onclick="showTab('${t.id}',this)">${t.lb}${t.badge?`<span class="tc req" data-req>0</span>`:''}</button>`
+  ).join('');
+}
+
+function showTab(id,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  const sec=document.getElementById('sec-'+id); if(sec) sec.classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='aud-overview') renderAudOverview();
+  if(id==='aud-docs') renderAudDocs();
+  if(id==='aud-my-requests') renderMyReqs();
+}
+
+function setRole(role){
+  currentRole=role;
+  document.getElementById('r-admin').className='role-opt'+(role==='admin'?' active':'');
+  document.getElementById('r-auditor').className='role-opt'+(role==='auditor'?' active':'');
+  const b=document.getElementById('role-banner');
+  b.className=(role==='admin'?'admin-mode':'auditor-mode');
+  b.textContent=role==='admin'?'Admin Mode — Changes save live to SharePoint ('+SP_SITE_HOST+SP_SITE_PATH+')':'Auditor View — Read-only. Use My Requests to send document requests to the audit team.';
+  buildTabBar();
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  const first=role==='admin'?'dashboard':'aud-overview';
+  const sec=document.getElementById('sec-'+first); if(sec) sec.classList.add('active');
+  if(first==='aud-overview') renderAudOverview();
+  updateNotif();
+}
+
+// ════════════════════════════════════════════════
+// YEAR DROPDOWNS
+// ════════════════════════════════════════════════
+function populateYearDDs(){
+  const sel=document.getElementById('year-sel');
+  sel.innerHTML=years.map(y=>`<option value="${y.id}"${y.id===currentYear?' selected':''}>${y.label||'FY '+y.id}</option>`).join('');
+  const nf=document.getElementById('ny-from');
+  if(nf) nf.innerHTML='<option value="">Standard Template</option>'+years.map(y=>`<option value="${y.id}">${y.label}</option>`).join('');
+}
+
+// ════════════════════════════════════════════════
+// MODALS
+// ════════════════════════════════════════════════
+function openM(id){document.getElementById(id).classList.add('open');}
+function closeM(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.ov').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
+
+// ════════════════════════════════════════════════
+// RENDER ALL
+// ════════════════════════════════════════════════
+function renderAll(){
+  renderPE('planning'); renderPE('execution'); renderRecs();
+  renderSampling(); renderTeams(); renderRegister(); renderAudReqs();
+  updateDash(); updateNotif(); updateCountdown(); populateYearDDs();
+}
+function updateAll(){
+  updateDash(); updateNotif(); updateCountdown();
+  updatePct('planning'); updatePct('execution'); updatePct('recommendations');
+}
+
+// ════════════════════════════════════════════════
+// INITIALISE
+// ════════════════════════════════════════════════
+async function loadAndRender(){
+  setLoad('Loading year configuration…');
+  await loadYears();
+  currentYear=years[0]?.id||'2025';
+  await loadData(currentYear);
+  buildTabBar(); renderAll();
+  document.getElementById('hdr-sub').textContent=currentYearCfg.label||'FY '+currentYear+' Audit';
+  toast('Connected to SharePoint ✓','ok');
+}
+
+async function init(){
+  try {
+    const alreadySignedIn = await initMsal();
+    if(alreadySignedIn){
+      document.getElementById('signin-screen').classList.add('hidden');
+      await loadAndRender();
+    } else {
+      hideLoad();
+      // Show sign-in screen — user clicks the button
+    }
+  } catch(e) {
+    hideLoad();
+    const errEl=document.getElementById('signin-error');
+    errEl.textContent=e.message; errEl.classList.add('show');
+  }
+}
+
+init();
+</script>
+</body>
+</html>
