@@ -504,12 +504,12 @@ td.dc{min-width:170px;max-width:270px}
   <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditConfig</p>
   <div class="cg"><span>Year</span><em> Text</em> · <span>Label</span><em> Text</em> · <span>FYEnd</span><em> Date</em> · <span>Deadline</span><em> Date</em> · <span>AuditStart</span><em> Date</em> · <span>Shadower</span><em> Date</em> · <span>Firm</span><em> Text</em></div>
   <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditPlanning &amp; AuditExecution (same columns)</p>
-  <div class="cg"><span>Year</span><em> Text</em> · <span>ItemDesc</span><em> Multi-text</em> · <span>DueDate</span><em> Date</em> · <span>Uploaded</span><em> Date</em> · <span>Status</span><em> Choice*</em> · <span>Responsible</span><em> Text</em> · <span>Shadower</span><em> Text</em> · <span>DocName</span><em> Text</em> · <span>DocLink</span><em> Text (paste full URL)</em> · <span>Notes</span><em> Multi-text</em></div>
+  <div class="cg"><span>Year</span><em> Text</em> · <span>Title</span><em> Text (built-in, no need to create)</em> · <span>DueDate</span><em> Date</em> · <span>Uploaded</span><em> Date</em> · <span>Status</span><em> Choice*</em> · <span>Responsible</span><em> Text</em> · <span>Shadower</span><em> Text</em> · <span>DocName</span><em> Text</em> · <span>DocLink</span><em> Text (paste full URL)</em> · <span>Notes</span><em> Multi-text</em></div>
   <p style="font-size:10px;color:#888;margin:3px 0 8px">*Status choices: Completed · In progress · Requires Attention · Not Started</p>
   <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditRecommendations</p>
   <div class="cg"><span>Year</span> · <span>Weakness</span><em> Multi-text</em> · <span>Recommendation</span><em> Multi-text</em> · <span>DueDate</span><em> Date</em> · <span>Status</span><em> Choice</em> · <span>Responsible</span><em> Text</em> · <span>Shadower</span><em> Text</em> · <span>DocName</span><em> Text</em> · <span>DocLink</span><em> Text</em> · <span>Comments</span><em> Multi-text</em></div>
   <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditSampling</p>
-  <div class="cg"><span>Year</span> · <span>ItemDesc</span><em> Multi-text</em> · <span>RequestedBy</span><em> Text</em> · <span>DateRequested</span><em> Date</em> · <span>Uploaded</span><em> Date</em> · <span>Status</span><em> Choice</em> · <span>Responsible</span><em> Text</em> · <span>DocName</span><em> Text</em> · <span>DocLink</span><em> Text</em></div>
+  <div class="cg"><span>Year</span> · <span>Title</span><em> Text (built-in, no need to create)</em> · <span>RequestedBy</span><em> Text</em> · <span>DateRequested</span><em> Date</em> · <span>Uploaded</span><em> Date</em> · <span>Status</span><em> Choice</em> · <span>Responsible</span><em> Text</em> · <span>DocName</span><em> Text</em> · <span>DocLink</span><em> Text</em></div>
   <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditTeams</p>
   <div class="cg"><span>Year</span> · <span>Email</span><em> Text</em> · <span>RequestedBy</span><em> Text</em> · <span>DateRequested</span><em> Date</em> · <span>DateConnected</span><em> Date</em> · <span>Status</span><em> Choice</em> · <span>Responsible</span><em> Text</em> · <span>Remarks</span><em> Text</em></div>
   <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditRegister</p>
@@ -559,13 +559,13 @@ const LISTS = {
 
 // ── Field mapping: app key → SharePoint column name ──
 const F = {
-  planning:        { desc:'ItemDesc', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', notes:'Notes' },
-  execution:       { desc:'ItemDesc', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', notes:'Notes' },
-  recommendations: { weakness:'Weakness', recommendation:'Recommendation', dueDate:'DueDate', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', comments:'Comments' },
-  sampling:        { desc:'ItemDesc', requestedBy:'RequestedBy', dateRequested:'DateRequested', uploaded:'Uploaded', status:'Status', responsible:'Responsible', docName:'DocName', docLink:'DocLink' },
+  planning:        { desc:'Title', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', notes:'Notes' },
+  execution:       { desc:'Title', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', notes:'Notes' },
+  recommendations: { weakness:'Title', recommendation:'Recommendation', dueDate:'DueDate', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', comments:'Comments' },
+  sampling:        { desc:'Title', requestedBy:'RequestedBy', dateRequested:'DateRequested', uploaded:'Uploaded', status:'Status', responsible:'Responsible', docName:'DocName', docLink:'DocLink' },
   teams:           { email:'Email', requestedBy:'RequestedBy', dateRequested:'DateRequested', dateConnected:'DateConnected', status:'Status', responsible:'Responsible', remarks:'Remarks' },
-  register:        { dateRequested:'DateRequested', doc:'Document', requester:'Requester', requestedFrom:'RequestedFrom', submitter:'Submitter', dateSubmitted:'DateSubmitted', docName:'DocName', docLink:'DocLink', comment:'Comment' },
-  auditorRequests: { date:'RequestDate', requestedBy:'RequestedBy', description:'Description', urgency:'Urgency', status:'Status', assignedTo:'AssignedTo', dateResolved:'DateResolved', responseLink:'ResponseLink', notes:'Notes' },
+  register:        { dateRequested:'DateRequested', doc:'Title', requester:'Requester', requestedFrom:'RequestedFrom', submitter:'Submitter', dateSubmitted:'DateSubmitted', docName:'DocName', docLink:'DocLink', comment:'Comment' },
+  auditorRequests: { date:'RequestDate', requestedBy:'RequestedBy', description:'Title', urgency:'Urgency', status:'Status', assignedTo:'AssignedTo', dateResolved:'DateResolved', responseLink:'ResponseLink', notes:'Notes' },
   config:          { id:'Year', label:'Label', fyEnd:'FYEnd', deadline:'Deadline', auditStart:'AuditStart', shadower:'Shadower', firm:'Firm' }
 };
 
