@@ -268,6 +268,8 @@ td.dc{min-width:170px;max-width:270px}
 <div id="loading-overlay" class="hidden">
   <div class="spinner"></div>
   <div id="loading-msg">Loading…</div>
+  <div id="loading-sub-msg" style="color:rgba(255,255,255,.65);font-size:11px;text-align:center;max-width:320px;line-height:1.5"></div>
+  <button id="loading-dismiss" onclick="hideLoad()" style="display:none;margin-top:12px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:6px;padding:7px 20px;font-size:12px;cursor:pointer">Dismiss &amp; continue →</button>
 </div>
 
 <!-- ═══ SAVE TOAST ═══ -->
@@ -734,6 +736,7 @@ async function loadYears() {
 
 async function loadData(year) {
   setLoad('Loading FY ' + year + ' from SharePoint…');
+  try {
   const [plan,exec,recs,samp,tms,reg,reqs] = await Promise.all([
     spGet(LISTS.planning,year), spGet(LISTS.execution,year), spGet(LISTS.recommendations,year),
     spGet(LISTS.sampling,year), spGet(LISTS.teams,year), spGet(LISTS.register,year), spGet(LISTS.auditorRequests,year)
@@ -748,6 +751,12 @@ async function loadData(year) {
     auditorRequests: reqs.map(s=>fromSpItem('auditorRequests',s))
   };
   currentYearCfg = years.find(y=>y.id===year) || {};
+  } catch(e) {
+    toast('Load error: '+e.message,'err');
+    console.error('loadData error:',e);
+  } finally {
+    hideLoad();
+  }
   document.getElementById('seed-banner').classList[appData.planning.length===0?'add':'remove']('show');
 }
 
@@ -1063,8 +1072,29 @@ function toast(msg,type=''){
   t.textContent=msg; t.className='show'+(type?' '+type:'');
   clearTimeout(toastTmr); toastTmr=setTimeout(()=>t.className='',2800);
 }
-function setLoad(msg){document.getElementById('loading-msg').textContent=msg||'Loading…';document.getElementById('loading-overlay').classList.remove('hidden');}
-function hideLoad(){document.getElementById('loading-overlay').classList.add('hidden');}
+let _loadTimer=null;
+function setLoad(msg,sub){
+  document.getElementById('loading-msg').textContent=msg||'Loading…';
+  const subEl=document.getElementById('loading-sub-msg');
+  if(subEl) subEl.textContent=sub||'';
+  document.getElementById('loading-overlay').classList.remove('hidden');
+  const dismissBtn=document.getElementById('loading-dismiss');
+  if(dismissBtn) dismissBtn.style.display='none';
+  clearTimeout(_loadTimer);
+  // Show dismiss button after 8 seconds so user is never permanently stuck
+  _loadTimer=setTimeout(()=>{
+    const btn=document.getElementById('loading-dismiss');
+    const sub2=document.getElementById('loading-sub-msg');
+    if(btn) btn.style.display='inline-block';
+    if(sub2) sub2.textContent='This is taking longer than expected. Your data may already be saved — click Dismiss and refresh the page to check.';
+  },8000);
+}
+function hideLoad(){
+  clearTimeout(_loadTimer);
+  document.getElementById('loading-overlay').classList.add('hidden');
+  const dismissBtn=document.getElementById('loading-dismiss');
+  if(dismissBtn) dismissBtn.style.display='none';
+}
 
 // ════════════════════════════════════════════════
 // INLINE CONTROLS  — use string _spId for Graph API
