@@ -17,7 +17,7 @@
 
   IT SETUP (one-time):
     1. Azure AD App registration already exists:
-       Client ID: 2dbd4565-a84e-49a6-a475-5f485414637d
+       Client ID: c5c93f6e-957d-431f-8e83-ff22e7be10a9
     2. Add this file's GitHub Pages URL as a redirect URI
        under Single-page application in Azure AD
     3. Create 3 SharePoint lists (see 📋 Column Guide in Hub):
@@ -50,7 +50,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
 #signin-screen{position:fixed;inset:0;background:var(--st-d);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center}
 #signin-screen.hidden{display:none}
 .si-card{background:#fff;border-radius:14px;padding:36px 40px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35)}
-.si-logo{background:var(--st);color:#fff;width:54px;height:54px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;margin:0 auto 14px}
+.si-logo{display:none}
 .si-card h2{font-size:18px;font-weight:700;color:var(--st);margin-bottom:5px}
 .si-card p{font-size:12px;color:var(--tx2);margin-bottom:22px;line-height:1.5}
 .si-btn{background:var(--st);color:#fff;border:none;border-radius:8px;padding:12px 28px;font-size:13px;font-weight:700;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;font-family:inherit}
@@ -248,6 +248,32 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
 .cg span{display:inline-block;background:var(--st-p);color:var(--st);border-radius:4px;padding:0 4px;margin:1px;font-weight:700}
 .cg em{color:var(--tx3);font-style:normal}
 
+/* ── NOTIFICATION BELL ── */
+#notif-btn{position:relative;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:50%;width:32px;height:32px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#notif-count{position:absolute;top:-4px;right:-4px;background:#e53935;color:#fff;border-radius:10px;font-size:9px;font-weight:700;min-width:16px;height:16px;display:none;align-items:center;justify-content:center;padding:0 3px}
+#notif-panel{display:none;position:fixed;top:58px;right:14px;width:370px;max-height:72vh;background:#fff;border-radius:var(--r);border:1px solid var(--bdr);box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:400;flex-direction:column;overflow:hidden}
+#notif-panel.open{display:flex}
+#notif-hdr{padding:11px 15px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;background:var(--st-p)}
+#notif-hdr h3{font-size:13px;font-weight:700;color:var(--st)}
+#notif-list{overflow-y:auto;flex:1;padding:6px 0}
+.ni{padding:9px 14px;border-bottom:.5px solid #f0f2f5;cursor:default}
+.ni:hover{background:#fafbfc}
+.ni-title{font-size:12px;font-weight:600;color:var(--tx);margin-bottom:2px;display:flex;align-items:center;gap:6px}
+.ni-meta{font-size:11px;color:var(--tx3)}
+.ni-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px}
+.ni-new{background:#d1fae5;color:#065f46}
+.ni-late{background:var(--rd-bg);color:var(--rd-tx)}
+.ni-change{background:var(--tr-bg);color:var(--tr-tx)}
+.ni-req{background:var(--pu-bg);color:var(--pu-tx)}
+.notif-empty{padding:22px;text-align:center;color:var(--tx3);font-size:12px}
+.notif-mark-read{padding:7px 14px;border-top:1px solid var(--bdr);text-align:center}
+.notif-mark-read button{font-size:11px;color:var(--st);background:none;border:none;cursor:pointer;font-family:inherit;font-weight:600}
+
+/* ── WEBHOOK STATUS ── */
+.wh-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.wh-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.wh-ok{background:var(--gn-tx)}.wh-empty{background:#ccc}.wh-err{background:var(--rd-tx)}
+
 /* ── FOOTER ── */
 .dash-footer{background:var(--st-d);color:rgba(255,255,255,.55);font-size:11px;padding:11px 20px;text-align:center;margin-top:24px}
 </style>
@@ -257,7 +283,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
 <!-- SIGN IN -->
 <div id="signin-screen">
   <div class="si-card">
-    <div class="si-logo">ST</div>
+    <img src="data:image/png;base64,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" alt="StudyTrust" style="width:110px;height:110px;object-fit:contain;display:block;margin:0 auto 14px;border-radius:10px">
     <h2>StudyTrust Governance Hub</h2>
     <p>Sign in with your Microsoft 365 account to access policies, SOPs, and governance information.</p>
     <button class="si-btn" id="si-btn" onclick="doSignIn()">
@@ -300,6 +326,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
       <button class="rb on" id="rb-a" onclick="setRole('admin')">Admin</button>
     </div>
     <span class="hdr-user" id="user-name">…</span>
+    <button id="notif-btn" onclick="toggleNotif()" title="Notifications">🔔<span id="notif-count">0</span></button>
     <button class="hdr-btn adm" id="btn-backup" onclick="downloadBackup()">⬇ Backup</button>
     <button class="hdr-btn adm" onclick="openM('m-restore')">⬆ Restore</button>
     <button class="hdr-btn" onclick="openM('m-guide')">📋 Col Guide</button>
@@ -308,6 +335,18 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
 
 <!-- ROLE BANNER -->
 <div id="role-banner" class="ban-personnel">All Personnel View — Published policies and SOPs only</div>
+
+<!-- NOTIFICATION PANEL -->
+<div id="notif-panel">
+  <div id="notif-hdr">
+    <h3 id="notif-title">Notifications</h3>
+    <div style="display:flex;gap:7px;align-items:center">
+      <button style="font-size:11px;color:var(--st);background:none;border:none;cursor:pointer;font-weight:600" onclick="markAllRead()">Mark all read</button>
+      <button class="btn btn-sec btn-sm" onclick="toggleNotif()">✕</button>
+    </div>
+  </div>
+  <div id="notif-list"></div>
+</div>
 
 <!-- TABS -->
 <nav class="tabs" id="tab-bar"></nav>
@@ -535,6 +574,60 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <div style="font-size:11px;color:var(--tx3);margin-top:8px">Group names are stored in localStorage. Users signing in will be assigned their role based on their Azure AD group membership.</div>
       </div></div>
 
+      <div class="slabel">Teams Webhook Notifications</div>
+      <div class="card"><div style="padding:14px">
+        <div style="font-size:12px;color:var(--tx2);margin-bottom:12px;line-height:1.6">Configure Teams incoming webhook URLs for each audience. When a policy or SOP status changes or a new document is registered, an Adaptive Card notification is posted automatically to the relevant Teams channels. To create a webhook: open a Teams channel → click ••• → Connectors (or Workflows) → Incoming Webhook → create and copy the URL.</div>
+
+        <div class="f-row" style="margin-bottom:10px">
+          <label style="font-size:11px;font-weight:600;color:var(--tx2);display:flex;align-items:center;gap:6px;margin-bottom:4px">
+            <span style="background:rgba(255,200,0,.2);color:#856404;border:1px solid rgba(255,200,0,.3);border-radius:10px;padding:1px 7px;font-size:10px">Admin</span>
+            Internal Team Webhook — receives all events
+          </label>
+          <div class="wh-row">
+            <span class="wh-dot" id="wh-admin-dot wh-empty"></span>
+            <input type="url" id="wh-admin" placeholder="https://studietrust.webhook.office.com/webhookb2/…" style="flex:1;border:1px solid var(--bdr);border-radius:5px;padding:6px 9px;font-size:12px;font-family:'Courier New',monospace">
+            <button class="btn btn-sec btn-sm" onclick="testWebhook('admin')">Test</button>
+          </div>
+        </div>
+
+        <div class="f-row" style="margin-bottom:10px">
+          <label style="font-size:11px;font-weight:600;color:var(--tx2);display:flex;align-items:center;gap:6px;margin-bottom:4px">
+            <span style="background:rgba(147,197,253,.2);color:#1e40af;border:1px solid rgba(147,197,253,.3);border-radius:10px;padding:1px 7px;font-size:10px">Trustee</span>
+            Board of Trustees Webhook — receives Published and Review Due events
+          </label>
+          <div class="wh-row">
+            <span class="wh-dot wh-empty" id="wh-trustee-dot"></span>
+            <input type="url" id="wh-trustee" placeholder="https://studietrust.webhook.office.com/webhookb2/…" style="flex:1;border:1px solid var(--bdr);border-radius:5px;padding:6px 9px;font-size:12px;font-family:'Courier New',monospace">
+            <button class="btn btn-sec btn-sm" onclick="testWebhook('trustee')">Test</button>
+          </div>
+        </div>
+
+        <div class="f-row" style="margin-bottom:12px">
+          <label style="font-size:11px;font-weight:600;color:var(--tx2);display:flex;align-items:center;gap:6px;margin-bottom:4px">
+            <span style="background:rgba(167,243,208,.2);color:#065f46;border:1px solid rgba(167,243,208,.3);border-radius:10px;padding:1px 7px;font-size:10px">Auditor</span>
+            External Auditors Webhook — receives Published and new document events
+          </label>
+          <div class="wh-row">
+            <span class="wh-dot wh-empty" id="wh-auditor-dot"></span>
+            <input type="url" id="wh-auditor" placeholder="https://studietrust.webhook.office.com/webhookb2/…" style="flex:1;border:1px solid var(--bdr);border-radius:5px;padding:6px 9px;font-size:12px;font-family:'Courier New',monospace">
+            <button class="btn btn-sec btn-sm" onclick="testWebhook('auditor')">Test</button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-pri btn-sm" onclick="saveWebhooks()">Save Webhook URLs</button>
+          <label style="font-size:11px;font-weight:400;color:var(--tx2);display:flex;align-items:center;gap:5px;cursor:pointer">
+            <input type="checkbox" id="wh-notify-overdue" style="cursor:pointer">
+            Also notify on page load if overdue reviews exist
+          </label>
+        </div>
+        <div style="font-size:11px;color:var(--tx3);margin-top:8px;line-height:1.5">Webhook URLs are stored in your browser (localStorage). Each person who configures webhooks on their device will trigger notifications from that device. For centralised notifications, configure webhooks on one designated admin device, or use Power Automate to connect the SharePoint lists directly to Teams — see the note below.</div>
+
+        <div class="info-box info-bl" style="margin-top:12px;margin-bottom:0">
+          <strong>Power Automate (recommended for reliable centralised delivery):</strong> Create a flow in Power Automate that triggers when a SharePoint list item is modified. The flow posts an Adaptive Card to your Teams channel. This works even when no one has the dashboard open, and does not depend on any single person's browser. Your IT person can set this up in about 30 minutes using the built-in SharePoint → Teams connector.
+        </div>
+      </div></div>
+
       <div class="slabel">Backup &amp; Restore</div>
       <div class="card"><div style="padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div style="border:1px solid var(--bdr);border-radius:var(--r);padding:14px;text-align:center">
@@ -650,13 +743,49 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
 
 <!-- STATUS CHANGE -->
 <div class="modal-ov" id="m-status">
-  <div class="modal">
+  <div class="modal" style="max-width:580px">
     <div class="modal-hd"><span class="modal-title" id="status-modal-title">Change Status</span><button class="modal-x" onclick="closeM('m-status')">✕</button></div>
     <div class="modal-body">
       <div style="margin-bottom:12px;font-size:12px;color:var(--tx2)">Current status: <span id="status-current" class="bd"></span></div>
       <div class="f-row"><label>Advance to:</label><div id="status-opts" style="display:flex;gap:7px;flex-wrap:wrap;margin-top:6px"></div></div>
       <div class="f-row"><label>Change Notes (mandatory for audit trail)</label><textarea id="f-status-note" rows="3" placeholder="Describe the reason for this status change…"></textarea></div>
-      <div id="status-warn" class="f-warn"></div>
+
+      <!-- PUBLISHING STEP — shown only when target status is Published -->
+      <div id="publish-step" style="display:none;margin-top:12px;background:#d1fae5;border:1px solid #6ee7b7;border-radius:var(--r);padding:14px">
+        <div style="font-size:12px;font-weight:700;color:#065f46;margin-bottom:8px">📁 Publishing Step — File Movement Required</div>
+        <div style="font-size:12px;color:#047857;line-height:1.7;margin-bottom:10px">
+          Before clicking Apply, move the document file in SharePoint:<br>
+          <strong>From:</strong> Governance Drafts/[Policies or SOPs]/PTT Review/<br>
+          <strong>To:</strong> Governance Published/[Policies or SOPs]/[Category]/<br>
+          Then paste the new SharePoint URL below.
+        </div>
+        <div class="f-row"><label>Published Document URL <span style="color:var(--rd-tx)">*</span></label>
+          <input type="url" id="f-pub-url" placeholder="https://studietrust.sharepoint.com/sites/StudyTrustAuditTracker/Governance%20Published/…">
+          <div class="f-note">Copy the link from SharePoint after moving the file. Right-click the file → Copy link.</div>
+        </div>
+        <div class="f-row" style="margin-bottom:0"><label>Archive URL for previous version <span style="font-weight:400;color:var(--tx3)">(if replacing an existing published version)</span></label>
+          <input type="url" id="f-arch-url" placeholder="https://studietrust.sharepoint.com/sites/StudyTrustAuditTracker/Governance%20Archive/…">
+          <div class="f-note">If a previous version existed, move that file to Governance Archive/ first, then paste its new URL here.</div>
+        </div>
+      </div>
+
+      <!-- ARCHIVING STEP — shown only when target status is Archived -->
+      <div id="archive-step" style="display:none;margin-top:12px;background:#f3e5f5;border:1px solid #ce93d8;border-radius:var(--r);padding:14px">
+        <div style="font-size:12px;font-weight:700;color:#4a1b9a;margin-bottom:8px">🗄 Archiving Step — File Movement Required</div>
+        <div style="font-size:12px;color:#6a1b9a;line-height:1.7;margin-bottom:10px">
+          Before clicking Apply, move the document file in SharePoint:<br>
+          <strong>From:</strong> Governance Published/[Policies or SOPs]/[Category]/<br>
+          <strong>To:</strong> Governance Archive/[Policies or SOPs]/<br>
+          Rename the file to include _ARCHIVED_[date] before moving.<br>
+          Then paste the archive URL below.
+        </div>
+        <div class="f-row" style="margin-bottom:0"><label>Archive Document URL <span style="color:var(--rd-tx)">*</span></label>
+          <input type="url" id="f-arch-url-arch" placeholder="https://studietrust.sharepoint.com/sites/StudyTrustAuditTracker/Governance%20Archive/…">
+          <div class="f-note">Copy the link from SharePoint after moving the file to Governance Archive.</div>
+        </div>
+      </div>
+
+      <div id="status-warn" class="f-warn" style="margin-top:10px"></div>
     </div>
     <div class="modal-actions"><button class="btn btn-sec" onclick="closeM('m-status')">Cancel</button><button class="btn btn-pri" onclick="applyStatus()">Apply Status Change</button></div>
   </div>
@@ -767,8 +896,8 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
 // ════════════════════════════════════════════
 // CONFIGURATION
 // ════════════════════════════════════════════
-const CLIENT_ID    = '2dbd4565-a84e-49a6-a475-5f485414637d';
-const REDIRECT_URI = 'https://studytrust1974-art.github.io/studytrust-apps/StudyTrust_Governance_Dashboard_v4.html';
+const CLIENT_ID    = 'c5c93f6e-957d-431f-8e83-ff22e7be10a9';
+const REDIRECT_URI = 'https://studietrust.sharepoint.com/sites/StudyTrustAuditTracker/SiteAssets/StudyTrust_Governance_Dashboard_v4.html';
 const SP_HOST      = 'studietrust.sharepoint.com';
 const SP_PATH      = '/sites/StudyTrustAuditTracker';
 const GRAPH        = 'https://graph.microsoft.com/v1.0';
@@ -1241,6 +1370,12 @@ function openStatusModal(docId,type,currentStatus){
   cur.textContent=currentStatus; cur.className='bd '+(({Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg','Review Due':'ba',Archived:'bgy'})[currentStatus]||'bgy');
   document.getElementById('f-status-note').value='';
   document.getElementById('status-warn').style.display='none';
+  // Reset step panels
+  const pubStep=document.getElementById('publish-step');
+  const archStep=document.getElementById('archive-step');
+  if(pubStep)  pubStep.style.display='none';
+  if(archStep) archStep.style.display='none';
+  ['f-pub-url','f-arch-url','f-arch-url-arch'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const next=STATUS_FLOW[currentStatus]||[];
   const badges={Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg','Review Due':'ba',Archived:'bgy'};
   document.getElementById('status-opts').innerHTML=next.length?next.map(s=>`<button class="bd ${badges[s]||'bgy'}" style="cursor:pointer;border:2px solid transparent" onclick="selectStatus(this,'${s}')" data-s="${s}">${s}</button>`).join(''):'<span style="font-size:12px;color:var(--tx3)">No transitions available.</span>';
@@ -1251,7 +1386,19 @@ let selStatus=null;
 function selectStatus(btn,s){
   document.querySelectorAll('#status-opts button').forEach(b=>b.style.border='2px solid transparent');
   btn.style.border='2px solid #333'; selStatus=s;
-  const warns={Archived:'Warning: Archived documents will be removed from active SharePoint within 72 hours.'};
+
+  // Show/hide contextual step panels
+  const pubStep  = document.getElementById('publish-step');
+  const archStep = document.getElementById('archive-step');
+  if(pubStep)  pubStep.style.display  = s==='Published' ? 'block' : 'none';
+  if(archStep) archStep.style.display = s==='Archived'  ? 'block' : 'none';
+
+  // Clear URL fields when switching
+  ['f-pub-url','f-arch-url','f-arch-url-arch'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+
+  const warns={Archived:'This document will be removed from all user views. Ensure the file has been moved to Governance Archive in SharePoint first.'};
   const w=document.getElementById('status-warn');
   if(warns[s]){w.textContent=warns[s];w.style.display='block';}else w.style.display='none';
 }
@@ -1260,21 +1407,49 @@ async function applyStatus(){
   if(!selStatus){toast('Please select a status.','warning');return;}
   const note=document.getElementById('f-status-note').value.trim();
   if(!note){toast('Change notes are mandatory for audit trail compliance.','warning');return;}
+
+  // Validate URL fields for publishing/archiving transitions
+  if(selStatus==='Published'){
+    const pubUrl=(document.getElementById('f-pub-url')||{}).value||'';
+    if(!pubUrl){toast('Please paste the Published document URL before applying.','warning');return;}
+  }
+  if(selStatus==='Archived'){
+    const archUrl=(document.getElementById('f-arch-url-arch')||{}).value||'';
+    if(!archUrl){toast('Please paste the Archive document URL before applying.','warning');return;}
+  }
+
   const {id,type}=statusTarget;
   const arr=type==='pol'?polData:sopData;
   const doc=arr.find(d=>(type==='pol'?d.polId:d.sopId)===id);
   if(!doc){toast('Document not found.','error');return;}
   const oldStatus=doc.status;
   doc.status=selStatus;
-  const spField=type==='pol'?{Status:selStatus}:{Status:selStatus};
+
+  // Build the SharePoint field update — include URLs if provided
+  const spFields={Status:selStatus};
+  if(selStatus==='Published'){
+    const pubUrl=(document.getElementById('f-pub-url')||{}).value.trim()||'';
+    const archUrl=(document.getElementById('f-arch-url')||{}).value.trim()||'';
+    if(pubUrl){ doc.publishedUrl=pubUrl; spFields.PublishedUrl=pubUrl; }
+    if(archUrl){ doc.archiveUrl=archUrl; spFields.ArchiveUrl=archUrl; doc.draftUrl=''; spFields.DraftUrl=null; }
+  }
+  if(selStatus==='Archived'){
+    const archUrl=(document.getElementById('f-arch-url-arch')||{}).value.trim()||'';
+    if(archUrl){ doc.archiveUrl=archUrl; spFields.ArchiveUrl=archUrl; }
+    doc.publishedUrl=''; spFields.PublishedUrl=null;
+  }
+
   try{
-    await spPatch(type==='pol'?LISTS.pol:LISTS.sop,doc._spId,spField);
+    await spPatch(type==='pol'?LISTS.pol:LISTS.sop,doc._spId,spFields);
     const logItem={note,docId:id,docType:type,fromStatus:oldStatus,toStatus:selStatus,changedBy:userName,changeDate:td()};
     const lr=await spPost(LISTS.log,{Title:note,DocID:id,DocType:type,FromStatus:oldStatus,ToStatus:selStatus,ChangedBy:userName,ChangeDate:td()+'T00:00:00Z'});
     logItem._spId=lr?.id||'';
     changeLog.unshift(logItem);
     renderAll(); closeM('m-status');
-    toast(`${id} → Status changed to "${selStatus}". Change logged.`,'success');
+    const urlMsg = selStatus==='Published'?' · Published URL saved.' : selStatus==='Archived'?' · Archive URL saved.' : '';
+    toast(`${id} → Status changed to "${selStatus}". Change logged.${urlMsg}`,'success');
+    // Fire Teams notifications asynchronously
+    fireStatusChangeNotif(id, doc.title||id, oldStatus, selStatus, userName);
   }catch(e){toast('Failed to save: '+e.message,'error');}
   selStatus=null;
 }
@@ -1334,6 +1509,7 @@ async function submitPol(){
     changeLog.unshift({note:'New policy registered',docId:pid,docType:'pol',fromStatus:'—',toStatus:p.status,changedBy:userName,changeDate:td(),_spId:lr?.id});
     renderAll(); closeM('m-pol');
     toast('Policy '+pid+' registered as '+p.status+'.','success');
+    fireNewDocNotif(pid, p.title, 'Policy', p.status, userName);
   }catch(e){toast('Failed to add policy: '+e.message,'error');}
 }
 
@@ -1350,6 +1526,7 @@ async function submitSop(){
     changeLog.unshift({note:'New SOP registered',docId:sid,docType:'sop',fromStatus:'—',toStatus:s.status,changedBy:userName,changeDate:td(),_spId:lr?.id});
     renderAll(); closeM('m-sop');
     toast('SOP '+sid+' registered.','success');
+    fireNewDocNotif(sid, s.title, 'SOP', s.status, userName);
   }catch(e){toast('Failed to add SOP: '+e.message,'error');}
 }
 
@@ -1580,6 +1757,18 @@ function submitAudRequest(){
   renderMyReqs();
   renderAudOverview();
   toast('Request submitted. The governance team will respond via email or SharePoint.','success');
+  // Notify admin team via webhook
+  const wh = loadWebhooks();
+  if(wh.admin){
+    sendAdaptiveCard(wh.admin,
+      '📋 New Auditor Document Request',
+      `From: ${name||'Auditor'} (${org||'External'})`,
+      `**Document requested:** ${doc}\n**Urgency:** ${urgency}${note ? '\n**Context:** '+note : ''}`,
+      'admin'
+    );
+  }
+  // Push to in-app bell
+  pushNotif('request', `Document request from ${name||'Auditor'}`, `${doc} · Urgency: ${urgency}`);
 }
 
 function renderMyReqs(){
@@ -1597,6 +1786,261 @@ function renderMyReqs(){
       <td style="font-size:11px;color:var(--tx2)">${esc(r.note||'—')}</td>
     </tr>`).join('')
     +'</tbody></table></div>';
+}
+
+// ════════════════════════════════════════════
+// NOTIFICATION SYSTEM
+// ════════════════════════════════════════════
+const NOTIF_KEY   = 'st_gov_notifs';
+const SEEN_KEY    = 'st_gov_last_seen';
+const WEBHOOK_KEY = 'st_gov_webhooks';
+
+// Each notification: { id, type, title, meta, ts, read }
+// Types: 'new-doc', 'status-change', 'overdue', 'request'
+
+function loadNotifs(){
+  try{ return JSON.parse(localStorage.getItem(NOTIF_KEY)||'[]'); }
+  catch(e){ return []; }
+}
+function saveNotifs(arr){
+  // Keep at most 100 notifications
+  localStorage.setItem(NOTIF_KEY, JSON.stringify(arr.slice(0,100)));
+}
+
+function pushNotif(type, title, meta){
+  const arr = loadNotifs();
+  arr.unshift({ id: Date.now()+Math.random(), type, title, meta, ts: new Date().toISOString(), read: false });
+  saveNotifs(arr);
+  renderNotifBell();
+}
+
+function renderNotifBell(){
+  const arr   = loadNotifs();
+  const unread = arr.filter(n => !n.read);
+  const nc    = document.getElementById('notif-count');
+  const btn   = document.getElementById('notif-btn');
+  if(!nc) return;
+  if(unread.length > 0){
+    nc.style.display = 'flex';
+    nc.textContent   = unread.length > 99 ? '99+' : unread.length;
+  } else {
+    nc.style.display = 'none';
+  }
+  if(btn) btn.title = unread.length ? unread.length+' unread notification'+(unread.length>1?'s':'') : 'No new notifications';
+}
+
+function renderNotifPanel(){
+  const arr  = loadNotifs();
+  const list = document.getElementById('notif-list');
+  const ttl  = document.getElementById('notif-title');
+  if(!list) return;
+  const unread = arr.filter(n => !n.read).length;
+  if(ttl) ttl.textContent = 'Notifications' + (unread ? ' ('+unread+' new)' : '');
+
+  const typeStyle = {
+    'new-doc'      : { cls:'ni-new',    icon:'📄', label:'NEW' },
+    'status-change': { cls:'ni-change',  icon:'🔄', label:'STATUS' },
+    'overdue'      : { cls:'ni-late',    icon:'⚠',  label:'OVERDUE' },
+    'request'      : { cls:'ni-req',     icon:'📋', label:'REQUEST' }
+  };
+
+  if(!arr.length){
+    list.innerHTML = '<div class="notif-empty">No notifications yet.</div>';
+    return;
+  }
+
+  list.innerHTML = arr.slice(0, 30).map(n => {
+    const s = typeStyle[n.type] || { cls:'ni-change', icon:'•', label:'INFO' };
+    const d = new Date(n.ts);
+    const when = d.toLocaleDateString('en-ZA') + ' ' + d.toLocaleTimeString('en-ZA', {hour:'2-digit',minute:'2-digit'});
+    return `<div class="ni" style="${n.read?'opacity:.6':''}">
+      <div class="ni-title"><span class="ni-badge ${s.cls}">${s.icon} ${s.label}</span>${esc(n.title)}</div>
+      <div class="ni-meta">${esc(n.meta)} &nbsp;·&nbsp; ${when}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleNotif(){
+  const panel = document.getElementById('notif-panel');
+  if(!panel) return;
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open');
+  if(!isOpen) renderNotifPanel();
+}
+
+function markAllRead(){
+  const arr = loadNotifs().map(n => ({...n, read:true}));
+  saveNotifs(arr);
+  renderNotifBell();
+  renderNotifPanel();
+}
+
+// Scan for overdue items and push notifications if they are new since last check
+function checkOverdueNotifs(){
+  const lastKey = 'st_gov_overdue_checked';
+  const lastCheck = localStorage.getItem(lastKey) || '';
+  const today = td();
+  if(lastCheck === today) return; // Already checked today
+  localStorage.setItem(lastKey, today);
+
+  const all = [...polData, ...sopData];
+  const overItems = all.filter(d => isOverdue(d.reviewDate) && d.status !== 'Archived');
+  overItems.forEach(d => {
+    const id = d.polId || d.sopId;
+    pushNotif('overdue', `${id} — ${d.title||d.polId||d.sopId}`, `Review was due ${d.reviewDate} · Owner: ${d.owner||'—'}`);
+  });
+  if(overItems.length){
+    // Optionally send to admin webhook
+    const wh = loadWebhooks();
+    if(wh.admin && loadWebhookPrefs().notifyOverdue){
+      sendAdaptiveCard(wh.admin, '⚠ Overdue Governance Reviews', `${overItems.length} document(s) are overdue for review.`,
+        overItems.slice(0,5).map(d=>`• ${d.polId||d.sopId}: due ${d.reviewDate}`).join('\n'),
+        'all');
+    }
+  }
+}
+
+// ════════════════════════════════════════════
+// WEBHOOK MANAGEMENT
+// ════════════════════════════════════════════
+function loadWebhooks(){
+  try{ return JSON.parse(localStorage.getItem(WEBHOOK_KEY)||'{}'); }
+  catch(e){ return {}; }
+}
+function loadWebhookPrefs(){
+  try{ return JSON.parse(localStorage.getItem(WEBHOOK_KEY+'_prefs')||'{}'); }
+  catch(e){ return {}; }
+}
+
+function saveWebhooks(){
+  const wh = {
+    admin:   (document.getElementById('wh-admin')  ||{}).value||'',
+    trustee: (document.getElementById('wh-trustee')||{}).value||'',
+    auditor: (document.getElementById('wh-auditor')||{}).value||''
+  };
+  const prefs = {
+    notifyOverdue: (document.getElementById('wh-notify-overdue')||{}).checked||false
+  };
+  localStorage.setItem(WEBHOOK_KEY, JSON.stringify(wh));
+  localStorage.setItem(WEBHOOK_KEY+'_prefs', JSON.stringify(prefs));
+  updateWebhookDots(wh);
+  toast('Webhook URLs saved.', 'success');
+}
+
+function loadWebhookUI(){
+  const wh = loadWebhooks();
+  const prefs = loadWebhookPrefs();
+  const a = document.getElementById('wh-admin');
+  const t = document.getElementById('wh-trustee');
+  const au = document.getElementById('wh-auditor');
+  const ov = document.getElementById('wh-notify-overdue');
+  if(a) a.value = wh.admin||'';
+  if(t) t.value = wh.trustee||'';
+  if(au) au.value = wh.auditor||'';
+  if(ov) ov.checked = prefs.notifyOverdue||false;
+  updateWebhookDots(wh);
+}
+
+function updateWebhookDots(wh){
+  const dots = { admin:'wh-admin-dot', trustee:'wh-trustee-dot', auditor:'wh-auditor-dot' };
+  Object.entries(dots).forEach(([key, id]) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.className = 'wh-dot ' + (wh[key] ? 'wh-ok' : 'wh-empty');
+  });
+}
+
+async function testWebhook(audience){
+  const wh = loadWebhooks();
+  const url = wh[audience];
+  if(!url){ toast('No webhook URL configured for ' + audience + '.', 'warning'); return; }
+  const ok = await sendAdaptiveCard(url,
+    '🔔 StudyTrust Governance Hub — Test Notification',
+    'This is a test notification from the StudyTrust Governance Hub.',
+    `Audience: ${audience} · Sent by: ${userName} · ${new Date().toLocaleString('en-ZA')}`,
+    audience
+  );
+  toast(ok ? 'Test notification sent to ' + audience + ' channel ✓' : 'Webhook test failed — check the URL.', ok ? 'success' : 'error');
+}
+
+// ── Send an Adaptive Card to a Teams Incoming Webhook ──
+async function sendAdaptiveCard(webhookUrl, title, subtitle, body, audience){
+  if(!webhookUrl) return false;
+  // Teams Incoming Webhook uses the MessageCard format (Adaptive Cards require approval in some tenants)
+  const card = {
+    "@type": "MessageCard",
+    "@context": "http://schema.org/extensions",
+    "themeColor": "226397",
+    "summary": title,
+    "sections": [{
+      "activityTitle": `**${title}**`,
+      "activitySubtitle": subtitle,
+      "activityText": body,
+      "facts": [
+        { "name": "System:", "value": "StudyTrust Governance Hub" },
+        { "name": "Audience:", "value": audience === 'all' ? 'Internal Team' : audience.charAt(0).toUpperCase() + audience.slice(1) },
+        { "name": "Timestamp:", "value": new Date().toLocaleString('en-ZA') }
+      ],
+      "markdown": true
+    }],
+    "potentialAction": [{
+      "@type": "OpenUri",
+      "name": "Open Governance Hub",
+      "targets": [{ "os": "default", "uri": "https://studietrust.sharepoint.com/sites/StudyTrustAuditTracker/SiteAssets/StudyTrust_Governance_Dashboard_v4.html" }]
+    }]
+  };
+  try{
+    const r = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(card)
+    });
+    return r.ok;
+  }catch(e){
+    console.warn('Webhook error:', e);
+    return false;
+  }
+}
+
+// ── Fire notifications for a status change event ──
+// audience rules:
+//   admin   → all status changes
+//   trustee → only Published, Review Due, Archived
+//   auditor → only Published
+async function fireStatusChangeNotif(docId, docTitle, fromStatus, toStatus, changedBy){
+  const wh = loadWebhooks();
+  const title  = `${docId} — Status changed to ${toStatus}`;
+  const sub    = `${docTitle}`;
+  const body   = `**From:** ${fromStatus}  →  **To:** ${toStatus}\n**Changed by:** ${changedBy}`;
+
+  // Push to in-app bell for current user
+  pushNotif('status-change', title, `${fromStatus} → ${toStatus} · by ${changedBy}`);
+
+  const trusteeStatuses = ['Published','Review Due','Archived'];
+  const auditorStatuses = ['Published'];
+
+  const sends = [];
+  if(wh.admin)   sends.push(sendAdaptiveCard(wh.admin,   '🔄 ' + title, sub, body, 'admin'));
+  if(wh.trustee && trusteeStatuses.includes(toStatus))
+                  sends.push(sendAdaptiveCard(wh.trustee, '🔄 ' + title, sub, body, 'trustee'));
+  if(wh.auditor && auditorStatuses.includes(toStatus))
+                  sends.push(sendAdaptiveCard(wh.auditor, '📄 New Published Document: ' + docId, sub, `${docTitle} has been published and is now available for review.`, 'auditor'));
+
+  await Promise.allSettled(sends);
+}
+
+// ── Fire notifications for a new document registered ──
+async function fireNewDocNotif(docId, docTitle, type, status, registeredBy){
+  const wh = loadWebhooks();
+  const title = `New ${type} registered: ${docId}`;
+  const body  = `**${docTitle}**\nInitial status: ${status} · Registered by: ${registeredBy}`;
+
+  pushNotif('new-doc', title, `Status: ${status} · by ${registeredBy}`);
+
+  const sends = [];
+  if(wh.admin) sends.push(sendAdaptiveCard(wh.admin, '📋 ' + title, `A new ${type} has been registered in the Governance Hub.`, body, 'admin'));
+  // Auditors and trustees only notified when Published — not for drafts
+  await Promise.allSettled(sends);
 }
 
 // ════════════════════════════════════════════
@@ -1618,6 +2062,11 @@ async function loadAndRender(){
     renderAll();
     if(role==='admin') polDropdown();
     toast('Connected to SharePoint — '+userName,'success');
+    // Initialise notification bell and webhook UI
+    renderNotifBell();
+    loadWebhookUI();
+    // Check for overdue items (once per day)
+    checkOverdueNotifs();
   }catch(e){
     hideLoad();
     toast('Load error: '+e.message,'error');
