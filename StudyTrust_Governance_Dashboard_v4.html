@@ -327,6 +327,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
     </div>
     <span class="hdr-user" id="user-name">…</span>
     <button id="notif-btn" onclick="toggleNotif()" title="Notifications">🔔<span id="notif-count">0</span></button>
+    <button class="hdr-btn" onclick="openDiag()" title="Access diagnostics" style="background:rgba(255,255,255,.08);font-size:13px;padding:4px 8px">ℹ</button>
     <button class="hdr-btn adm" id="btn-backup" onclick="downloadBackup()">⬇ Backup</button>
     <button class="hdr-btn adm" onclick="openM('m-restore')">⬆ Restore</button>
     <button class="hdr-btn" onclick="openM('m-guide')">📋 Col Guide</button>
@@ -859,6 +860,61 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
   </div>
 </div>
 
+<!-- DIAGNOSTIC MODAL — visible to all roles -->
+<div class="modal-ov" id="m-diag">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-hd"><span class="modal-title">Access Diagnostics</span><button class="modal-x" onclick="closeM('m-diag')">✕</button></div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:14px;line-height:1.6">This panel shows how the dashboard detected your access role. If your role is incorrect, compare the group names below and update the configuration to match exactly.</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div style="background:var(--bg);border:1px solid var(--bdr);border-radius:var(--r);padding:12px">
+          <div style="font-size:11px;font-weight:700;color:var(--tx3);margin-bottom:6px">SIGNED-IN USER</div>
+          <div id="diag-user" style="font-size:13px;font-weight:600;color:var(--tx)"></div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--bdr);border-radius:var(--r);padding:12px">
+          <div style="font-size:11px;font-weight:700;color:var(--tx3);margin-bottom:6px">DETECTED ROLE</div>
+          <div id="diag-role" style="font-size:13px;font-weight:600"></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--tx3);margin-bottom:6px">CONFIGURED GROUP NAMES (dashboard expects these exact names)</div>
+        <table style="width:100%;font-size:12px;border-collapse:collapse">
+          <tr><td style="padding:5px 8px;background:var(--bg);border:1px solid var(--bdr);font-weight:600;color:var(--st);width:140px">Admin</td><td id="diag-grp-admin" style="padding:5px 8px;border:1px solid var(--bdr);font-family:monospace"></td></tr>
+          <tr><td style="padding:5px 8px;background:var(--bg);border:1px solid var(--bdr);font-weight:600;color:var(--st)">Trustee</td><td id="diag-grp-trustee" style="padding:5px 8px;border:1px solid var(--bdr);font-family:monospace"></td></tr>
+          <tr><td style="padding:5px 8px;background:var(--bg);border:1px solid var(--bdr);font-weight:600;color:var(--st)">Auditor</td><td id="diag-grp-auditor" style="padding:5px 8px;border:1px solid var(--bdr);font-family:monospace"></td></tr>
+        </table>
+      </div>
+
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--tx3);margin-bottom:6px">YOUR AZURE AD GROUPS (returned by Microsoft)</div>
+        <div id="diag-groups" style="background:var(--bg);border:1px solid var(--bdr);border-radius:5px;padding:10px;font-size:12px;font-family:monospace;max-height:140px;overflow-y:auto;line-height:1.8;color:var(--tx)"></div>
+      </div>
+
+      <div id="diag-error-box" style="display:none;background:var(--rd-bg);border:1px solid #ef9a9a;border-radius:6px;padding:10px;font-size:12px;color:var(--rd-tx);margin-bottom:14px">
+        <strong>API Error:</strong> <span id="diag-error-msg"></span>
+      </div>
+
+      <div style="background:var(--am-bg);border-left:4px solid #ef9f27;border-radius:5px;padding:10px;font-size:12px;color:var(--am-tx);margin-bottom:14px">
+        <strong>If your group names do not match:</strong> Update the group names below to match exactly what Azure AD shows above, then click Save and sign out and back in.
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+        <div><label style="font-size:11px;font-weight:600;color:var(--tx2);display:block;margin-bottom:3px">Admin Group</label>
+          <input type="text" id="diag-admin-grp" style="width:100%;border:1px solid var(--bdr);border-radius:5px;padding:5px 8px;font-size:11px;font-family:monospace"></div>
+        <div><label style="font-size:11px;font-weight:600;color:var(--tx2);display:block;margin-bottom:3px">Trustee Group</label>
+          <input type="text" id="diag-trustee-grp" style="width:100%;border:1px solid var(--bdr);border-radius:5px;padding:5px 8px;font-size:11px;font-family:monospace"></div>
+        <div><label style="font-size:11px;font-weight:600;color:var(--tx2);display:block;margin-bottom:3px">Auditor Group</label>
+          <input type="text" id="diag-auditor-grp" style="width:100%;border:1px solid var(--bdr);border-radius:5px;padding:5px 8px;font-size:11px;font-family:monospace"></div>
+      </div>
+      <button class="btn btn-pri btn-sm" onclick="saveDiagGroups()">Save Group Names and Re-detect Role</button>
+      <div style="font-size:11px;color:var(--tx3);margin-top:6px">After saving, sign out and back in for the new role to take effect.</div>
+    </div>
+    <div class="modal-actions"><button class="btn btn-sec" onclick="closeM('m-diag')">Close</button></div>
+  </div>
+</div>
+
 <!-- RESTORE -->
 <div class="modal-ov" id="m-restore">
   <div class="modal">
@@ -1048,14 +1104,23 @@ function saveGroupConfig(){
 // ════════════════════════════════════════════
 // ROLE DETECTION via Graph API
 // ════════════════════════════════════════════
+// Stores diagnostic info for the help panel
+let _diagGroups=[], _diagRole='', _diagError='';
+
 async function detectRole(){
   try{
     const d=await gFetch('/me/memberOf?$select=displayName&$top=200');
-    const groups=(d.value||[]).map(g=>g.displayName||'');
-    if(groups.some(g=>g.toLowerCase()===ADMIN_GROUP.toLowerCase())) return 'admin';
-    if(groups.some(g=>g.toLowerCase()===TRUSTEE_GROUP.toLowerCase())) return 'trustee';
-    if(groups.some(g=>g.toLowerCase()===AUDITOR_GROUP.toLowerCase())) return 'auditor';
-  }catch(e){console.warn('Role detection failed:',e);}
+    _diagGroups=(d.value||[]).map(g=>g.displayName||'').filter(Boolean);
+    if(_diagGroups.some(g=>g.toLowerCase()===ADMIN_GROUP.toLowerCase())){ _diagRole='admin'; return 'admin'; }
+    if(_diagGroups.some(g=>g.toLowerCase()===TRUSTEE_GROUP.toLowerCase())){ _diagRole='trustee'; return 'trustee'; }
+    if(_diagGroups.some(g=>g.toLowerCase()===AUDITOR_GROUP.toLowerCase())){ _diagRole='auditor'; return 'auditor'; }
+    _diagRole='personnel';
+  }catch(e){
+    _diagError=e.message;
+    _diagGroups=[];
+    _diagRole='personnel (error)';
+    console.warn('Role detection failed:',e);
+  }
   return 'personnel';
 }
 
@@ -2041,6 +2106,58 @@ async function fireNewDocNotif(docId, docTitle, type, status, registeredBy){
   if(wh.admin) sends.push(sendAdaptiveCard(wh.admin, '📋 ' + title, `A new ${type} has been registered in the Governance Hub.`, body, 'admin'));
   // Auditors and trustees only notified when Published — not for drafts
   await Promise.allSettled(sends);
+}
+
+// ════════════════════════════════════════════
+// DIAGNOSTICS
+// ════════════════════════════════════════════
+function openDiag(){
+  document.getElementById('diag-user').textContent = userName || '—';
+
+  const roleEl = document.getElementById('diag-role');
+  const roleLabels = {admin:'Admin ✅',trustee:'Trustee ✅',auditor:'Auditor ✅',personnel:'All Personnel (no matching group found)'};
+  roleEl.textContent = roleLabels[currentRole] || currentRole;
+  roleEl.style.color = currentRole==='personnel' ? '#856404' : '#1b5e20';
+
+  document.getElementById('diag-grp-admin').textContent   = ADMIN_GROUP;
+  document.getElementById('diag-grp-trustee').textContent = TRUSTEE_GROUP;
+  document.getElementById('diag-grp-auditor').textContent = AUDITOR_GROUP;
+
+  const grpEl = document.getElementById('diag-groups');
+  if(_diagGroups.length){
+    grpEl.innerHTML = _diagGroups.map(g=>{
+      const isMatch = [ADMIN_GROUP,TRUSTEE_GROUP,AUDITOR_GROUP].some(cfg=>cfg.toLowerCase()===g.toLowerCase());
+      return `<div style="color:${isMatch?'#1b5e20':'var(--tx)'}${isMatch?';font-weight:600':''}">${isMatch?'✅ ':''} ${g}</div>`;
+    }).join('');
+  } else {
+    grpEl.textContent = _diagError ? 'Error — could not retrieve groups (see error below)' : 'No groups returned by Microsoft. Your account may not be in any Azure AD groups.';
+  }
+
+  const errBox = document.getElementById('diag-error-box');
+  const errMsg = document.getElementById('diag-error-msg');
+  if(_diagError){ errBox.style.display='block'; errMsg.textContent=_diagError; }
+  else errBox.style.display='none';
+
+  // Pre-fill editable fields
+  document.getElementById('diag-admin-grp').value   = ADMIN_GROUP;
+  document.getElementById('diag-trustee-grp').value = TRUSTEE_GROUP;
+  document.getElementById('diag-auditor-grp').value = AUDITOR_GROUP;
+
+  openM('m-diag');
+}
+
+function saveDiagGroups(){
+  const ag  = document.getElementById('diag-admin-grp').value.trim();
+  const tg  = document.getElementById('diag-trustee-grp').value.trim();
+  const aug = document.getElementById('diag-auditor-grp').value.trim();
+  if(!ag||!tg||!aug){ toast('All three group names are required.','warning'); return; }
+  localStorage.setItem('st_gov_group_cfg', JSON.stringify({admin:ag,trustee:tg,auditor:aug}));
+  ADMIN_GROUP=ag; TRUSTEE_GROUP=tg; AUDITOR_GROUP=aug;
+  // Also update the hub admin panel fields if visible
+  const a=document.getElementById('cfg-admin-grp'), t=document.getElementById('cfg-trustee-grp'), au=document.getElementById('cfg-auditor-grp');
+  if(a) a.value=ag; if(t) t.value=tg; if(au) au.value=aug;
+  toast('Group names saved. Sign out and back in to re-detect your role.','success');
+  closeM('m-diag');
 }
 
 // ════════════════════════════════════════════
