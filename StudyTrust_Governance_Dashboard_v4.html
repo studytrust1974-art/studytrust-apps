@@ -644,6 +644,12 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
           <div style="font-size:11px;color:var(--tx2);margin-bottom:10px;line-height:1.4">Upload a previously downloaded JSON backup to SharePoint.</div>
           <button class="btn btn-am" onclick="openM('m-restore')">Restore from Backup</button>
         </div>
+        <div style="border:1px solid var(--bdr);border-radius:var(--r);padding:14px;text-align:center">
+          <div style="font-size:22px;margin-bottom:6px">🧹</div>
+          <div style="font-size:12px;font-weight:600;margin-bottom:4px">Remove Duplicates</div>
+          <div style="font-size:11px;color:var(--tx2);margin-bottom:10px;line-height:1.4">Find and delete duplicate policies and SOPs keeping the most complete record of each.</div>
+          <button class="btn btn-sec" onclick="deduplicateAll()">Remove Duplicates</button>
+        </div>
       </div></div>
     </div>
   </section>
@@ -1805,6 +1811,54 @@ function polDropdown(){
 // ════════════════════════════════════════════
 // BACKUP / RESTORE
 // ════════════════════════════════════════════
+// ════════════════════════════════════════════
+// DEDUPLICATE
+// ════════════════════════════════════════════
+async function deduplicateAll(){
+  const polDups = findDups(polData, 'polId');
+  const sopDups = findDups(sopData, 'sopId');
+  const total = polDups.length + sopDups.length;
+  if(total === 0){ toast('No duplicates found.', 'success'); return; }
+  if(!confirm(`Found ${polDups.length} duplicate policy item(s) and ${sopDups.length} duplicate SOP item(s).\n\nThe duplicate with the least data will be deleted, keeping the most complete record.\n\nProceed?`)) return;
+  setLoad('Removing ' + total + ' duplicate item(s)…');
+  try{
+    const sid = await getSiteId();
+    for(const dup of polDups){
+      await gFetch(`/sites/${sid}/lists/${LISTS.pol}/items/${dup._spId}`, {method:'DELETE'});
+    }
+    for(const dup of sopDups){
+      await gFetch(`/sites/${sid}/lists/${LISTS.sop}/items/${dup._spId}`, {method:'DELETE'});
+    }
+    await loadData(); renderAll();
+    toast(`Removed ${total} duplicate(s). Registers are now clean.`, 'success');
+  }catch(e){
+    toast('Deduplicate error: ' + e.message, 'error');
+  }finally{ hideLoad(); }
+}
+
+function findDups(arr, idField){
+  // Group by ID field. For each group with more than one item,
+  // keep the one with the most non-empty fields and mark the rest for deletion.
+  const groups = {};
+  arr.forEach(item => {
+    const key = item[idField] || item.title || item._spId;
+    if(!groups[key]) groups[key] = [];
+    groups[key].push(item);
+  });
+  const toDelete = [];
+  Object.values(groups).forEach(group => {
+    if(group.length <= 1) return;
+    // Score each by number of non-empty fields — keep the highest score
+    const scored = group.map(item => ({
+      item,
+      score: Object.values(item).filter(v => v && v !== '' && v !== item._spId).length
+    })).sort((a,b) => b.score - a.score);
+    // Keep first (highest score), delete the rest
+    scored.slice(1).forEach(s => toDelete.push(s.item));
+  });
+  return toDelete;
+}
+
 function downloadBackup(){
   const pkg={version:4,exportDate:new Date().toISOString(),org:'StudyTrust — 000-601 NPO · IT3895/11(T)',polData,sopData,changeLog};
   const a=document.createElement('a');
