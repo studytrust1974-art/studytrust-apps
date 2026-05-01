@@ -1242,23 +1242,78 @@ async function loadData(){
 // SEED DATA
 // ════════════════════════════════════════════
 async function seedData(){
-  setLoad('Seeding '+(DEFAULT_POL.length+DEFAULT_SOP.length)+' items into SharePoint…');
-  try{
-    for(const p of DEFAULT_POL) await spPost(LISTS.pol,toSpPol({...p,title:p.title||p.polId}));
-    for(const s of DEFAULT_SOP) await spPost(LISTS.sop,toSpSop({...s,title:s.title||s.sopId}));
-    // Seed the six named trustees
-    const defaultTrustees=[
-      {name:'Andre Bartlett',title:'Chairperson',email:'',invited:'',confirmed:'',status:'Pending Invitation',notes:''},
-      {name:'Sethlogane Manchidi',title:'Trustee',email:'',invited:'',confirmed:'',status:'Pending Invitation',notes:''},
-      {name:'Naledi Maricowitz',title:'Trustee',email:'',invited:'',confirmed:'',status:'Pending Invitation',notes:''},
-      {name:'Itumeleng Matlou',title:'Trustee',email:'',invited:'',confirmed:'',status:'Pending Invitation',notes:''},
-      {name:'Isaah Mhlanga',title:'Trustee',email:'',invited:'',confirmed:'',status:'Pending Invitation',notes:''},
-      {name:'Doc Sethole',title:'Trustee',email:'',invited:'',confirmed:'',status:'Pending Invitation',notes:''},
-    ];
-    for(const t of defaultTrustees) await spPost(LISTS.trustees,toSpTrustee(t));
-    await loadData(); renderAll();
-    toast('Standard register seeded — '+DEFAULT_POL.length+' policies, '+DEFAULT_SOP.length+' SOPs, '+defaultTrustees.length+' trustees','success');
-  }catch(e){toast('Seed error: '+e.message,'error');}finally{hideLoad();}
+  const total=DEFAULT_POL.length+DEFAULT_SOP.length+6;
+  setLoad('Seeding '+total+' items into SharePoint…','Posting to SharePoint lists one by one…');
+  const errors=[];
+  let seeded=0;
+
+  // Strip null/empty fields from the payload — prevents "not acceptable" errors
+  // when a column does not exist yet in SharePoint
+  function clean(fields){
+    const out={};
+    for(const[k,v]of Object.entries(fields)){
+      if(v!==null&&v!==undefined&&v!=='') out[k]=v;
+    }
+    return out;
+  }
+
+  for(const p of DEFAULT_POL){
+    try{
+      const fields=clean(toSpPol({...p,title:p.title||p.polId}));
+      await spPost(LISTS.pol,fields);
+      seeded++;
+    }catch(e){
+      errors.push({item:p.polId||p.title,list:'GovPolicies',msg:e.message});
+    }
+  }
+
+  for(const s of DEFAULT_SOP){
+    try{
+      const fields=clean(toSpSop({...s,title:s.title||s.sopId}));
+      await spPost(LISTS.sop,fields);
+      seeded++;
+    }catch(e){
+      errors.push({item:s.sopId||s.title,list:'GovSOPs',msg:e.message});
+    }
+  }
+
+  const defaultTrustees=[
+    {name:'Andre Bartlett',title:'Chairperson',email:'',invited:'',confirmed:'',status:'Pending Invitation',notes:''},
+    {name:'Sethlogane Manchidi',title:'Trustee',email:'',invited:'',confirmed:'',status:'Pending Invitation',notes:''},
+    {name:'Naledi Maricowitz',title:'Trustee',email:'',invited:'',confirmed:'',status:'Pending Invitation',notes:''},
+    {name:'Itumeleng Matlou',title:'Trustee',email:'',invited:'',confirmed:'',status:'Pending Invitation',notes:''},
+    {name:'Isaah Mhlanga',title:'Trustee',email:'',invited:'',confirmed:'',status:'Pending Invitation',notes:''},
+    {name:'Doc Sethole',title:'Trustee',email:'',invited:'',confirmed:'',status:'Pending Invitation',notes:''},
+  ];
+  for(const t of defaultTrustees){
+    try{
+      const fields=clean(toSpTrustee(t));
+      await spPost(LISTS.trustees,fields);
+      seeded++;
+    }catch(e){
+      errors.push({item:t.name,list:'GovTrustees',msg:e.message});
+    }
+  }
+
+  await loadData(); renderAll(); hideLoad();
+
+  if(errors.length===0){
+    toast('Seeded '+seeded+' items successfully.','success');
+  }else{
+    // Show detailed error panel
+    const detail=errors.map(e=>`• ${e.list} — ${e.item}: ${e.msg}`).join('\n');
+    toast(seeded+' items seeded. '+errors.length+' failed — see details below.','warning');
+    // Display error details in a visible panel under the seed banner
+    let panel=document.getElementById('seed-error-panel');
+    if(!panel){
+      panel=document.createElement('div');
+      panel.id='seed-error-panel';
+      panel.style.cssText='background:#fde8e8;border:1px solid #ef9a9a;border-radius:8px;padding:14px 16px;margin:0 20px 14px;font-size:12px;color:#7a2020';
+      document.getElementById('content').insertBefore(panel,document.getElementById('content').firstChild);
+    }
+    panel.innerHTML=`<strong>Seed errors — ${errors.length} item(s) failed to post:</strong><pre style="margin-top:8px;white-space:pre-wrap;font-size:11px">${detail}</pre>
+    <div style="margin-top:10px;color:#5a1010;font-size:11px">Most likely cause: a column name does not exist in SharePoint yet, or a Status choice value does not match exactly. Compare the column names in the error above against your SharePoint list columns. Then click Seed Standard Register again — already-created items will not be duplicated.</div>`;
+  }
 }
 
 // ════════════════════════════════════════════
