@@ -277,6 +277,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
 /* ── FOOTER ── */
 .dash-footer{background:var(--st-d);color:rgba(255,255,255,.55);font-size:11px;padding:11px 20px;text-align:center;margin-top:24px}
 </style>
+<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://login.microsoftonline.com https://graph.microsoft.com;">
 </head>
 <body>
 
@@ -969,6 +970,34 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
       </div>
       <button class="btn btn-pri btn-sm" onclick="saveDiagGroups()">Save Group Names and Re-detect Role</button>
       <div style="font-size:11px;color:var(--tx3);margin-top:6px">After saving, sign out and back in for the new role to take effect.</div>
+
+      <div style="margin-top:18px;border-top:1px solid var(--bdr);padding-top:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--tx3);margin-bottom:8px">SHAREPOINT LIST DIAGNOSTICS — Test each list individually</div>
+        <div style="font-size:12px;color:var(--tx2);margin-bottom:10px;line-height:1.6">Click Test next to each list to post a minimal test item. A green tick means the list and its columns are correctly configured. A red cross shows the exact error from SharePoint.</div>
+        <div id="diag-list-results" style="display:flex;flex-direction:column;gap:7px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="btn btn-sec btn-sm" onclick="testList('GovPolicies',{Title:'__TEST__',PolicyID:'TEST-000',Category:'Test',Tier:'T1',PolicyVersion:'0.0',Status:'Draft',Risk:'Low',Approver:'Test',Owner:'Test',Custodian:'Test'})">Test</button>
+            <span style="font-size:12px;font-weight:600;min-width:120px">GovPolicies</span>
+            <span id="diag-GovPolicies" style="font-size:12px;color:var(--tx3)">Not tested</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="btn btn-sec btn-sm" onclick="testList('GovSOPs',{Title:'__TEST__',SopID:'TEST-000',Category:'Test',LinkedPolicy:'TEST',SopVersion:'0.0',Status:'Draft',Owner:'Test'})">Test</button>
+            <span style="font-size:12px;font-weight:600;min-width:120px">GovSOPs</span>
+            <span id="diag-GovSOPs" style="font-size:12px;color:var(--tx3)">Not tested</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="btn btn-sec btn-sm" onclick="testList('GovChangelog',{Title:'__TEST__',DocID:'TEST-000',DocType:'pol',FromStatus:'Draft',ToStatus:'Draft',ChangedBy:'Test'})">Test</button>
+            <span style="font-size:12px;font-weight:600;min-width:120px">GovChangelog</span>
+            <span id="diag-GovChangelog" style="font-size:12px;color:var(--tx3)">Not tested</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="btn btn-sec btn-sm" onclick="testList('GovTrustees',{Title:'__TEST__',Email:'test@test.com',TrusteeTitle:'Test',Status:'Pending Invitation'})">Test</button>
+            <span style="font-size:12px;font-weight:600;min-width:120px">GovTrustees</span>
+            <span id="diag-GovTrustees" style="font-size:12px;color:var(--tx3)">Not tested</span>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--tx3);margin-top:8px">Test items are posted with Title = __TEST__ so you can delete them from the list afterwards.</div>
+      </div>
     </div>
     <div class="modal-actions"><button class="btn btn-sec" onclick="closeM('m-diag')">Close</button></div>
   </div>
@@ -1244,11 +1273,9 @@ async function loadData(){
 async function seedData(){
   const total=DEFAULT_POL.length+DEFAULT_SOP.length+6;
   setLoad('Seeding '+total+' items into SharePoint…','Posting to SharePoint lists one by one…');
-  const errors=[];
+  const errors=[], fieldErrors=[];
   let seeded=0;
 
-  // Strip null/empty fields from the payload — prevents "not acceptable" errors
-  // when a column does not exist yet in SharePoint
   function clean(fields){
     const out={};
     for(const[k,v]of Object.entries(fields)){
@@ -1257,24 +1284,52 @@ async function seedData(){
     return out;
   }
 
-  for(const p of DEFAULT_POL){
+  // Try posting a full payload. If it fails, fall back field by field,
+  // posting only the fields SharePoint accepts, then report which failed.
+  async function safePost(listName, fullFields, itemLabel){
+    const cf=clean(fullFields);
     try{
-      const fields=clean(toSpPol({...p,title:p.title||p.polId}));
-      await spPost(LISTS.pol,fields);
+      await spPost(listName,cf);
       seeded++;
+      return true;
     }catch(e){
-      errors.push({item:p.polId||p.title,list:'GovPolicies',msg:e.message});
+      // Full post failed — try fields one by one to identify the bad column
+      // Post with just Title first to create the item
+      const base={Title:cf.Title||itemLabel};
+      let itemId=null;
+      try{
+        const r=await spPost(listName,base);
+        itemId=r?.id;
+        seeded++;
+      }catch(e2){
+        errors.push({item:itemLabel,list:listName,msg:'Even Title-only post failed: '+e2.message});
+        return false;
+      }
+      // Now PATCH additional fields one at a time
+      const sid=await getSiteId();
+      const badFields=[];
+      for(const[k,v]of Object.entries(cf)){
+        if(k==='Title') continue;
+        try{
+          await gFetch(`/sites/${sid}/lists/${listName}/items/${itemId}`,{
+            method:'PATCH',body:JSON.stringify({fields:{[k]:v}})
+          });
+        }catch(fe){
+          badFields.push(k);
+        }
+      }
+      if(badFields.length){
+        fieldErrors.push({item:itemLabel,list:listName,fields:badFields});
+      }
+      return true;
     }
   }
 
+  for(const p of DEFAULT_POL){
+    await safePost(LISTS.pol, toSpPol({...p,title:p.title||p.polId}), p.polId||p.title);
+  }
   for(const s of DEFAULT_SOP){
-    try{
-      const fields=clean(toSpSop({...s,title:s.title||s.sopId}));
-      await spPost(LISTS.sop,fields);
-      seeded++;
-    }catch(e){
-      errors.push({item:s.sopId||s.title,list:'GovSOPs',msg:e.message});
-    }
+    await safePost(LISTS.sop, toSpSop({...s,title:s.title||s.sopId}), s.sopId||s.title);
   }
 
   const defaultTrustees=[
@@ -1286,34 +1341,40 @@ async function seedData(){
     {name:'Doc Sethole',title:'Trustee',email:'',invited:'',confirmed:'',status:'Pending Invitation',notes:''},
   ];
   for(const t of defaultTrustees){
-    try{
-      const fields=clean(toSpTrustee(t));
-      await spPost(LISTS.trustees,fields);
-      seeded++;
-    }catch(e){
-      errors.push({item:t.name,list:'GovTrustees',msg:e.message});
-    }
+    await safePost(LISTS.trustees, clean(toSpTrustee(t)), t.name);
   }
 
   await loadData(); renderAll(); hideLoad();
 
-  if(errors.length===0){
+  // Remove old error panel
+  const oldP=document.getElementById('seed-error-panel');
+  if(oldP) oldP.remove();
+
+  if(errors.length===0&&fieldErrors.length===0){
     toast('Seeded '+seeded+' items successfully.','success');
-  }else{
-    // Show detailed error panel
-    const detail=errors.map(e=>`• ${e.list} — ${e.item}: ${e.msg}`).join('\n');
-    toast(seeded+' items seeded. '+errors.length+' failed — see details below.','warning');
-    // Display error details in a visible panel under the seed banner
-    let panel=document.getElementById('seed-error-panel');
-    if(!panel){
-      panel=document.createElement('div');
-      panel.id='seed-error-panel';
-      panel.style.cssText='background:#fde8e8;border:1px solid #ef9a9a;border-radius:8px;padding:14px 16px;margin:0 20px 14px;font-size:12px;color:#7a2020';
-      document.getElementById('content').insertBefore(panel,document.getElementById('content').firstChild);
-    }
-    panel.innerHTML=`<strong>Seed errors — ${errors.length} item(s) failed to post:</strong><pre style="margin-top:8px;white-space:pre-wrap;font-size:11px">${detail}</pre>
-    <div style="margin-top:10px;color:#5a1010;font-size:11px">Most likely cause: a column name does not exist in SharePoint yet, or a Status choice value does not match exactly. Compare the column names in the error above against your SharePoint list columns. Then click Seed Standard Register again — already-created items will not be duplicated.</div>`;
+    return;
   }
+
+  // Build error report
+  let report='';
+  if(errors.length) report+=errors.map(e=>`• ${e.list} — ${e.item}: ${e.msg}`).join('\n');
+  if(fieldErrors.length){
+    report+='\n\nColumns that do not exist in SharePoint (create these then seed again):\n';
+    const allBad=[...new Set(fieldErrors.flatMap(fe=>fe.fields))];
+    report+=allBad.map(f=>`  ✗ ${f}`).join('\n');
+  }
+
+  let panel=document.getElementById('seed-error-panel');
+  if(!panel){
+    panel=document.createElement('div');
+    panel.id='seed-error-panel';
+    panel.style.cssText='background:#fde8e8;border:1px solid #ef9a9a;border-radius:8px;padding:14px 16px;margin:0 20px 14px;font-size:12px;color:#7a2020';
+    document.getElementById('content').insertBefore(panel,document.getElementById('content').firstChild);
+  }
+  panel.innerHTML=`<strong>Seed report — ${seeded} items created, ${fieldErrors.length} had missing columns:</strong>
+    <pre style="margin-top:8px;white-space:pre-wrap;font-size:11px">${report}</pre>
+    <div style="margin-top:8px;font-size:11px">Items were created in SharePoint with available fields. Create the missing columns listed above, then use Seed again — duplicates will not be created for existing items.</div>`;
+  toast(seeded+' items seeded. Check the error panel for missing columns.','warning');
 }
 
 // ════════════════════════════════════════════
@@ -1378,7 +1439,17 @@ function renderPol(){
     const act=currentRole==='admin'?`<td><button class="btn btn-sec btn-sm" onclick="openStatusModal('${esc(p.polId)}','pol','${esc(p.status)}')">Change Status</button></td>`:'';
     html+=`<tr><td>${esc(p.polId)}</td><td>${esc(p.title)}</td><td>${esc(p.category)}</td><td>${tbadge(p.tier)}</td><td>${esc(p.version)}</td><td>${sbadge(p.status)}</td><td>${rbadge(p.risk)}</td><td style="font-size:11px">${esc(p.approver)}</td><td>${datecell(p.reviewDate)}</td><td style="font-size:11px">${esc(p.owner)}</td><td>${docLinks(p,'pol')}</td>${act}</tr>`;
   });
-  if(!shown) html=`<tr><td colspan="12" style="text-align:center;color:var(--tx3);padding:20px">No policies match the current filters.</td></tr>`;
+  if(!shown){
+    if(polData.length===0){
+      html=`<tr><td colspan="12" style="text-align:center;padding:24px">
+        <div style="color:#856404;font-weight:600;margin-bottom:6px">No policies loaded from SharePoint.</div>
+        <div style="color:#5a6172;font-size:11px">The GovPolicies list may be empty or the dashboard could not read it.<br>
+        Check the ℹ Access Diagnostics panel → Test GovPolicies to verify the list connection.</div>
+      </td></tr>`;
+    } else {
+      html=`<tr><td colspan="12" style="text-align:center;color:var(--tx3);padding:20px">No policies match the current filters. Clear all filters to see all ${polData.length} policies.</td></tr>`;
+    }
+  }
   tbody.innerHTML=html;
 
   const hdr=document.getElementById('pol-act-hdr');
@@ -1743,15 +1814,70 @@ function downloadBackup(){
 }
 
 async function doRestore(){
-  let pkg; try{pkg=JSON.parse(document.getElementById('restore-data').value.trim());}catch(e){toast('Invalid JSON: '+e.message,'error');return;}
+  let pkg;
+  try{pkg=JSON.parse(document.getElementById('restore-data').value.trim());}
+  catch(e){toast('Invalid JSON: '+e.message,'error');return;}
   if(!confirm('Post all backup items to SharePoint? Existing items are not deleted.')) return;
+
   setLoad('Restoring to SharePoint…');
-  try{
-    for(const p of (pkg.polData||[])) await spPost(LISTS.pol,toSpPol(p));
-    for(const s of (pkg.sopData||[])) await spPost(LISTS.sop,toSpSop(s));
-    closeM('m-restore'); await loadData(); renderAll();
-    toast('Restore complete — '+(pkg.polData||[]).length+' policies, '+(pkg.sopData||[]).length+' SOPs.','success');
-  }catch(e){toast('Restore error: '+e.message,'error');}finally{hideLoad();}
+  const fieldErrors=[], restoreErrors=[];
+  let posted=0;
+
+  function clean(fields){
+    const out={};
+    for(const[k,v]of Object.entries(fields)){
+      if(v!==null&&v!==undefined&&v!=='') out[k]=v;
+    }
+    return out;
+  }
+
+  async function safePost(listName, fullFields, label){
+    const cf=clean(fullFields);
+    try{
+      await spPost(listName,cf);
+      posted++;
+      return;
+    }catch(e){/* fall through to field-by-field */}
+    // Post with Title only, then PATCH each field individually
+    const base={Title:cf.Title||label};
+    let itemId=null;
+    try{
+      const r=await spPost(listName,base);
+      itemId=r?.id; posted++;
+    }catch(e2){
+      restoreErrors.push(`${listName} — ${label}: ${e2.message}`);
+      return;
+    }
+    const sid=await getSiteId();
+    const bad=[];
+    for(const[k,v]of Object.entries(cf)){
+      if(k==='Title') continue;
+      try{
+        await gFetch(`/sites/${sid}/lists/${listName}/items/${itemId}`,{
+          method:'PATCH',body:JSON.stringify({fields:{[k]:v}})
+        });
+      }catch(fe){ bad.push(k); }
+    }
+    if(bad.length) fieldErrors.push(...bad);
+  }
+
+  for(const p of (pkg.polData||[])) await safePost(LISTS.pol, toSpPol(p), p.polId||p.title||'Policy');
+  for(const s of (pkg.sopData||[])) await safePost(LISTS.sop, toSpSop(s), s.sopId||s.title||'SOP');
+
+  closeM('m-restore');
+  await loadData(); renderAll(); hideLoad();
+
+  const uniqueBad=[...new Set(fieldErrors)];
+  if(restoreErrors.length===0 && uniqueBad.length===0){
+    toast('Restore complete — '+posted+' items posted to SharePoint.','success');
+  } else {
+    let msg='Restore: '+posted+' items created.';
+    if(uniqueBad.length) msg+=' Missing columns: '+uniqueBad.join(', ')+'. Create these in SharePoint then restore again.';
+    toast(msg,'warning');
+    if(uniqueBad.length){
+      alert('The following SharePoint columns do not exist in GovPolicies:\n\n'+uniqueBad.map(f=>'  • '+f).join('\n')+'\n\nCreate these columns (Single line of text) in SharePoint, then run Restore again.');
+    }
+  }
 }
 
 function exportPolCsv(){
@@ -2354,6 +2480,68 @@ function openDiag(){
   document.getElementById('diag-auditor-grp').value = AUDITOR_GROUP;
 
   openM('m-diag');
+}
+
+async function testList(listName, fields){
+  const el=document.getElementById('diag-'+listName);
+  if(el) el.innerHTML='<span style="color:#856404">Testing…</span>';
+  try{
+    const r=await spPost(listName,fields);
+    if(r&&r.id){
+      const sid=await getSiteId();
+      await gFetch(`/sites/${sid}/lists/${listName}/items/${r.id}`,{method:'DELETE'}).catch(()=>{});
+    }
+    if(el) el.innerHTML='<span style="color:#1b5e20;font-weight:600">✅ Connected — all columns accepted</span>';
+  }catch(e){
+    if(el) el.innerHTML=`<span style="color:#7a2020;font-weight:600">✗ Error: ${e.message}</span> <button class="btn btn-sec btn-sm" style="margin-left:8px" onclick="isolateField('${listName}')">Find exact field →</button>`;
+  }
+}
+
+// Tests each field of the failing list individually to identify the bad column
+async function isolateField(listName){
+  const el=document.getElementById('diag-'+listName);
+  if(el) el.innerHTML='<span style="color:#856404">Isolating failing field — testing one by one…</span>';
+
+  const allFields={
+    GovPolicies:{
+      Title:'__TEST__', PolicyID:'TEST-000', Category:'Test',
+      Tier:'T1', PolicyVersion:'0.0', Status:'Draft',
+      Risk:'Low', Approver:'Test', ReviewDate:null,
+      Owner:'Test', Custodian:'Test',
+      DraftUrl:'', PublishedUrl:'', ArchiveUrl:''
+    }
+  };
+
+  const testFields=allFields[listName];
+  if(!testFields){
+    if(el) el.innerHTML='<span style="color:#7a2020">No field map for '+listName+'</span>';
+    return;
+  }
+
+  const failing=[], passing=[];
+  const sid=await getSiteId();
+
+  for(const [fieldName, fieldValue] of Object.entries(testFields)){
+    if(fieldValue===null||fieldValue==='') continue; // skip empty — not the cause
+    try{
+      const payload={Title:'__TEST__'};
+      if(fieldName!=='Title') payload[fieldName]=fieldValue;
+      const r=await gFetch(`/sites/${sid}/lists/${listName}/items`,{
+        method:'POST',body:JSON.stringify({fields:payload})
+      });
+      passing.push(fieldName);
+      // Delete test item
+      if(r&&r.id) await gFetch(`/sites/${sid}/lists/${listName}/items/${r.id}`,{method:'DELETE'}).catch(()=>{});
+    }catch(e){
+      failing.push(fieldName);
+    }
+  }
+
+  if(failing.length===0){
+    if(el) el.innerHTML='<span style="color:#1b5e20;font-weight:600">✅ All fields passed individually — issue may be a combination. Try Seed again.</span>';
+  } else {
+    if(el) el.innerHTML=`<span style="color:#7a2020;font-weight:600">✗ Failing column(s): <strong>${failing.join(', ')}</strong></span><br><span style="font-size:11px;color:#5a1010">These column names do not exist in SharePoint or are named differently. Create them with exactly these names and try seeding again.</span>`;
+  }
 }
 
 function saveDiagGroups(){
