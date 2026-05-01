@@ -736,6 +736,65 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
     <div id="aud-req-list"><div style="color:var(--tx3);font-size:12px;padding:12px">No requests submitted yet.</div></div>
   </section>
 
+  <!-- ── BOARD OF TRUSTEES ── -->
+  <section id="sec-trustees" class="sec">
+
+    <!-- Admin add panel -->
+    <div class="adm-b">
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-hd">Register a Trustee</div>
+        <div style="padding:14px">
+          <div style="font-size:12px;color:var(--tx2);margin-bottom:12px;line-height:1.6">Register each Board of Trustees member. After registering, follow the guest invitation process in Azure AD to grant them dashboard access. See the SOP for the full onboarding procedure.</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
+            <div class="f-row"><label>Full Name *</label><input type="text" id="tr-name" placeholder="e.g. Andre Bartlett"></div>
+            <div class="f-row"><label>Email Address</label><input type="text" id="tr-email" placeholder="e.g. andre@email.com"></div>
+            <div class="f-row"><label>Designation / Title</label><input type="text" id="tr-title" placeholder="e.g. Chairperson"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
+            <div class="f-row"><label>Date Invited</label><input type="date" id="tr-invited"></div>
+            <div class="f-row"><label>Date Confirmed (access granted)</label><input type="date" id="tr-confirmed"></div>
+            <div class="f-row"><label>Status</label>
+              <select id="tr-status">
+                <option>Pending Invitation</option>
+                <option>Invited — Awaiting Acceptance</option>
+                <option>Active</option>
+                <option>Inactive</option>
+              </select>
+            </div>
+          </div>
+          <div class="f-row"><label>Notes</label><input type="text" id="tr-notes" placeholder="e.g. Personal Microsoft account — uses andre@outlook.com"></div>
+          <button class="btn btn-pri btn-sm" onclick="addTrustee()">Register Trustee →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trustees table -->
+    <div class="card">
+      <div class="card-hd">
+        Board of Trustees Register
+        <div style="display:flex;gap:7px;align-items:center">
+          <span id="tr-count" style="font-size:11px;color:var(--tx3)"></span>
+          <button class="btn btn-sec btn-sm" onclick="exportTrusteesCsv()">CSV</button>
+        </div>
+      </div>
+      <div class="tbl-wrap"><table class="dt" id="trustees-table">
+        <thead><tr>
+          <th>Name</th><th>Designation</th><th>Email</th>
+          <th>Date Invited</th><th>Date Confirmed</th><th>Status</th>
+          <th>Notes</th><th id="tr-act-hdr" style="display:none">Actions</th>
+        </tr></thead>
+        <tbody id="trustees-body"></tbody>
+      </table></div>
+    </div>
+
+    <!-- Trustee access guide (visible to all trustee+ roles) -->
+    <div class="tr-box" style="margin-top:14px">
+      <h3>Board Access Information</h3>
+      <p>Trustees access this dashboard using their personal or work Microsoft account at the URL below. They sign in with Microsoft and automatically land in the Board of Trustees view showing published policies, SOPs, governance overview, and this board register.</p>
+      <p style="margin-top:8px;font-family:monospace;font-size:11px;color:var(--st)">https://studytrust1974-art.github.io/studytrust-apps/StudyTrust_Governance_Dashboard_v4.html</p>
+    </div>
+  </section>
+
 </div><!-- /content -->
 
 <div class="dash-footer">StudyTrust Governance Hub v4 &nbsp;·&nbsp; 000-601 NPO &nbsp;·&nbsp; IT3895/11(T) &nbsp;·&nbsp; Policies &amp; SOPs subject to formal approval processes</div>
@@ -958,7 +1017,7 @@ const SP_HOST      = 'studietrust.sharepoint.com';
 const SP_PATH      = '/sites/StudyTrustAuditTracker';
 const GRAPH        = 'https://graph.microsoft.com/v1.0';
 
-const LISTS = { pol:'GovPolicies', sop:'GovSOPs', log:'GovChangelog' };
+const LISTS = { pol:'GovPolicies', sop:'GovSOPs', log:'GovChangelog', trustees:'GovTrustees' };
 
 const MSAL_CFG = {
   auth:{ clientId:CLIENT_ID, authority:'https://login.microsoftonline.com/studietrust.onmicrosoft.com', redirectUri:REDIRECT_URI },
@@ -1078,7 +1137,12 @@ function fromSpLog(sp){const f=sp.fields||{},l={_spId:sp.id};for(const[ak,sk]of 
 // ════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════
-let polData=[], sopData=[], changeLog=[];
+let polData=[], sopData=[], changeLog=[], trusteesData=[];
+
+const TR_MAP={name:'Title',email:'Email',title:'TrusteeTitle',invited:'DateInvited',confirmed:'DateConfirmed',status:'Status',notes:'Notes'};
+
+function toSpTrustee(t){const f={};for(const[ak,sk]of Object.entries(TR_MAP)){const v=t[ak];f[sk]=(ak==='invited'||ak==='confirmed')?(v?v+'T00:00:00Z':null):(v||null);}return f;}
+function fromSpTrustee(sp){const f=sp.fields||{},t={_spId:sp.id};for(const[ak,sk]of Object.entries(TR_MAP)){let v=f[sk];if(typeof v==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(v))v=v.substring(0,10);t[ak]=v||'';}return t;}
 let currentRole='personnel', userName='User';
 let statusTarget=null, urlTarget=null;
 let ADMIN_GROUP='StudyTrust-Governance-Admins', TRUSTEE_GROUP='StudyTrust-Board-of-Trustees', AUDITOR_GROUP='StudyTrust-External-Auditors';
@@ -1165,10 +1229,11 @@ const DEFAULT_SOP=[
 // LOAD DATA
 // ════════════════════════════════════════════
 async function loadData(){
-  const [pRows,sRows,lRows]=await Promise.all([spGet(LISTS.pol),spGet(LISTS.sop),spGet(LISTS.log)]);
+  const [pRows,sRows,lRows,tRows]=await Promise.all([spGet(LISTS.pol),spGet(LISTS.sop),spGet(LISTS.log),spGet(LISTS.trustees).catch(()=>[])]);
   polData=pRows.map(fromSpPol);
   sopData=sRows.map(fromSpSop);
   changeLog=lRows.map(fromSpLog).sort((a,b)=>(b.changeDate||'').localeCompare(a.changeDate||''));
+  trusteesData=tRows.map(fromSpTrustee);
   const sb=document.getElementById('seed-banner');
   if(polData.length===0&&sopData.length===0) sb.style.display='flex'; else sb.style.display='none';
 }
@@ -1181,8 +1246,18 @@ async function seedData(){
   try{
     for(const p of DEFAULT_POL) await spPost(LISTS.pol,toSpPol({...p,title:p.title||p.polId}));
     for(const s of DEFAULT_SOP) await spPost(LISTS.sop,toSpSop({...s,title:s.title||s.sopId}));
+    // Seed the six named trustees
+    const defaultTrustees=[
+      {name:'Andre Bartlett',title:'Chairperson',email:'',invited:'',confirmed:'',status:'Pending Invitation',notes:''},
+      {name:'Sethlogane Manchidi',title:'Trustee',email:'',invited:'',confirmed:'',status:'Pending Invitation',notes:''},
+      {name:'Naledi Maricowitz',title:'Trustee',email:'',invited:'',confirmed:'',status:'Pending Invitation',notes:''},
+      {name:'Itumeleng Matlou',title:'Trustee',email:'',invited:'',confirmed:'',status:'Pending Invitation',notes:''},
+      {name:'Isaah Mhlanga',title:'Trustee',email:'',invited:'',confirmed:'',status:'Pending Invitation',notes:''},
+      {name:'Doc Sethole',title:'Trustee',email:'',invited:'',confirmed:'',status:'Pending Invitation',notes:''},
+    ];
+    for(const t of defaultTrustees) await spPost(LISTS.trustees,toSpTrustee(t));
     await loadData(); renderAll();
-    toast('Standard register seeded — '+DEFAULT_POL.length+' policies and '+DEFAULT_SOP.length+' SOPs','success');
+    toast('Standard register seeded — '+DEFAULT_POL.length+' policies, '+DEFAULT_SOP.length+' SOPs, '+defaultTrustees.length+' trustees','success');
   }catch(e){toast('Seed error: '+e.message,'error');}finally{hideLoad();}
 }
 
@@ -1423,6 +1498,7 @@ function renderAll(){
   renderSop();
   renderMaturity();
   renderChangelog();
+  renderTrustees();
 }
 
 // ════════════════════════════════════════════
@@ -1639,8 +1715,8 @@ function exportSopCsv(){
 // ════════════════════════════════════════════
 // TABS & ROLE
 // ════════════════════════════════════════════
-const TABS_ADMIN=[{id:'sec-exec',l:'Executive Overview'},{id:'sec-workflow',l:'Approval Workflow'},{id:'sec-pol',l:'Policy Register'},{id:'sec-sop',l:'SOP Register'},{id:'sec-mat',l:'Maturity Tracker'},{id:'sec-docs',l:'Document Libraries'},{id:'sec-hub',l:'Governance Hub'}];
-const TABS_TRUSTEE=[{id:'sec-exec',l:'Governance Overview'},{id:'sec-pol',l:'Policy Register'},{id:'sec-sop',l:'SOP Register'},{id:'sec-workflow',l:'Approval Framework'},{id:'sec-mat',l:'Maturity Overview'},{id:'sec-hub',l:'Governance Hub'}];
+const TABS_ADMIN=[{id:'sec-exec',l:'Executive Overview'},{id:'sec-workflow',l:'Approval Workflow'},{id:'sec-pol',l:'Policy Register'},{id:'sec-sop',l:'SOP Register'},{id:'sec-mat',l:'Maturity Tracker'},{id:'sec-docs',l:'Document Libraries'},{id:'sec-trustees',l:'Board of Trustees'},{id:'sec-hub',l:'Governance Hub'}];
+const TABS_TRUSTEE=[{id:'sec-exec',l:'Governance Overview'},{id:'sec-pol',l:'Policy Register'},{id:'sec-sop',l:'SOP Register'},{id:'sec-workflow',l:'Approval Framework'},{id:'sec-mat',l:'Maturity Overview'},{id:'sec-trustees',l:'Board of Trustees'},{id:'sec-hub',l:'Governance Hub'}];
 const TABS_AUDITOR=[{id:'sec-aud-docs',l:'Policy & SOP Documents'},{id:'sec-aud-overview',l:'Governance Overview'},{id:'sec-aud-request',l:'Document Requests'}];
 const TABS_PERSONNEL=[{id:'sec-pol',l:'Policies'},{id:'sec-sop',l:'SOPs'},{id:'sec-hub',l:'Quick Access'}];
 
@@ -2106,6 +2182,85 @@ async function fireNewDocNotif(docId, docTitle, type, status, registeredBy){
   if(wh.admin) sends.push(sendAdaptiveCard(wh.admin, '📋 ' + title, `A new ${type} has been registered in the Governance Hub.`, body, 'admin'));
   // Auditors and trustees only notified when Published — not for drafts
   await Promise.allSettled(sends);
+}
+
+// ════════════════════════════════════════════
+// TRUSTEES
+// ════════════════════════════════════════════
+function renderTrustees(){
+  const tbody=document.getElementById('trustees-body'); if(!tbody) return;
+  const hdr=document.getElementById('tr-act-hdr');
+  if(hdr) hdr.style.display=currentRole==='admin'?'':'none';
+  const count=document.getElementById('tr-count');
+  const active=trusteesData.filter(t=>t.status==='Active').length;
+  if(count) count.textContent=`${trusteesData.length} registered · ${active} active`;
+
+  const statusBadge=(s)=>{
+    const m={'Active':'bg','Inactive':'bgy','Pending Invitation':'ba','Invited — Awaiting Acceptance':'bt'};
+    return`<span class="bd ${m[s]||'bgy'}">${esc(s)}</span>`;
+  };
+
+  if(!trusteesData.length){
+    tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:24px">No trustees registered yet. Use the form above to register Board members.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML=trusteesData.map(t=>{
+    const act=currentRole==='admin'
+      ?`<td><button class="btn btn-sec btn-sm" onclick="deleteTrustee('${esc(t._spId)}','${esc(t.name)}')">Remove</button></td>`
+      :'';
+    return`<tr>
+      <td style="font-weight:600">${esc(t.name)}</td>
+      <td style="font-size:11px">${esc(t.title)}</td>
+      <td style="font-size:11px">${t.email?`<a href="mailto:${esc(t.email)}" style="color:var(--st)">${esc(t.email)}</a>`:'—'}</td>
+      <td style="font-size:11px">${esc(t.invited)||'—'}</td>
+      <td style="font-size:11px">${esc(t.confirmed)||'—'}</td>
+      <td>${statusBadge(t.status)}</td>
+      <td style="font-size:11px;color:var(--tx2)">${esc(t.notes)||'—'}</td>
+      ${act}
+    </tr>`;
+  }).join('');
+}
+
+async function addTrustee(){
+  const name=document.getElementById('tr-name').value.trim();
+  if(!name){toast('Trustee name is required.','warning');return;}
+  const t={
+    name, email:document.getElementById('tr-email').value.trim(),
+    title:document.getElementById('tr-title').value.trim(),
+    invited:document.getElementById('tr-invited').value,
+    confirmed:document.getElementById('tr-confirmed').value,
+    status:document.getElementById('tr-status').value,
+    notes:document.getElementById('tr-notes').value.trim()
+  };
+  try{
+    const r=await spPost(LISTS.trustees,toSpTrustee(t));
+    t._spId=r.id; trusteesData.push(t);
+    // Clear form
+    ['tr-name','tr-email','tr-title','tr-invited','tr-confirmed','tr-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    document.getElementById('tr-status').value='Pending Invitation';
+    renderTrustees();
+    toast(`${name} registered as a trustee.`,'success');
+  }catch(e){toast('Failed to add trustee: '+e.message,'error');}
+}
+
+async function deleteTrustee(spId, name){
+  if(!confirm(`Remove ${name} from the trustee register? This does not remove their Azure AD guest account.`)) return;
+  try{
+    const sid=await getSiteId();
+    await gFetch(`/sites/${sid}/lists/${LISTS.trustees}/items/${spId}`,{method:'DELETE'});
+    trusteesData=trusteesData.filter(t=>t._spId!==spId);
+    renderTrustees();
+    toast(`${name} removed from the register.`,'success');
+  }catch(e){toast('Failed to remove trustee: '+e.message,'error');}
+}
+
+function exportTrusteesCsv(){
+  const rows=[['Name','Designation','Email','Date Invited','Date Confirmed','Status','Notes'],
+    ...trusteesData.map(t=>[t.name,t.title,t.email,t.invited,t.confirmed,t.status,t.notes].map(v=>'"'+(v||'').replace(/"/g,'""')+'"'))];
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'}));
+  a.download='StudyTrust_Board_of_Trustees_'+td()+'.csv'; a.click();
 }
 
 // ════════════════════════════════════════════

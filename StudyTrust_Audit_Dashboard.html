@@ -1117,11 +1117,15 @@ function lBtn(name,url){return url?`<a class="lb" href="${esc(url)}" target="_bl
 // ════════════════════════════════════════════════
 function renderPE(tab){
   const body=document.getElementById('body-'+tab); if(!body) return;
+  const isAdmin=(typeof currentRole!=='undefined'&&currentRole==='admin')||document.querySelector('.rb-admin.on')!==null;
   body.innerHTML=appData[tab].map((r,i)=>{
     const lt=isLate(r),nw=isNew(r);
+    const moveBtn=tab==='planning'&&isAdmin
+      ?`<button class="btn btn-sm" style="background:var(--am-bg);color:#7a4400;border:1px solid #ef9f27;font-size:10px;margin-top:4px;padding:2px 7px" onclick="moveToExecution('${esc(r._spId)}')">→ Move to Execution</button>`
+      :'';
     return`<tr class="${lt?'rl':nw?'rn':''}" data-status="${esc(r.status)}" data-person="${esc(r.responsible)}">
       <td class="n">${i+1}</td>
-      <td class="dc">${esc(r.desc||'')}${lt?'<br><span class="bl">⚠ LATE</span>':''}</td>
+      <td class="dc">${esc(r.desc||'')}${lt?'<br><span class="bl">⚠ LATE</span>':''}${moveBtn?'<br>'+moveBtn:''}</td>
       <td>${fld(tab,r._spId,'dueDate',r.dueDate,'date')}</td>
       <td>${fld(tab,r._spId,'uploaded',r.uploaded,'date')}${nw?'<br><span class="bn">🆕 NEW</span>':''}</td>
       <td>${selFld(tab,r._spId,'status',r.status)}</td>
@@ -1133,6 +1137,35 @@ function renderPE(tab){
     </tr>`;
   }).join('');
   populateFilters(tab); updatePct(tab);
+}
+
+async function moveToExecution(spId){
+  const item=appData.planning.find(r=>r._spId===spId);
+  if(!item){toast('Item not found.','error');return;}
+  if(!confirm(`Move "${item.desc}" to the Execution tab?\n\nThis will:\n• Create a copy in Execution\n• Mark this Planning item as Completed\n\nThis cannot be undone.`)) return;
+  try{
+    const sid=await getSiteId();
+    // Post copy to Execution list
+    const execFields={};
+    execFields[F.execution.desc]=item.desc;
+    execFields[F.execution.responsible]=item.responsible||null;
+    execFields[F.execution.shadower]=item.shadower||null;
+    execFields[F.execution.docName]=item.docName||null;
+    execFields[F.execution.docLink]=item.docLink||null;
+    execFields[F.execution.notes]=(item.notes?item.notes+' ':'')+'[Moved from Planning]';
+    execFields[F.execution.status]='Not Started';
+    execFields['Year']=currentYear;
+    await gFetch(`/sites/${sid}/lists/${LISTS.execution}/items`,{method:'POST',body:JSON.stringify({fields:execFields})});
+    // Mark Planning item Completed with a note
+    const planFields={};
+    planFields[F.planning.status]='Completed';
+    planFields[F.planning.notes]=(item.notes?item.notes+' ':'')+'[Moved to Execution tab]';
+    await gFetch(`/sites/${sid}/lists/${LISTS.planning}/items/${spId}`,{method:'PATCH',body:JSON.stringify({fields:planFields})});
+    // Reload and re-render
+    await loadData(currentYear);
+    renderAll();
+    toast(`"${item.desc}" moved to Execution. Planning row marked Completed.`,'success');
+  }catch(e){toast('Move failed: '+e.message,'error');}
 }
 
 function renderRecs(){
