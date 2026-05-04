@@ -90,6 +90,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
 .rb-trustee{background:rgba(147,197,253,.2);color:#bfdbfe;border:1px solid rgba(147,197,253,.3)}
 .rb-personnel{background:rgba(255,255,255,.12);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.25)}
 .rb-auditor{background:rgba(167,243,208,.2);color:#6ee7b7;border:1px solid rgba(167,243,208,.3)}
+.rb-ptt{background:rgba(241,90,41,.18);color:#ffd1bf;border:1px solid rgba(241,90,41,.4)}
 .hdr-user{font-size:11px;opacity:.7}
 .hdr-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:500}
 .hdr-btn:hover{background:rgba(255,255,255,.22)}
@@ -100,6 +101,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
 .ban-trustee{background:var(--tr-bg);color:var(--tr-tx);border-bottom:1px solid #9fa8da}
 .ban-personnel{background:var(--st-p);color:var(--st-m);border-bottom:1px solid var(--st-l)}
 .ban-auditor{background:#d1fae5;color:#065f46;border-bottom:1px solid #6ee7b7}
+.ban-ptt{background:#fde7dc;color:#7a2e0b;border-bottom:1px solid #f15a29}
 
 /* ── TABS ── */
 .tabs{background:var(--sur);border-bottom:2px solid var(--st-l);padding:0 20px;position:sticky;top:52px;z-index:190;display:flex;overflow-x:auto;scrollbar-width:none}
@@ -314,7 +316,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L3 7v10l9 5 9-5V7L12 2z"/><line x1="12" y1="22" x2="12" y2="12"/><line x1="3" y1="7" x2="12" y2="12"/><line x1="21" y1="7" x2="12" y2="12"/></svg>
     </div>
     <div>
-      <div class="hdr-title">StudyTrust Governance Hub <span style="font-size:10px;opacity:.45;font-weight:400">v4</span></div>
+      <div class="hdr-title">StudyTrust Governance Hub <span style="font-size:10px;opacity:.45;font-weight:400">v4.1</span></div>
       <div class="hdr-sub">Policies · SOPs · Compliance · Risk · 000-601 NPO · IT3895/11(T)</div>
     </div>
   </div>
@@ -323,6 +325,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
     <div class="role-tog" id="role-toggle" style="display:none">
       <button class="rb" id="rb-p" onclick="setRole('personnel')">Personnel</button>
       <button class="rb" id="rb-au" onclick="setRole('auditor')">Auditor</button>
+      <button class="rb" id="rb-pt" onclick="setRole('ptt')">PTT</button>
       <button class="rb" id="rb-t" onclick="setRole('trustee')">Trustee</button>
       <button class="rb on" id="rb-a" onclick="setRole('admin')">Admin</button>
     </div>
@@ -572,6 +575,11 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
           <label style="font-size:11px;font-weight:600;color:var(--tx2);display:block;margin-bottom:4px">External Auditor Group Name</label>
           <input type="text" id="cfg-auditor-grp" value="StudyTrust-External-Auditors" style="width:100%;border:1px solid var(--bdr);border-radius:5px;padding:6px 9px;font-size:12px">
         </div>
+        <div style="margin-bottom:10px">
+          <label style="font-size:11px;font-weight:600;color:var(--tx2);display:block;margin-bottom:4px">PTT (Policy Task Team) Group Name</label>
+          <input type="text" id="cfg-ptt-grp" value="StudyTrust-PTT" style="width:100%;border:1px solid var(--bdr);border-radius:5px;padding:6px 9px;font-size:12px">
+          <div style="font-size:11px;color:var(--tx3);margin-top:4px;line-height:1.5">Members of this group can review and edit drafts (Step 4 of governance), but cannot publish, archive, or delete final documents.</div>
+        </div>
         <button class="btn btn-pri btn-sm" onclick="saveGroupConfig()">Save Group Names</button>
         <div style="font-size:11px;color:var(--tx3);margin-top:8px">Group names are stored in localStorage. Users signing in will be assigned their role based on their Azure AD group membership.</div>
       </div></div>
@@ -601,6 +609,18 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
             <span class="wh-dot wh-empty" id="wh-trustee-dot"></span>
             <input type="url" id="wh-trustee" placeholder="https://studietrust.webhook.office.com/webhookb2/…" style="flex:1;border:1px solid var(--bdr);border-radius:5px;padding:6px 9px;font-size:12px;font-family:'Courier New',monospace">
             <button class="btn btn-sec btn-sm" onclick="testWebhook('trustee')">Test</button>
+          </div>
+        </div>
+
+        <div class="f-row" style="margin-bottom:10px">
+          <label style="font-size:11px;font-weight:600;color:var(--tx2);display:flex;align-items:center;gap:6px;margin-bottom:4px">
+            <span style="background:rgba(241,90,41,.18);color:#7a2e0b;border:1px solid rgba(241,90,41,.4);border-radius:10px;padding:1px 7px;font-size:10px">PTT</span>
+            StudyTrust-PTT Webhook — receives drafts entering Consult and PTT Review
+          </label>
+          <div class="wh-row">
+            <span class="wh-dot wh-empty" id="wh-ptt-dot"></span>
+            <input type="url" id="wh-ptt" placeholder="https://studietrust.webhook.office.com/webhookb2/…" style="flex:1;border:1px solid var(--bdr);border-radius:5px;padding:6px 9px;font-size:12px;font-family:'Courier New',monospace">
+            <button class="btn btn-sec btn-sm" onclick="testWebhook('ptt')">Test</button>
           </div>
         </div>
 
@@ -949,6 +969,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <table style="width:100%;font-size:12px;border-collapse:collapse">
           <tr><td style="padding:5px 8px;background:var(--bg);border:1px solid var(--bdr);font-weight:600;color:var(--st);width:140px">Admin</td><td id="diag-grp-admin" style="padding:5px 8px;border:1px solid var(--bdr);font-family:monospace"></td></tr>
           <tr><td style="padding:5px 8px;background:var(--bg);border:1px solid var(--bdr);font-weight:600;color:var(--st)">Trustee</td><td id="diag-grp-trustee" style="padding:5px 8px;border:1px solid var(--bdr);font-family:monospace"></td></tr>
+          <tr><td style="padding:5px 8px;background:var(--bg);border:1px solid var(--bdr);font-weight:600;color:var(--st)">PTT</td><td id="diag-grp-ptt" style="padding:5px 8px;border:1px solid var(--bdr);font-family:monospace"></td></tr>
           <tr><td style="padding:5px 8px;background:var(--bg);border:1px solid var(--bdr);font-weight:600;color:var(--st)">Auditor</td><td id="diag-grp-auditor" style="padding:5px 8px;border:1px solid var(--bdr);font-family:monospace"></td></tr>
         </table>
       </div>
@@ -966,11 +987,13 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <strong>If your group names do not match:</strong> Update the group names below to match exactly what Azure AD shows above, then click Save and sign out and back in.
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px">
         <div><label style="font-size:11px;font-weight:600;color:var(--tx2);display:block;margin-bottom:3px">Admin Group</label>
           <input type="text" id="diag-admin-grp" style="width:100%;border:1px solid var(--bdr);border-radius:5px;padding:5px 8px;font-size:11px;font-family:monospace"></div>
         <div><label style="font-size:11px;font-weight:600;color:var(--tx2);display:block;margin-bottom:3px">Trustee Group</label>
           <input type="text" id="diag-trustee-grp" style="width:100%;border:1px solid var(--bdr);border-radius:5px;padding:5px 8px;font-size:11px;font-family:monospace"></div>
+        <div><label style="font-size:11px;font-weight:600;color:var(--tx2);display:block;margin-bottom:3px">PTT Group</label>
+          <input type="text" id="diag-ptt-grp" style="width:100%;border:1px solid var(--bdr);border-radius:5px;padding:5px 8px;font-size:11px;font-family:monospace"></div>
         <div><label style="font-size:11px;font-weight:600;color:var(--tx2);display:block;margin-bottom:3px">Auditor Group</label>
           <input type="text" id="diag-auditor-grp" style="width:100%;border:1px solid var(--bdr);border-radius:5px;padding:5px 8px;font-size:11px;font-family:monospace"></div>
       </div>
@@ -1162,11 +1185,33 @@ const POL_MAP={title:'Title',polId:'PolicyID',category:'Category',tier:'Tier',ve
 const SOP_MAP={title:'Title',sopId:'SopID',category:'Category',linkedPolicy:'LinkedPolicy',version:'SopVersion',status:'Status',reviewDate:'ReviewDate',owner:'Owner',draftUrl:'DraftUrl',publishedUrl:'PublishedUrl',archiveUrl:'ArchiveUrl'};
 const LOG_MAP={note:'Title',docId:'DocID',docType:'DocType',fromStatus:'FromStatus',toStatus:'ToStatus',changedBy:'ChangedBy',changeDate:'ChangeDate'};
 
-function toSpPol(p){const f={};for(const[ak,sk]of Object.entries(POL_MAP)){const v=p[ak];f[sk]=ak==='reviewDate'?(v?v+'T00:00:00Z':null):(v||null);}return f;}
-function toSpSop(s){const f={};for(const[ak,sk]of Object.entries(SOP_MAP)){const v=s[ak];f[sk]=ak==='reviewDate'?(v?v+'T00:00:00Z':null):(v||null);}return f;}
+// Hyperlink columns: SharePoint "Hyperlink or Picture" type returns/accepts {Url, Description} objects via Graph.
+// Backward compatible: if your SP column is plain text these helpers pass strings through unchanged.
+const HYPERLINK_FIELDS = new Set(['draftUrl','publishedUrl','archiveUrl']);
+const DATE_FIELDS = new Set(['reviewDate','invited','confirmed','changeDate']);
+function spWriteValue(field, value, item){
+  if (HYPERLINK_FIELDS.has(field)) {
+    if (!value) return null;
+    return { Url: value, Description: (item && item.title) || value };
+  }
+  if (DATE_FIELDS.has(field)) return value ? value + 'T00:00:00Z' : null;
+  return value || null;
+}
+function spReadValue(field, v){
+  if (HYPERLINK_FIELDS.has(field) && v && typeof v === 'object') return v.Url || '';
+  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return v.substring(0,10);
+  return v == null ? '' : v;
+}
+// Build a SharePoint fields object for one URL field, respecting hyperlink shape
+function spUrlField(field, value, item){
+  return spWriteValue(field, value, item);
+}
 
-function fromSpPol(sp){const f=sp.fields||{},p={_spId:sp.id};for(const[ak,sk]of Object.entries(POL_MAP)){let v=f[sk];if(typeof v==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(v))v=v.substring(0,10);p[ak]=v||'';}return p;}
-function fromSpSop(sp){const f=sp.fields||{},s={_spId:sp.id};for(const[ak,sk]of Object.entries(SOP_MAP)){let v=f[sk];if(typeof v==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(v))v=v.substring(0,10);s[ak]=v||'';}return s;}
+function toSpPol(p){const f={};for(const[ak,sk]of Object.entries(POL_MAP)){f[sk]=spWriteValue(ak,p[ak],p);}return f;}
+function toSpSop(s){const f={};for(const[ak,sk]of Object.entries(SOP_MAP)){f[sk]=spWriteValue(ak,s[ak],s);}return f;}
+
+function fromSpPol(sp){const f=sp.fields||{},p={_spId:sp.id};for(const[ak,sk]of Object.entries(POL_MAP)){p[ak]=spReadValue(ak,f[sk]);}return p;}
+function fromSpSop(sp){const f=sp.fields||{},s={_spId:sp.id};for(const[ak,sk]of Object.entries(SOP_MAP)){s[ak]=spReadValue(ak,f[sk]);}return s;}
 function fromSpLog(sp){const f=sp.fields||{},l={_spId:sp.id};for(const[ak,sk]of Object.entries(LOG_MAP)){let v=f[sk];if(typeof v==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(v))v=v.substring(0,10);l[ak]=v||'';}return l;}
 
 // ════════════════════════════════════════════
@@ -1180,7 +1225,7 @@ function toSpTrustee(t){const f={};for(const[ak,sk]of Object.entries(TR_MAP)){co
 function fromSpTrustee(sp){const f=sp.fields||{},t={_spId:sp.id};for(const[ak,sk]of Object.entries(TR_MAP)){let v=f[sk];if(typeof v==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(v))v=v.substring(0,10);t[ak]=v||'';}return t;}
 let currentRole='personnel', userName='User';
 let statusTarget=null, urlTarget=null;
-let ADMIN_GROUP='StudyTrust-Governance-Admins', TRUSTEE_GROUP='StudyTrust-Board-of-Trustees', AUDITOR_GROUP='StudyTrust-External-Auditors';
+let ADMIN_GROUP='StudyTrust-Governance-Admins', TRUSTEE_GROUP='StudyTrust-Board-of-Trustees', AUDITOR_GROUP='StudyTrust-External-Auditors', PTT_GROUP='StudyTrust-PTT';
 
 // Load group config from localStorage
 function loadGroupConfig(){
@@ -1188,15 +1233,17 @@ function loadGroupConfig(){
   ADMIN_GROUP=cfg.admin||'StudyTrust-Governance-Admins';
   TRUSTEE_GROUP=cfg.trustee||'StudyTrust-Board-of-Trustees';
   AUDITOR_GROUP=cfg.auditor||'StudyTrust-External-Auditors';
-  const ag=document.getElementById('cfg-admin-grp'), tg=document.getElementById('cfg-trustee-grp'), aug=document.getElementById('cfg-auditor-grp');
-  if(ag) ag.value=ADMIN_GROUP; if(tg) tg.value=TRUSTEE_GROUP; if(aug) aug.value=AUDITOR_GROUP;
+  PTT_GROUP=cfg.ptt||'StudyTrust-PTT';
+  const ag=document.getElementById('cfg-admin-grp'), tg=document.getElementById('cfg-trustee-grp'), aug=document.getElementById('cfg-auditor-grp'), pg=document.getElementById('cfg-ptt-grp');
+  if(ag) ag.value=ADMIN_GROUP; if(tg) tg.value=TRUSTEE_GROUP; if(aug) aug.value=AUDITOR_GROUP; if(pg) pg.value=PTT_GROUP;
 }
 function saveGroupConfig(){
   const ag=document.getElementById('cfg-admin-grp').value.trim();
   const tg=document.getElementById('cfg-trustee-grp').value.trim();
   const aug=document.getElementById('cfg-auditor-grp').value.trim();
-  localStorage.setItem('st_gov_group_cfg',JSON.stringify({admin:ag,trustee:tg,auditor:aug}));
-  ADMIN_GROUP=ag; TRUSTEE_GROUP=tg; AUDITOR_GROUP=aug;
+  const pg=(document.getElementById('cfg-ptt-grp')||{}).value?document.getElementById('cfg-ptt-grp').value.trim():PTT_GROUP;
+  localStorage.setItem('st_gov_group_cfg',JSON.stringify({admin:ag,trustee:tg,auditor:aug,ptt:pg}));
+  ADMIN_GROUP=ag; TRUSTEE_GROUP=tg; AUDITOR_GROUP=aug; PTT_GROUP=pg;
   toast('Group configuration saved.','success');
 }
 
@@ -1212,6 +1259,7 @@ async function detectRole(){
     _diagGroups=(d.value||[]).map(g=>g.displayName||'').filter(Boolean);
     if(_diagGroups.some(g=>g.toLowerCase()===ADMIN_GROUP.toLowerCase())){ _diagRole='admin'; return 'admin'; }
     if(_diagGroups.some(g=>g.toLowerCase()===TRUSTEE_GROUP.toLowerCase())){ _diagRole='trustee'; return 'trustee'; }
+    if(_diagGroups.some(g=>g.toLowerCase()===PTT_GROUP.toLowerCase())){ _diagRole='ptt'; return 'ptt'; }
     if(_diagGroups.some(g=>g.toLowerCase()===AUDITOR_GROUP.toLowerCase())){ _diagRole='auditor'; return 'auditor'; }
     _diagRole='personnel';
   }catch(e){
@@ -1398,11 +1446,12 @@ function rbadge(r){const c=r==='High Strategic'||r==='High Operational'?'br':r==
 function datecell(d){if(!d)return'—';return isOverdue(d)?`<span class="overdue">${esc(d)} ⚠</span>`:esc(d);}
 
 function docLinks(doc,type){
-  const isA=currentRole==='admin', isPub=isPublished(doc.status), isDr=isDraft(doc.status), isAr=doc.status==='Archived';
+  const isA=currentRole==='admin', isP=currentRole==='ptt';
+  const isPub=isPublished(doc.status), isDr=isDraft(doc.status), isAr=doc.status==='Archived';
   let h='<div class="doc-links">';
   if(isDr){
-    if(isA&&doc.draftUrl) h+=`<a class="doc-btn edit" href="${esc(doc.draftUrl)}?web=1" target="_blank">✏ Edit Draft</a>`;
-    else if(isA) h+='<span style="font-size:11px;color:var(--tx3)">No draft URL</span>';
+    if((isA||isP)&&doc.draftUrl) h+=`<a class="doc-btn edit" href="${esc(doc.draftUrl)}?web=1" target="_blank">✏ Edit Draft</a>`;
+    else if(isA||isP) h+='<span style="font-size:11px;color:var(--tx3)">No draft URL</span>';
   }
   if(isPub){
     if(doc.publishedUrl) h+=`<a class="doc-btn view" href="${esc(doc.publishedUrl)}" target="_blank">📄 View</a>`;
@@ -1414,7 +1463,12 @@ function docLinks(doc,type){
     else h+='<span style="font-size:11px;color:var(--tx3)">No archive URL</span>';
   }
   const id=doc.polId||doc.sopId||doc._spId;
-  if(isA) h+=`<button class="doc-btn" style="background:var(--st-p);color:var(--st);border-color:var(--st-l)" onclick="openUrlModal('${esc(id)}','${type}')">⚙ URLs</button>`;
+  // Admin: full URL editor. PTT: only draft URL editor, only on documents currently in a draft phase.
+  if(isA) {
+    h+=`<button class="doc-btn" style="background:var(--st-p);color:var(--st);border-color:var(--st-l)" onclick="openUrlModal('${esc(id)}','${type}')">⚙ URLs</button>`;
+  } else if(isP && isDr) {
+    h+=`<button class="doc-btn" style="background:var(--st-p);color:var(--st);border-color:var(--st-l)" onclick="openUrlModal('${esc(id)}','${type}')">✏ Draft URL</button>`;
+  }
   h+='</div>'; return h;
 }
 
@@ -1429,8 +1483,9 @@ function renderPol(){
   const rf=(document.getElementById('pol-risk')||{}).value||'';
   const ql=q.toLowerCase();
 
-  // For trustees and personnel: only show published
-  const visibleData = currentRole==='admin' ? polData : polData.filter(p=>isPublished(p.status));
+  // Admin and PTT see all statuses; trustees, auditors and personnel see only published
+  const seesAll = currentRole==='admin' || currentRole==='ptt';
+  const visibleData = seesAll ? polData : polData.filter(p=>isPublished(p.status));
 
   const tbody=document.getElementById('pol-body'); if(!tbody) return;
   let html='',shown=0;
@@ -1442,7 +1497,10 @@ function renderPol(){
     if(sf&&p.status!==sf) return;
     if(rf&&p.risk!==rf) return;
     shown++;
-    const act=currentRole==='admin'?`<td><button class="btn btn-sec btn-sm" onclick="openStatusModal('${esc(p.polId)}','pol','${esc(p.status)}')">Change Status</button></td>`:'';
+    const canChange = (currentRole==='admin') || (currentRole==='ptt' && allowedTransitions(p.status,'ptt').length>0);
+    const act = canChange
+      ? `<td><button class="btn btn-sec btn-sm" onclick="openStatusModal('${esc(p.polId)}','pol','${esc(p.status)}')">Change Status</button></td>`
+      : (seesAll ? '<td></td>' : '');
     html+=`<tr><td>${esc(p.polId)}</td><td>${esc(p.title)}</td><td>${esc(p.category)}</td><td>${tbadge(p.tier)}</td><td>${esc(p.version)}</td><td>${sbadge(p.status)}</td><td>${rbadge(p.risk)}</td><td style="font-size:11px">${esc(p.approver)}</td><td>${datecell(p.reviewDate)}</td><td style="font-size:11px">${esc(p.owner)}</td><td>${docLinks(p,'pol')}</td>${act}</tr>`;
   });
   if(!shown){
@@ -1459,7 +1517,7 @@ function renderPol(){
   tbody.innerHTML=html;
 
   const hdr=document.getElementById('pol-act-hdr');
-  if(hdr) hdr.style.display=currentRole==='admin'?'':'none';
+  if(hdr) hdr.style.display=(currentRole==='admin'||currentRole==='ptt')?'':'none';
   const lbl=document.getElementById('pol-prog-lbl');
   const pub=polData.filter(p=>isPublished(p.status)).length;
   if(lbl) lbl.textContent=`${pub}/${polData.length} published`;
@@ -1483,7 +1541,8 @@ function renderSop(){
   const sf=(document.getElementById('sop-status')||{}).value||'';
   const ql=q.toLowerCase();
 
-  const visibleData=currentRole==='admin'?sopData:sopData.filter(s=>isPublished(s.status));
+  const seesAll = currentRole==='admin' || currentRole==='ptt';
+  const visibleData = seesAll ? sopData : sopData.filter(s=>isPublished(s.status));
 
   const tbody=document.getElementById('sop-body'); if(!tbody) return;
   let html='',shown=0;
@@ -1493,14 +1552,17 @@ function renderSop(){
     if(cf&&s.category!==cf) return;
     if(sf&&s.status!==sf) return;
     shown++;
-    const act=currentRole==='admin'?`<td><button class="btn btn-sec btn-sm" onclick="openStatusModal('${esc(s.sopId)}','sop','${esc(s.status)}')">Change Status</button></td>`:'';
+    const canChange = (currentRole==='admin') || (currentRole==='ptt' && allowedTransitions(s.status,'ptt').length>0);
+    const act = canChange
+      ? `<td><button class="btn btn-sec btn-sm" onclick="openStatusModal('${esc(s.sopId)}','sop','${esc(s.status)}')">Change Status</button></td>`
+      : (seesAll ? '<td></td>' : '');
     html+=`<tr><td>${esc(s.sopId)}</td><td>${esc(s.title)}</td><td>${esc(s.category)}</td><td>${esc(s.linkedPolicy)}</td><td>${sbadge(s.status)}</td><td>${esc(s.version)}</td><td>${datecell(s.reviewDate)}</td><td style="font-size:11px">${esc(s.owner)}</td><td>${docLinks(s,'sop')}</td>${act}</tr>`;
   });
   if(!shown) html=`<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:20px">No SOPs match the current filters.</td></tr>`;
   tbody.innerHTML=html;
 
   const hdr=document.getElementById('sop-act-hdr');
-  if(hdr) hdr.style.display=currentRole==='admin'?'':'none';
+  if(hdr) hdr.style.display=(currentRole==='admin'||currentRole==='ptt')?'':'none';
   const lbl=document.getElementById('sop-prog-lbl');
   const pub=sopData.filter(s=>isPublished(s.status)).length;
   if(lbl) lbl.textContent=`${pub}/${sopData.length} published`;
@@ -1649,9 +1711,9 @@ function openStatusModal(docId,type,currentStatus){
   if(pubStep)  pubStep.style.display='none';
   if(archStep) archStep.style.display='none';
   ['f-pub-url','f-arch-url','f-arch-url-arch'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  const next=STATUS_FLOW[currentStatus]||[];
+  const next=allowedTransitions(currentStatus,currentRole);
   const badges={Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg','Review Due':'ba',Archived:'bgy'};
-  document.getElementById('status-opts').innerHTML=next.length?next.map(s=>`<button class="bd ${badges[s]||'bgy'}" style="cursor:pointer;border:2px solid transparent" onclick="selectStatus(this,'${s}')" data-s="${s}">${s}</button>`).join(''):'<span style="font-size:12px;color:var(--tx3)">No transitions available.</span>';
+  document.getElementById('status-opts').innerHTML=next.length?next.map(s=>`<button class="bd ${badges[s]||'bgy'}" style="cursor:pointer;border:2px solid transparent" onclick="selectStatus(this,'${s}')" data-s="${s}">${s}</button>`).join(''):'<span style="font-size:12px;color:var(--tx3)">No transitions available for your role.</span>';
   openM('m-status');
 }
 
@@ -1703,12 +1765,12 @@ async function applyStatus(){
   if(selStatus==='Published'){
     const pubUrl=(document.getElementById('f-pub-url')||{}).value.trim()||'';
     const archUrl=(document.getElementById('f-arch-url')||{}).value.trim()||'';
-    if(pubUrl){ doc.publishedUrl=pubUrl; spFields.PublishedUrl=pubUrl; }
-    if(archUrl){ doc.archiveUrl=archUrl; spFields.ArchiveUrl=archUrl; doc.draftUrl=''; spFields.DraftUrl=null; }
+    if(pubUrl){ doc.publishedUrl=pubUrl; spFields.PublishedUrl=spWriteValue('publishedUrl',pubUrl,doc); }
+    if(archUrl){ doc.archiveUrl=archUrl; spFields.ArchiveUrl=spWriteValue('archiveUrl',archUrl,doc); doc.draftUrl=''; spFields.DraftUrl=null; }
   }
   if(selStatus==='Archived'){
     const archUrl=(document.getElementById('f-arch-url-arch')||{}).value.trim()||'';
-    if(archUrl){ doc.archiveUrl=archUrl; spFields.ArchiveUrl=archUrl; }
+    if(archUrl){ doc.archiveUrl=archUrl; spFields.ArchiveUrl=spWriteValue('archiveUrl',archUrl,doc); }
     doc.publishedUrl=''; spFields.PublishedUrl=null;
   }
 
@@ -1738,6 +1800,16 @@ function openUrlModal(docId,type){
   document.getElementById('f-url-draft').value=doc?.draftUrl||'';
   document.getElementById('f-url-pub').value=doc?.publishedUrl||'';
   document.getElementById('f-url-arch').value=doc?.archiveUrl||'';
+  // PTT scope: lock Published and Archive URL fields (read-only)
+  const isP = currentRole === 'ptt';
+  const pub = document.getElementById('f-url-pub');
+  const arc = document.getElementById('f-url-arch');
+  [pub,arc].forEach(el=>{
+    if(!el) return;
+    el.readOnly = isP;
+    el.style.background = isP ? '#f1f3f5' : '';
+    el.title = isP ? 'Only an Admin can edit Published and Archive URLs' : '';
+  });
   openM('m-urls');
 }
 
@@ -1746,11 +1818,26 @@ async function saveUrls(){
   const arr=type==='pol'?polData:sopData;
   const doc=arr.find(d=>(type==='pol'?d.polId:d.sopId)===id);
   if(!doc){closeM('m-urls');return;}
+  // PTT may only update the draft URL
+  if(currentRole === 'ptt'){
+    doc.draftUrl=document.getElementById('f-url-draft').value.trim();
+    try{
+      await spPatch(type==='pol'?LISTS.pol:LISTS.sop,doc._spId,
+        {DraftUrl: spWriteValue('draftUrl', doc.draftUrl, doc)});
+      renderAll(); closeM('m-urls');
+      toast('Draft URL saved for '+id,'success');
+    }catch(e){toast('Failed to save URL: '+e.message,'error');}
+    return;
+  }
   doc.draftUrl=document.getElementById('f-url-draft').value.trim();
   doc.publishedUrl=document.getElementById('f-url-pub').value.trim();
   doc.archiveUrl=document.getElementById('f-url-arch').value.trim();
   try{
-    await spPatch(type==='pol'?LISTS.pol:LISTS.sop,doc._spId,{DraftUrl:doc.draftUrl||null,PublishedUrl:doc.publishedUrl||null,ArchiveUrl:doc.archiveUrl||null});
+    await spPatch(type==='pol'?LISTS.pol:LISTS.sop,doc._spId,{
+      DraftUrl: spWriteValue('draftUrl', doc.draftUrl, doc),
+      PublishedUrl: spWriteValue('publishedUrl', doc.publishedUrl, doc),
+      ArchiveUrl: spWriteValue('archiveUrl', doc.archiveUrl, doc)
+    });
     renderAll(); closeM('m-urls');
     toast('Document URLs saved for '+id,'success');
   }catch(e){toast('Failed to save URLs: '+e.message,'error');}
@@ -1953,10 +2040,20 @@ function exportSopCsv(){
 const TABS_ADMIN=[{id:'sec-exec',l:'Executive Overview'},{id:'sec-workflow',l:'Approval Workflow'},{id:'sec-pol',l:'Policy Register'},{id:'sec-sop',l:'SOP Register'},{id:'sec-mat',l:'Maturity Tracker'},{id:'sec-docs',l:'Document Libraries'},{id:'sec-trustees',l:'Board of Trustees'},{id:'sec-hub',l:'Governance Hub'}];
 const TABS_TRUSTEE=[{id:'sec-exec',l:'Governance Overview'},{id:'sec-pol',l:'Policy Register'},{id:'sec-sop',l:'SOP Register'},{id:'sec-workflow',l:'Approval Framework'},{id:'sec-mat',l:'Maturity Overview'},{id:'sec-trustees',l:'Board of Trustees'},{id:'sec-hub',l:'Governance Hub'}];
 const TABS_AUDITOR=[{id:'sec-aud-docs',l:'Policy & SOP Documents'},{id:'sec-aud-overview',l:'Governance Overview'},{id:'sec-aud-request',l:'Document Requests'}];
+const TABS_PTT=[{id:'sec-exec',l:'Governance Overview'},{id:'sec-workflow',l:'Approval Workflow'},{id:'sec-pol',l:'Policy Register'},{id:'sec-sop',l:'SOP Register'},{id:'sec-mat',l:'Maturity Tracker'},{id:'sec-docs',l:'Document Libraries'},{id:'sec-hub',l:'Quick Access'}];
 const TABS_PERSONNEL=[{id:'sec-pol',l:'Policies'},{id:'sec-sop',l:'SOPs'},{id:'sec-hub',l:'Quick Access'}];
 
+// Status transitions allowed by role.
+// PTT may move documents within the drafting pipeline but not to Published or Archived.
+function allowedTransitions(currentStatus, role){
+  const all = STATUS_FLOW[currentStatus] || [];
+  if(role === 'admin') return all;
+  if(role === 'ptt')   return all.filter(s => s !== 'Published' && s !== 'Archived');
+  return [];
+}
+
 function buildTabs(){
-  const tabs=currentRole==='admin'?TABS_ADMIN:currentRole==='trustee'?TABS_TRUSTEE:currentRole==='auditor'?TABS_AUDITOR:TABS_PERSONNEL;
+  const tabs=currentRole==='admin'?TABS_ADMIN:currentRole==='trustee'?TABS_TRUSTEE:currentRole==='auditor'?TABS_AUDITOR:currentRole==='ptt'?TABS_PTT:TABS_PERSONNEL;
   document.getElementById('tab-bar').innerHTML=tabs.map((t,i)=>`<button class="tab${i===0?' on':''}" onclick="showTab('${t.id}',this)">${t.l}</button>`).join('');
 }
 
@@ -1973,20 +2070,22 @@ function setRole(role){
   document.getElementById('rb-t').classList.toggle('on',role==='trustee');
   document.getElementById('rb-au').classList.toggle('on',role==='auditor');
   document.getElementById('rb-p').classList.toggle('on',role==='personnel');
+  const rbpt=document.getElementById('rb-pt'); if(rbpt) rbpt.classList.toggle('on',role==='ptt');
 
   const badge=document.getElementById('role-badge');
-  const labels={admin:'Admin',trustee:'Trustee',auditor:'External Auditor',personnel:'All Personnel'};
-  const badgeCls={admin:'rb-admin',trustee:'rb-trustee',auditor:'rb-auditor',personnel:'rb-personnel'};
+  const labels={admin:'Admin',trustee:'Trustee',auditor:'External Auditor',personnel:'All Personnel',ptt:'PTT (Policy Task Team)'};
+  const badgeCls={admin:'rb-admin',trustee:'rb-trustee',auditor:'rb-auditor',personnel:'rb-personnel',ptt:'rb-ptt'};
   badge.textContent=labels[role]||'All Personnel';
   badge.className='role-badge '+(badgeCls[role]||'rb-personnel');
 
   const banner=document.getElementById('role-banner');
-  const bannerCls={admin:'ban-admin',trustee:'ban-trustee',auditor:'ban-auditor',personnel:'ban-personnel'};
+  const bannerCls={admin:'ban-admin',trustee:'ban-trustee',auditor:'ban-auditor',personnel:'ban-personnel',ptt:'ban-ptt'};
   const bannerText={
     admin:'Admin Mode — Full access. All changes save live to SharePoint.',
     trustee:'Trustee View — StudyTrust-Board-of-Trustees access. Published policies and governance information.',
     auditor:'External Auditor View — Read-only access to published documents. Use Document Requests to request additional information.',
-    personnel:'All Personnel View — Published policies and SOPs only.'
+    personnel:'All Personnel View — Published policies and SOPs only.',
+    ptt:'PTT View — Review and edit drafts (Step 4 of the governance process). You cannot publish, archive, or change hub structure.'
   };
   banner.className=bannerCls[role]||'ban-personnel';
   banner.textContent=bannerText[role]||bannerText.personnel;
@@ -1997,7 +2096,7 @@ function setRole(role){
 
   buildTabs();
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
-  const firstTab={admin:'sec-exec',trustee:'sec-exec',auditor:'sec-aud-docs',personnel:'sec-pol'}[role]||'sec-pol';
+  const firstTab={admin:'sec-exec',trustee:'sec-exec',auditor:'sec-aud-docs',personnel:'sec-pol',ptt:'sec-exec'}[role]||'sec-pol';
   const sec=document.getElementById(firstTab); if(sec) sec.classList.add('on');
 
   renderAll();
@@ -2292,6 +2391,7 @@ function saveWebhooks(){
   const wh = {
     admin:   (document.getElementById('wh-admin')  ||{}).value||'',
     trustee: (document.getElementById('wh-trustee')||{}).value||'',
+    ptt:     (document.getElementById('wh-ptt')    ||{}).value||'',
     auditor: (document.getElementById('wh-auditor')||{}).value||''
   };
   const prefs = {
@@ -2308,17 +2408,19 @@ function loadWebhookUI(){
   const prefs = loadWebhookPrefs();
   const a = document.getElementById('wh-admin');
   const t = document.getElementById('wh-trustee');
+  const p = document.getElementById('wh-ptt');
   const au = document.getElementById('wh-auditor');
   const ov = document.getElementById('wh-notify-overdue');
   if(a) a.value = wh.admin||'';
   if(t) t.value = wh.trustee||'';
+  if(p) p.value = wh.ptt||'';
   if(au) au.value = wh.auditor||'';
   if(ov) ov.checked = prefs.notifyOverdue||false;
   updateWebhookDots(wh);
 }
 
 function updateWebhookDots(wh){
-  const dots = { admin:'wh-admin-dot', trustee:'wh-trustee-dot', auditor:'wh-auditor-dot' };
+  const dots = { admin:'wh-admin-dot', trustee:'wh-trustee-dot', ptt:'wh-ptt-dot', auditor:'wh-auditor-dot' };
   Object.entries(dots).forEach(([key, id]) => {
     const el = document.getElementById(id);
     if(!el) return;
@@ -2394,11 +2496,19 @@ async function fireStatusChangeNotif(docId, docTitle, fromStatus, toStatus, chan
 
   const trusteeStatuses = ['Published','Review Due','Archived'];
   const auditorStatuses = ['Published'];
+  // PTT is interested in drafts moving through review-relevant states
+  const pttStatuses     = ['Consult','PTT Review'];
 
   const sends = [];
   if(wh.admin)   sends.push(sendAdaptiveCard(wh.admin,   '🔄 ' + title, sub, body, 'admin'));
   if(wh.trustee && trusteeStatuses.includes(toStatus))
                   sends.push(sendAdaptiveCard(wh.trustee, '🔄 ' + title, sub, body, 'trustee'));
+  if(wh.ptt && pttStatuses.includes(toStatus)){
+    const pttBody = toStatus==='PTT Review'
+      ? `${docTitle} is ready for PTT review. Please open the Governance Hub and review the draft.`
+      : `${docTitle} has entered consultation. Please review the draft and provide input.`;
+    sends.push(sendAdaptiveCard(wh.ptt, '📝 ' + title, sub, pttBody, 'ptt'));
+  }
   if(wh.auditor && auditorStatuses.includes(toStatus))
                   sends.push(sendAdaptiveCard(wh.auditor, '📄 New Published Document: ' + docId, sub, `${docTitle} has been published and is now available for review.`, 'auditor'));
 
@@ -2415,6 +2525,10 @@ async function fireNewDocNotif(docId, docTitle, type, status, registeredBy){
 
   const sends = [];
   if(wh.admin) sends.push(sendAdaptiveCard(wh.admin, '📋 ' + title, `A new ${type} has been registered in the Governance Hub.`, body, 'admin'));
+  // Notify PTT when a new draft is registered (so they can pick it up for review when it advances)
+  if(wh.ptt && ['Draft','Consult','PTT Review'].includes(status)){
+    sends.push(sendAdaptiveCard(wh.ptt, '📝 ' + title, `A new ${type} draft has been registered. It will reach PTT review when its drafting and consultation phases complete.`, body, 'ptt'));
+  }
   // Auditors and trustees only notified when Published — not for drafts
   await Promise.allSettled(sends);
 }
@@ -2505,18 +2619,19 @@ function openDiag(){
   document.getElementById('diag-user').textContent = userName || '—';
 
   const roleEl = document.getElementById('diag-role');
-  const roleLabels = {admin:'Admin ✅',trustee:'Trustee ✅',auditor:'Auditor ✅',personnel:'All Personnel (no matching group found)'};
+  const roleLabels = {admin:'Admin ✅',trustee:'Trustee ✅',auditor:'Auditor ✅',ptt:'PTT ✅',personnel:'All Personnel (no matching group found)'};
   roleEl.textContent = roleLabels[currentRole] || currentRole;
   roleEl.style.color = currentRole==='personnel' ? '#856404' : '#1b5e20';
 
   document.getElementById('diag-grp-admin').textContent   = ADMIN_GROUP;
   document.getElementById('diag-grp-trustee').textContent = TRUSTEE_GROUP;
   document.getElementById('diag-grp-auditor').textContent = AUDITOR_GROUP;
+  const pttEl = document.getElementById('diag-grp-ptt'); if(pttEl) pttEl.textContent = PTT_GROUP;
 
   const grpEl = document.getElementById('diag-groups');
   if(_diagGroups.length){
     grpEl.innerHTML = _diagGroups.map(g=>{
-      const isMatch = [ADMIN_GROUP,TRUSTEE_GROUP,AUDITOR_GROUP].some(cfg=>cfg.toLowerCase()===g.toLowerCase());
+      const isMatch = [ADMIN_GROUP,TRUSTEE_GROUP,AUDITOR_GROUP,PTT_GROUP].some(cfg=>cfg.toLowerCase()===g.toLowerCase());
       return `<div style="color:${isMatch?'#1b5e20':'var(--tx)'}${isMatch?';font-weight:600':''}">${isMatch?'✅ ':''} ${g}</div>`;
     }).join('');
   } else {
@@ -2532,6 +2647,7 @@ function openDiag(){
   document.getElementById('diag-admin-grp').value   = ADMIN_GROUP;
   document.getElementById('diag-trustee-grp').value = TRUSTEE_GROUP;
   document.getElementById('diag-auditor-grp').value = AUDITOR_GROUP;
+  const pttIn = document.getElementById('diag-ptt-grp'); if(pttIn) pttIn.value = PTT_GROUP;
 
   openM('m-diag');
 }
@@ -2602,12 +2718,13 @@ function saveDiagGroups(){
   const ag  = document.getElementById('diag-admin-grp').value.trim();
   const tg  = document.getElementById('diag-trustee-grp').value.trim();
   const aug = document.getElementById('diag-auditor-grp').value.trim();
-  if(!ag||!tg||!aug){ toast('All three group names are required.','warning'); return; }
-  localStorage.setItem('st_gov_group_cfg', JSON.stringify({admin:ag,trustee:tg,auditor:aug}));
-  ADMIN_GROUP=ag; TRUSTEE_GROUP=tg; AUDITOR_GROUP=aug;
+  const pg  = (document.getElementById('diag-ptt-grp')||{}).value ? document.getElementById('diag-ptt-grp').value.trim() : PTT_GROUP;
+  if(!ag||!tg||!aug||!pg){ toast('All four group names are required.','warning'); return; }
+  localStorage.setItem('st_gov_group_cfg', JSON.stringify({admin:ag,trustee:tg,auditor:aug,ptt:pg}));
+  ADMIN_GROUP=ag; TRUSTEE_GROUP=tg; AUDITOR_GROUP=aug; PTT_GROUP=pg;
   // Also update the hub admin panel fields if visible
-  const a=document.getElementById('cfg-admin-grp'), t=document.getElementById('cfg-trustee-grp'), au=document.getElementById('cfg-auditor-grp');
-  if(a) a.value=ag; if(t) t.value=tg; if(au) au.value=aug;
+  const a=document.getElementById('cfg-admin-grp'), t=document.getElementById('cfg-trustee-grp'), au=document.getElementById('cfg-auditor-grp'), p=document.getElementById('cfg-ptt-grp');
+  if(a) a.value=ag; if(t) t.value=tg; if(au) au.value=aug; if(p) p.value=pg;
   toast('Group names saved. Sign out and back in to re-detect your role.','success');
   closeM('m-diag');
 }
