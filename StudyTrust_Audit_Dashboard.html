@@ -6,8 +6,23 @@
 <title>StudyTrust Audit Tracker</title>
 <!--
   ════════════════════════════════════════════════════════
-  STUDYTRUST AUDIT TRACKER  v4  — Microsoft Graph Edition
+  STUDYTRUST AUDIT TRACKER  v4.2  — Microsoft Graph Edition
   Works from: locally, SharePoint, any web host
+
+  Changes since v4.1:
+   • Description field is now editable on Recommendations
+     (Weakness + Recommendation), Sampling, Doc Register and
+     Auditor Requests tabs. Edits save back to SharePoint.
+     (Date and Requester fields on Auditor Requests stay
+     read-only to preserve the request audit trail.)
+
+  Changes since v4:
+   • Hyperlink columns (DocLink) handled correctly on read AND write
+     — fixes "URLs disappear after refresh" issue when SP column type
+     is "Hyperlink or Picture". Backward compatible with text columns.
+   • Description field is now editable on Planning and Execution rows.
+   • Filter bar adds: Compliance date range, Uploaded date range,
+     Clear button, and Document Name / Notes are now searchable too.
   ════════════════════════════════════════════════════════
 
   IT PERSON SETUP  (one-time, ~20 minutes):
@@ -160,6 +175,9 @@ body{background:var(--bg);color:#1a1a1a;font-size:13px;min-height:100vh}
 .fb{display:flex;gap:7px;margin-bottom:11px;flex-wrap:wrap;align-items:center}
 .fb input,.fb select{border:.5px solid #ccc;border-radius:6px;padding:5px 9px;font-size:12px;color:#333;background:#fff}
 .fb input{flex:1;min-width:130px;max-width:240px}
+.fb input[type=date]{flex:0 0 auto;min-width:130px;max-width:140px}
+.fb-lbl{font-size:11px;color:#555;font-weight:600;margin-left:4px}
+.fb-sep{font-size:10px;color:#888}
 
 /* ── TABLE ── */
 .tw{overflow-x:auto;border-radius:var(--rad-lg);border:.5px solid var(--border);background:#fff}
@@ -338,6 +356,15 @@ td.dc{min-width:170px;max-width:270px}
       <select id="f-planning-s" onchange="filterTab('planning')"><option value="">All Statuses</option></select>
       <select id="f-planning-p" onchange="filterTab('planning')"><option value="">All Persons</option></select>
       <select id="f-planning-l" onchange="filterTab('planning')"><option value="">All Items</option><option value="late">Late Only</option><option value="nodoc">No Link Yet</option></select>
+      <span class="fb-lbl">Compliance:</span>
+      <input type="date" id="f-planning-cf" onchange="filterTab('planning')" title="Compliance from">
+      <span class="fb-sep">to</span>
+      <input type="date" id="f-planning-ct" onchange="filterTab('planning')" title="Compliance to">
+      <span class="fb-lbl">Uploaded:</span>
+      <input type="date" id="f-planning-uf" onchange="filterTab('planning')" title="Uploaded from">
+      <span class="fb-sep">to</span>
+      <input type="date" id="f-planning-ut" onchange="filterTab('planning')" title="Uploaded to">
+      <button class="btn" onclick="clearFilters('planning')" style="padding:4px 9px;font-size:11px">Clear</button>
     </div>
     <div class="tw"><table><thead><tr>
       <th class="n">#</th><th style="min-width:195px">Description</th><th>Compliance Date</th>
@@ -355,6 +382,15 @@ td.dc{min-width:170px;max-width:270px}
       <input type="text" id="f-execution-q" placeholder="Search…" oninput="filterTab('execution')">
       <select id="f-execution-s" onchange="filterTab('execution')"><option value="">All Statuses</option></select>
       <select id="f-execution-l" onchange="filterTab('execution')"><option value="">All Items</option><option value="late">Late Only</option><option value="nodoc">No Link Yet</option></select>
+      <span class="fb-lbl">Compliance:</span>
+      <input type="date" id="f-execution-cf" onchange="filterTab('execution')" title="Compliance from">
+      <span class="fb-sep">to</span>
+      <input type="date" id="f-execution-ct" onchange="filterTab('execution')" title="Compliance to">
+      <span class="fb-lbl">Uploaded:</span>
+      <input type="date" id="f-execution-uf" onchange="filterTab('execution')" title="Uploaded from">
+      <span class="fb-sep">to</span>
+      <input type="date" id="f-execution-ut" onchange="filterTab('execution')" title="Uploaded to">
+      <button class="btn" onclick="clearFilters('execution')" style="padding:4px 9px;font-size:11px">Clear</button>
     </div>
     <div class="tw"><table><thead><tr>
       <th class="n">#</th><th style="min-width:195px">Description</th><th>Compliance Date</th>
@@ -573,6 +609,23 @@ const F = {
 
 const DATE_FIELDS = new Set(['dueDate','uploaded','dateRequested','dateConnected','dateSubmitted','dateResolved','date','fyEnd','deadline','auditStart','shadower','FYEnd','Deadline','AuditStart','Shadower','DateRequested','DateConnected','DateSubmitted','DateResolved','RequestDate','Uploaded']);
 
+// Hyperlink columns: SharePoint "Hyperlink or Picture" type returns/accepts {Url, Description} objects via Graph
+// If your SP column is plain text these helpers stay backward-compatible (string passes through).
+const HYPERLINK_FIELDS = new Set(['docLink','responseLink']);
+function spWriteValue(field, value, item){
+  if (HYPERLINK_FIELDS.has(field)) {
+    if (!value) return null;
+    return { Url: value, Description: (item && item.docName) || value };
+  }
+  if (DATE_FIELDS.has(field)) return value ? value + 'T00:00:00Z' : null;
+  return value || null;
+}
+function spReadValue(field, v){
+  if (HYPERLINK_FIELDS.has(field) && v && typeof v === 'object') return v.Url || '';
+  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return v.substring(0,10);
+  return v == null ? '' : v;
+}
+
 // ════════════════════════════════════════════════
 // MSAL & GRAPH AUTH
 // ════════════════════════════════════════════════
@@ -689,8 +742,7 @@ function toSpFields(tab, item, year) {
   const out = {};
   if (year) out.Year = year;
   for (const [ak, sk] of Object.entries(map)) {
-    const v = item[ak];
-    out[sk] = DATE_FIELDS.has(ak) ? (v ? v + 'T00:00:00Z' : null) : (v || null);
+    out[sk] = spWriteValue(ak, item[ak], item);
   }
   return out;
 }
@@ -701,9 +753,7 @@ function fromSpItem(tab, sp) {
   const fields = sp.fields || {};
   const item = { _spId: sp.id, id: sp.id };
   for (const [ak, sk] of Object.entries(map)) {
-    let v = fields[sk];
-    if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) v = v.substring(0, 10);
-    item[ak] = v || '';
+    item[ak] = spReadValue(ak, fields[sk]);
   }
   return item;
 }
@@ -769,7 +819,7 @@ async function upd(tab, spId, field, value) {
   item[field] = value;
   updateAll();
   const spField = (F[tab]||{})[field] || field;
-  const spValue = DATE_FIELDS.has(field) ? (value?value+'T00:00:00Z':null) : (value||null);
+  const spValue = spWriteValue(field, value, item);
   try {
     await spPatch(LISTS[tab], spId, { [spField]: spValue });
     toast('Saved ✓','ok');
@@ -1123,9 +1173,9 @@ function renderPE(tab){
     const moveBtn=tab==='planning'&&isAdmin
       ?`<button class="btn btn-sm" style="background:var(--am-bg);color:#7a4400;border:1px solid #ef9f27;font-size:10px;margin-top:4px;padding:2px 7px" onclick="moveToExecution('${esc(r._spId)}')">→ Move to Execution</button>`
       :'';
-    return`<tr class="${lt?'rl':nw?'rn':''}" data-status="${esc(r.status)}" data-person="${esc(r.responsible)}">
+    return`<tr class="${lt?'rl':nw?'rn':''}" data-status="${esc(r.status)}" data-person="${esc(r.responsible)}" data-due="${esc(r.dueDate||'')}" data-up="${esc(r.uploaded||'')}">
       <td class="n">${i+1}</td>
-      <td class="dc">${esc(r.desc||'')}${lt?'<br><span class="bl">⚠ LATE</span>':''}${moveBtn?'<br>'+moveBtn:''}</td>
+      <td class="dc"><input type="text" class="ie it" style="width:100%" value="${esc(r.desc||'')}" onchange="upd('${tab}','${r._spId}','desc',this.value)" title="${esc(r.desc||'')}">${lt?'<br><span class="bl">⚠ LATE</span>':''}${moveBtn?'<br>'+moveBtn:''}</td>
       <td>${fld(tab,r._spId,'dueDate',r.dueDate,'date')}</td>
       <td>${fld(tab,r._spId,'uploaded',r.uploaded,'date')}${nw?'<br><span class="bn">🆕 NEW</span>':''}</td>
       <td>${selFld(tab,r._spId,'status',r.status)}</td>
@@ -1173,7 +1223,9 @@ function renderRecs(){
   body.innerHTML=appData.recommendations.map((r,i)=>{
     const lt=isLate(r);
     return`<tr class="${lt?'rl':''}" data-status="${esc(r.status)}">
-      <td class="n">${i+1}</td><td class="dc">${esc(r.weakness||'')}</td><td class="dc">${esc(r.recommendation||'')}</td>
+      <td class="n">${i+1}</td>
+      <td class="dc"><input type="text" class="ie it" style="width:100%" value="${esc(r.weakness||'')}" onchange="upd('recommendations','${r._spId}','weakness',this.value)" title="${esc(r.weakness||'')}"></td>
+      <td class="dc"><input type="text" class="ie it" style="width:100%" value="${esc(r.recommendation||'')}" onchange="upd('recommendations','${r._spId}','recommendation',this.value)" title="${esc(r.recommendation||'')}"></td>
       <td>${fld('recommendations',r._spId,'dueDate',r.dueDate,'date')}${lt?'<br><span class="bl">⚠ LATE</span>':''}</td>
       <td>${selFld('recommendations',r._spId,'status',r.status)}</td>
       <td>${fld('recommendations',r._spId,'responsible',r.responsible,'text','78px')}</td>
@@ -1189,7 +1241,8 @@ function renderRecs(){
 function renderSampling(){
   const body=document.getElementById('body-sampling'); if(!body) return;
   body.innerHTML=appData.sampling.map((r,i)=>`<tr>
-    <td class="n">${i+1}</td><td class="dc">${esc(r.desc||'')}</td>
+    <td class="n">${i+1}</td>
+    <td class="dc"><input type="text" class="ie it" style="width:100%" value="${esc(r.desc||'')}" onchange="upd('sampling','${r._spId}','desc',this.value)" title="${esc(r.desc||'')}"></td>
     <td>${fld('sampling',r._spId,'requestedBy',r.requestedBy,'text','78px')}</td>
     <td>${fld('sampling',r._spId,'dateRequested',r.dateRequested,'date')}</td>
     <td>${fld('sampling',r._spId,'uploaded',r.uploaded,'date')}</td>
@@ -1218,7 +1271,7 @@ function renderRegister(){
   body.innerHTML=appData.register.map((r,i)=>`<tr>
     <td class="n">${i+1}</td>
     <td>${fld('register',r._spId,'dateRequested',r.dateRequested,'date')}</td>
-    <td class="dc">${esc(r.doc||'')}</td>
+    <td class="dc"><input type="text" class="ie it" style="width:100%" value="${esc(r.doc||'')}" onchange="upd('register','${r._spId}','doc',this.value)" title="${esc(r.doc||'')}"></td>
     <td>${fld('register',r._spId,'requester',r.requester,'text','78px')}</td>
     <td>${fld('register',r._spId,'requestedFrom',r.requestedFrom,'text','85px')}</td>
     <td>${fld('register',r._spId,'submitter',r.submitter,'text','78px')}</td>
@@ -1233,7 +1286,8 @@ function renderAudReqs(){
   const body=document.getElementById('body-aud-requests'); if(!body) return;
   body.innerHTML=appData.auditorRequests.map((r,i)=>`<tr>
     <td class="n">${i+1}</td><td style="white-space:nowrap;color:#666">${esc(r.date||'')}</td>
-    <td>${esc(r.requestedBy||'')}</td><td class="dc">${esc(r.description||'')}</td>
+    <td>${esc(r.requestedBy||'')}</td>
+    <td class="dc"><input type="text" class="ie it" style="width:100%" value="${esc(r.description||'')}" onchange="upd('auditorRequests','${r._spId}','description',this.value)" title="${esc(r.description||'')}"></td>
     <td><span class="${r.urgency==='Urgent'?'bl':r.urgency==='High'?'ni-badge req':''}">${esc(r.urgency||'Normal')}</span></td>
     <td>${selFld('auditorRequests',r._spId,'status',r.status||'Pending')}</td>
     <td>${fld('auditorRequests',r._spId,'assignedTo',r.assignedTo,'text','85px')}</td>
@@ -1392,16 +1446,34 @@ function populateFilters(tab){
 }
 
 function filterTab(tab){
-  const q=(document.getElementById('f-'+tab+'-q')||{}).value||'';
-  const sf=(document.getElementById('f-'+tab+'-s')||{}).value||'';
-  const pf=(document.getElementById('f-'+tab+'-p')||{}).value||'';
-  const lf=(document.getElementById('f-'+tab+'-l')||{}).value||'';
+  const g=id=>(document.getElementById(id)||{}).value||'';
+  const q=g('f-'+tab+'-q').toLowerCase();
+  const sf=g('f-'+tab+'-s'),pf=g('f-'+tab+'-p'),lf=g('f-'+tab+'-l');
+  const cf=g('f-'+tab+'-cf'),ct=g('f-'+tab+'-ct');
+  const uf=g('f-'+tab+'-uf'),ut=g('f-'+tab+'-ut');
   document.querySelectorAll('#body-'+tab+' tr').forEach(row=>{
-    const txt=row.textContent.toLowerCase(),st=row.dataset.status||'',pe=row.dataset.person||'';
+    let txt=row.textContent.toLowerCase();
+    // Also search input/select values so Document Name, Notes, links etc. are searchable
+    row.querySelectorAll('input,select').forEach(i=>{ if(i.value) txt+=' '+String(i.value).toLowerCase(); });
+    const st=row.dataset.status||'',pe=row.dataset.person||'';
+    const cd=row.dataset.due||'',ud=row.dataset.up||'';
     const ltRow=row.classList.contains('rl');
     let docLink=''; row.querySelectorAll('input[type=url]').forEach(i=>{if(i.value)docLink=i.value;});
-    row.style.display=((!q||txt.includes(q.toLowerCase()))&&(!sf||st===sf)&&(!pf||pe.includes(pf))&&(lf!=='late'||ltRow)&&(lf!=='nodoc'||!docLink))?'':'none';
+    const dateOk=
+      (!cf||(cd&&cd>=cf)) &&
+      (!ct||(cd&&cd<=ct)) &&
+      (!uf||(ud&&ud>=uf)) &&
+      (!ut||(ud&&ud<=ut));
+    row.style.display=((!q||txt.includes(q))&&(!sf||st===sf)&&(!pf||pe.includes(pf))&&(lf!=='late'||ltRow)&&(lf!=='nodoc'||!docLink)&&dateOk)?'':'none';
   });
+}
+
+function clearFilters(tab){
+  ['q','s','p','l','cf','ct','uf','ut'].forEach(k=>{
+    const el=document.getElementById('f-'+tab+'-'+k);
+    if(el) el.value='';
+  });
+  filterTab(tab);
 }
 
 // ════════════════════════════════════════════════
