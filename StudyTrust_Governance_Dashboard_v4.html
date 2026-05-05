@@ -23,8 +23,8 @@
     3. Create 3 SharePoint lists (see 📋 Column Guide in Hub):
          GovPolicies · GovSOPs · GovChangelog
     4. Create Azure AD groups:
-         "StudyTrust-Governance-Admins"  → admin role
-         "StudyTrust-Board-of-Trustees"  → trustee role
+         "Dashboards - Governance-Admins"  → admin role
+         "Dashboards - Board-of-Trustees"  → trustee role
        All other signed-in users → personnel role
   ════════════════════════════════════════════════════════
 -->
@@ -372,7 +372,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
 
     <!-- TRUSTEE SUMMARY BOX (trustee only) -->
     <div id="trustee-summary" class="tr-box" style="display:none;margin-top:14px">
-      <h3>StudyTrust-Board-of-Trustees — Governance Summary</h3>
+      <h3>Dashboards - Board-of-Trustees — Governance Summary</h3>
       <p id="trustee-summary-text"></p>
     </div>
 
@@ -421,7 +421,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
     <div class="card" style="margin-bottom:14px"><div class="tbl-wrap"><table class="dt">
       <thead><tr><th>Risk Level</th><th>Tier</th><th>Approver</th><th>Quorum / Requirements</th></tr></thead>
       <tbody>
-        <tr><td><span class="bd br">High Strategic</span></td><td><span class="bd bb">T1</span></td><td style="font-weight:600">StudyTrust-Board-of-Trustees</td><td style="font-size:11px">≥ 50%+1 quorum · Legal consultation mandatory · King V alignment required</td></tr>
+        <tr><td><span class="bd br">High Strategic</span></td><td><span class="bd bb">T1</span></td><td style="font-weight:600">Dashboards - Board-of-Trustees</td><td style="font-size:11px">≥ 50%+1 quorum · Legal consultation mandatory · King V alignment required</td></tr>
         <tr><td><span class="bd br">High Operational</span></td><td><span class="bd bb">T2</span></td><td style="font-weight:600">National Director<br><span style="font-size:11px;font-weight:400">(or Deputy ND if formally delegated)</span></td><td style="font-size:11px">LT consultation mandatory · Legal review required · Board notified if delegation &gt;90 days</td></tr>
         <tr><td><span class="bd ba">Medium</span></td><td><span class="bd bb">T2–3</span></td><td style="font-weight:600">National Director + Leadership Team</td><td style="font-size:11px">Legal review recommended · Board notified via Central Register</td></tr>
         <tr><td><span class="bd bg">Low</span></td><td><span class="bd bb">T3–4</span></td><td style="font-weight:600">Leadership Team (majority quorum)</td><td style="font-size:11px">Legal consultation optional · PTT verification required · Board notified</td></tr>
@@ -512,21 +512,21 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <div style="padding:12px;font-size:12px">
           <div style="font-weight:600;margin-bottom:6px">Contains:</div>
           <div style="color:var(--tx2);line-height:1.7">All <strong>Approved</strong>, <strong>New</strong>, and <strong>Published</strong> documents<br>View link visible to all users (trustees, personnel, admin)</div>
-          <div style="margin-top:10px;font-size:11px;background:var(--gn-bg);padding:6px 9px;border-radius:5px;color:var(--gn-tx)"><strong>Permissions:</strong> StudyTrust-Governance-Admins → Contribute<br>StudyTrust-Board-of-Trustees → Read<br>All Personnel → Read</div>
+          <div style="margin-top:10px;font-size:11px;background:var(--gn-bg);padding:6px 9px;border-radius:5px;color:var(--gn-tx)"><strong>Permissions:</strong> Dashboards - Governance-Admins → Contribute<br>Dashboards - Board-of-Trustees → Read<br>All Personnel → Read</div>
         </div>
       </div>
       <div class="card"><div class="card-hd" style="background:var(--am-bg);color:var(--am-tx);border-color:#ffe082">📁 Governance Drafts</div>
         <div style="padding:12px;font-size:12px">
           <div style="font-weight:600;margin-bottom:6px">Contains:</div>
           <div style="color:var(--tx2);line-height:1.7">All <strong>Draft</strong>, <strong>Consult</strong>, <strong>PTT Review</strong> documents<br>Edit links visible to admins only</div>
-          <div style="margin-top:10px;font-size:11px;background:var(--am-bg);padding:6px 9px;border-radius:5px;color:var(--am-tx)"><strong>Permissions:</strong> StudyTrust-Governance-Admins → Contribute<br>StudyTrust-Board-of-Trustees → No access<br>All Personnel → No access</div>
+          <div style="margin-top:10px;font-size:11px;background:var(--am-bg);padding:6px 9px;border-radius:5px;color:var(--am-tx)"><strong>Permissions:</strong> Dashboards - Governance-Admins → Contribute<br>Dashboards - Board-of-Trustees → No access<br>All Personnel → No access</div>
         </div>
       </div>
       <div class="card"><div class="card-hd" style="background:var(--bg);border-color:var(--bdr)">🗄 Governance Archive</div>
         <div style="padding:12px;font-size:12px">
           <div style="font-weight:600;margin-bottom:6px">Contains:</div>
           <div style="color:var(--tx2);line-height:1.7">All <strong>Archived</strong> (retired) documents<br>5-year retention per Trust Deed Part 3<br>Archive links visible to admins only</div>
-          <div style="margin-top:10px;font-size:11px;background:var(--bg);padding:6px 9px;border-radius:5px;color:var(--tx2)"><strong>Permissions:</strong> StudyTrust-Governance-Admins → Read<br>StudyTrust-Board-of-Trustees → No access<br>All Personnel → No access</div>
+          <div style="margin-top:10px;font-size:11px;background:var(--bg);padding:6px 9px;border-radius:5px;color:var(--tx2)"><strong>Permissions:</strong> Dashboards - Governance-Admins → Read<br>Dashboards - Board-of-Trustees → No access<br>All Personnel → No access</div>
         </div>
       </div>
     </div>
@@ -552,7 +552,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
 
     <div class="slabel">Roles &amp; Responsibilities</div>
     <div class="g3" style="margin-bottom:18px">
-      <div class="role-c"><div class="role-hd"><div class="av">BT</div><div class="role-name">StudyTrust-Board-of-Trustees</div></div><div class="role-desc">Approves Tier 1 &amp; High Strategic policies (quorum ≥50%+1). Fiduciary oversight and King V compliance. Receives all Tier 2 &amp; 3 notifications.</div></div>
+      <div class="role-c"><div class="role-hd"><div class="av">BT</div><div class="role-name">Dashboards - Board-of-Trustees</div></div><div class="role-desc">Approves Tier 1 &amp; High Strategic policies (quorum ≥50%+1). Fiduciary oversight and King V compliance. Receives all Tier 2 &amp; 3 notifications.</div></div>
       <div class="role-c"><div class="role-hd"><div class="av">ND</div><div class="role-name">National Director</div></div><div class="role-desc">Approves Tier 2 &amp; High Operational policies. Chairs approval meetings. Cannot delegate Board-level approvals. Commences emergency reviews within 7 or 30 days.</div></div>
       <div class="role-c"><div class="role-hd"><div class="av">DN</div><div class="role-name">Deputy National Director</div></div><div class="role-desc">Acts in ND's absence when formally delegated in writing with defined scope and duration. Board notified if delegation exceeds 90 days.</div></div>
       <div class="role-c"><div class="role-hd"><div class="av">RL</div><div class="role-name">Regulatory Watch Lead</div></div><div class="role-desc">Oversees all policy development. Coordinates reviews and version control. Member of PTT. Notifies ND &amp; Chairperson of regulatory changes.</div></div>
@@ -567,17 +567,17 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <div style="font-size:12px;color:var(--tx2);margin-bottom:12px;line-height:1.6">Configure the Azure AD group display names used for role detection. These must match exactly the group names in your Azure AD tenant.</div>
         <div class="f-grid" style="margin-bottom:10px">
           <div><label style="font-size:11px;font-weight:600;color:var(--tx2);display:block;margin-bottom:4px">Admin Group Name</label>
-            <input type="text" id="cfg-admin-grp" value="StudyTrust-Governance-Admins" style="width:100%;border:1px solid var(--bdr);border-radius:5px;padding:6px 9px;font-size:12px"></div>
+            <input type="text" id="cfg-admin-grp" value="Dashboards - Governance-Admins" style="width:100%;border:1px solid var(--bdr);border-radius:5px;padding:6px 9px;font-size:12px"></div>
           <div><label style="font-size:11px;font-weight:600;color:var(--tx2);display:block;margin-bottom:4px">Trustee Group Name</label>
-            <input type="text" id="cfg-trustee-grp" value="StudyTrust-Board-of-Trustees" style="width:100%;border:1px solid var(--bdr);border-radius:5px;padding:6px 9px;font-size:12px"></div>
+            <input type="text" id="cfg-trustee-grp" value="Dashboards - Board-of-Trustees" style="width:100%;border:1px solid var(--bdr);border-radius:5px;padding:6px 9px;font-size:12px"></div>
         </div>
         <div style="margin-bottom:10px">
           <label style="font-size:11px;font-weight:600;color:var(--tx2);display:block;margin-bottom:4px">External Auditor Group Name</label>
-          <input type="text" id="cfg-auditor-grp" value="StudyTrust-External-Auditors" style="width:100%;border:1px solid var(--bdr);border-radius:5px;padding:6px 9px;font-size:12px">
+          <input type="text" id="cfg-auditor-grp" value="Dashboards - External-Auditors" style="width:100%;border:1px solid var(--bdr);border-radius:5px;padding:6px 9px;font-size:12px">
         </div>
         <div style="margin-bottom:10px">
           <label style="font-size:11px;font-weight:600;color:var(--tx2);display:block;margin-bottom:4px">PTT (Policy Task Team) Group Name</label>
-          <input type="text" id="cfg-ptt-grp" value="StudyTrust-PTT" style="width:100%;border:1px solid var(--bdr);border-radius:5px;padding:6px 9px;font-size:12px">
+          <input type="text" id="cfg-ptt-grp" value="Dashboards - Policy Task Team" style="width:100%;border:1px solid var(--bdr);border-radius:5px;padding:6px 9px;font-size:12px">
           <div style="font-size:11px;color:var(--tx3);margin-top:4px;line-height:1.5">Members of this group can review and edit drafts (Step 4 of governance), but cannot publish, archive, or delete final documents.</div>
         </div>
         <button class="btn btn-pri btn-sm" onclick="saveGroupConfig()">Save Group Names</button>
@@ -603,7 +603,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <div class="f-row" style="margin-bottom:10px">
           <label style="font-size:11px;font-weight:600;color:var(--tx2);display:flex;align-items:center;gap:6px;margin-bottom:4px">
             <span style="background:rgba(147,197,253,.2);color:#1e40af;border:1px solid rgba(147,197,253,.3);border-radius:10px;padding:1px 7px;font-size:10px">Trustee</span>
-            StudyTrust-Board-of-Trustees Webhook — receives Published and Review Due events
+            Dashboards - Board-of-Trustees Webhook — receives Published and Review Due events
           </label>
           <div class="wh-row">
             <span class="wh-dot wh-empty" id="wh-trustee-dot"></span>
@@ -615,7 +615,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <div class="f-row" style="margin-bottom:10px">
           <label style="font-size:11px;font-weight:600;color:var(--tx2);display:flex;align-items:center;gap:6px;margin-bottom:4px">
             <span style="background:rgba(241,90,41,.18);color:#7a2e0b;border:1px solid rgba(241,90,41,.4);border-radius:10px;padding:1px 7px;font-size:10px">PTT</span>
-            StudyTrust-PTT Webhook — receives drafts entering Consult and PTT Review
+            Dashboards - Policy Task Team Webhook — receives drafts entering Consult and PTT Review
           </label>
           <div class="wh-row">
             <span class="wh-dot wh-empty" id="wh-ptt-dot"></span>
@@ -627,7 +627,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <div class="f-row" style="margin-bottom:12px">
           <label style="font-size:11px;font-weight:600;color:var(--tx2);display:flex;align-items:center;gap:6px;margin-bottom:4px">
             <span style="background:rgba(167,243,208,.2);color:#065f46;border:1px solid rgba(167,243,208,.3);border-radius:10px;padding:1px 7px;font-size:10px">Auditor</span>
-            StudyTrust-External-Auditors Webhook — receives Published and new document events
+            Dashboards - External-Auditors Webhook — receives Published and new document events
           </label>
           <div class="wh-row">
             <span class="wh-dot wh-empty" id="wh-auditor-dot"></span>
@@ -1225,15 +1225,15 @@ function toSpTrustee(t){const f={};for(const[ak,sk]of Object.entries(TR_MAP)){co
 function fromSpTrustee(sp){const f=sp.fields||{},t={_spId:sp.id};for(const[ak,sk]of Object.entries(TR_MAP)){let v=f[sk];if(typeof v==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(v))v=v.substring(0,10);t[ak]=v||'';}return t;}
 let currentRole='personnel', userName='User';
 let statusTarget=null, urlTarget=null;
-let ADMIN_GROUP='StudyTrust-Governance-Admins', TRUSTEE_GROUP='StudyTrust-Board-of-Trustees', AUDITOR_GROUP='StudyTrust-External-Auditors', PTT_GROUP='StudyTrust-PTT';
+let ADMIN_GROUP='Dashboards - Governance-Admins', TRUSTEE_GROUP='Dashboards - Board-of-Trustees', AUDITOR_GROUP='Dashboards - External-Auditors', PTT_GROUP='Dashboards - Policy Task Team';
 
 // Load group config from localStorage
 function loadGroupConfig(){
   const cfg=JSON.parse(localStorage.getItem('st_gov_group_cfg')||'{}');
-  ADMIN_GROUP=cfg.admin||'StudyTrust-Governance-Admins';
-  TRUSTEE_GROUP=cfg.trustee||'StudyTrust-Board-of-Trustees';
-  AUDITOR_GROUP=cfg.auditor||'StudyTrust-External-Auditors';
-  PTT_GROUP=cfg.ptt||'StudyTrust-PTT';
+  ADMIN_GROUP=cfg.admin||'Dashboards - Governance-Admins';
+  TRUSTEE_GROUP=cfg.trustee||'Dashboards - Board-of-Trustees';
+  AUDITOR_GROUP=cfg.auditor||'Dashboards - External-Auditors';
+  PTT_GROUP=cfg.ptt||'Dashboards - Policy Task Team';
   const ag=document.getElementById('cfg-admin-grp'), tg=document.getElementById('cfg-trustee-grp'), aug=document.getElementById('cfg-auditor-grp'), pg=document.getElementById('cfg-ptt-grp');
   if(ag) ag.value=ADMIN_GROUP; if(tg) tg.value=TRUSTEE_GROUP; if(aug) aug.value=AUDITOR_GROUP; if(pg) pg.value=PTT_GROUP;
 }
@@ -1275,13 +1275,13 @@ async function detectRole(){
 // DEFAULT SEED DATA (from v3)
 // ════════════════════════════════════════════
 const DEFAULT_POL=[
-  {polId:'POL-001',title:'Foundational Governance Policy',category:'Governance',tier:'T1',version:'1.2',status:'Published',risk:'High Strategic',approver:'StudyTrust-Board-of-Trustees',reviewDate:'2027-05-01',owner:'National Director',custodian:'PTT Lead',draftUrl:'',publishedUrl:'',archiveUrl:''},
-  {polId:'POL-002',title:'Code of Conduct & Ethics Policy',category:'Governance',tier:'T1',version:'1.1',status:'Published',risk:'High Strategic',approver:'StudyTrust-Board-of-Trustees',reviewDate:'2027-05-01',owner:'National Director',custodian:'PTT Lead',draftUrl:'',publishedUrl:'',archiveUrl:''},
+  {polId:'POL-001',title:'Foundational Governance Policy',category:'Governance',tier:'T1',version:'1.2',status:'Published',risk:'High Strategic',approver:'Dashboards - Board-of-Trustees',reviewDate:'2027-05-01',owner:'National Director',custodian:'PTT Lead',draftUrl:'',publishedUrl:'',archiveUrl:''},
+  {polId:'POL-002',title:'Code of Conduct & Ethics Policy',category:'Governance',tier:'T1',version:'1.1',status:'Published',risk:'High Strategic',approver:'Dashboards - Board-of-Trustees',reviewDate:'2027-05-01',owner:'National Director',custodian:'PTT Lead',draftUrl:'',publishedUrl:'',archiveUrl:''},
   {polId:'POL-003',title:'Human Resources Policy',category:'HR',tier:'T2',version:'2.0',status:'Published',risk:'High Operational',approver:'National Director',reviewDate:'2026-06-30',owner:'HR Manager',custodian:'HR Manager',draftUrl:'',publishedUrl:'',archiveUrl:''},
   {polId:'POL-004',title:'Leave & Attendance Policy',category:'HR',tier:'T3',version:'1.0',status:'Published',risk:'Medium',approver:'National Director',reviewDate:'2026-12-31',owner:'HR Manager',custodian:'HR Manager',draftUrl:'',publishedUrl:'',archiveUrl:''},
   {polId:'POL-005',title:'IT Security & Access Control Policy',category:'IT',tier:'T2',version:'1.1',status:'Published',risk:'High Operational',approver:'National Director',reviewDate:'2026-04-30',owner:'IT Lead',custodian:'IT Lead',draftUrl:'',publishedUrl:'',archiveUrl:''},
-  {polId:'POL-006',title:'Data Protection & Privacy (POPIA)',category:'IT',tier:'T1',version:'1.0',status:'Published',risk:'High Strategic',approver:'StudyTrust-Board-of-Trustees',reviewDate:'2026-07-01',owner:'Governance Lead',custodian:'PTT Lead',draftUrl:'',publishedUrl:'',archiveUrl:''},
-  {polId:'POL-007',title:'Financial Management Policy',category:'Finance',tier:'T1',version:'2.1',status:'Review Due',risk:'High Strategic',approver:'StudyTrust-Board-of-Trustees',reviewDate:'2026-03-31',owner:'CFO',custodian:'CFO',draftUrl:'',publishedUrl:'',archiveUrl:''},
+  {polId:'POL-006',title:'Data Protection & Privacy (POPIA)',category:'IT',tier:'T1',version:'1.0',status:'Published',risk:'High Strategic',approver:'Dashboards - Board-of-Trustees',reviewDate:'2026-07-01',owner:'Governance Lead',custodian:'PTT Lead',draftUrl:'',publishedUrl:'',archiveUrl:''},
+  {polId:'POL-007',title:'Financial Management Policy',category:'Finance',tier:'T1',version:'2.1',status:'Review Due',risk:'High Strategic',approver:'Dashboards - Board-of-Trustees',reviewDate:'2026-03-31',owner:'CFO',custodian:'CFO',draftUrl:'',publishedUrl:'',archiveUrl:''},
   {polId:'POL-008',title:'Procurement & Supply Chain Policy',category:'Finance',tier:'T2',version:'1.0',status:'Published',risk:'High Operational',approver:'National Director',reviewDate:'2026-09-01',owner:'Manager: Operations',custodian:'Manager: Operations',draftUrl:'',publishedUrl:'',archiveUrl:''},
   {polId:'POL-009',title:'Bursary Management Policy',category:'Bursaries',tier:'T2',version:'1.1',status:'Published',risk:'High Operational',approver:'National Director',reviewDate:'2026-08-01',owner:'Bursary Manager',custodian:'Bursary Manager',draftUrl:'',publishedUrl:'',archiveUrl:''},
   {polId:'POL-010',title:'Funder Relations Policy',category:'Funders',tier:'T2',version:'1.0',status:'Published',risk:'Medium',approver:'National Director',reviewDate:'2026-04-15',owner:'Manager: Operations',custodian:'Manager: Operations',draftUrl:'',publishedUrl:'',archiveUrl:''},
@@ -1850,7 +1850,7 @@ function autoFillApprover(){
   const tier=document.getElementById('f-pol-tier').value;
   const risk=document.getElementById('f-pol-risk').value;
   const el=document.getElementById('f-pol-app'); if(!el) return;
-  if(tier==='T1'||risk==='High Strategic') el.value='StudyTrust-Board-of-Trustees (quorum ≥50%+1, legal consultation mandatory)';
+  if(tier==='T1'||risk==='High Strategic') el.value='Dashboards - Board-of-Trustees (quorum ≥50%+1, legal consultation mandatory)';
   else if(risk==='High Operational') el.value='National Director (or Deputy ND if formally delegated in writing)';
   else if(tier==='T2'||tier==='T3') el.value='National Director + Leadership Team';
   else el.value='Leadership Team (majority quorum)';
@@ -2082,7 +2082,7 @@ function setRole(role){
   const bannerCls={admin:'ban-admin',trustee:'ban-trustee',auditor:'ban-auditor',personnel:'ban-personnel',ptt:'ban-ptt'};
   const bannerText={
     admin:'Admin Mode — Full access. All changes save live to SharePoint.',
-    trustee:'Trustee View — StudyTrust-Board-of-Trustees access. Published policies and governance information.',
+    trustee:'Trustee View — Dashboards - Board-of-Trustees access. Published policies and governance information.',
     auditor:'External Auditor View — Read-only access to published documents. Use Document Requests to request additional information.',
     personnel:'All Personnel View — Published policies and SOPs only.',
     ptt:'PTT View — Review and edit drafts (Step 4 of the governance process). You cannot publish, archive, or change hub structure.'
