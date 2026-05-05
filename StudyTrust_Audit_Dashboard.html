@@ -6,8 +6,21 @@
 <title>StudyTrust Audit Tracker</title>
 <!--
   ════════════════════════════════════════════════════════
-  STUDYTRUST AUDIT TRACKER  v4.3  — Microsoft Graph Edition
+  STUDYTRUST AUDIT TRACKER  v4.4  — Microsoft Graph Edition
   Works from: locally, SharePoint, any web host
+
+  Changes since v4.3:
+   • Auditor Requests: expandable sub-panel per request holds multiple
+     response documents (name, URL, upload button, delete button).
+   • Teams webhook notification fires to the auditor channel when any
+     request moves to Resolved status. Configure via the Webhooks
+     button in the header. Test button confirms the channel works.
+   • renderMyReqs (auditor view) shows all response documents per
+     request, not just a single link.
+   • Auditor status counts updated: Open, Submitted, In Progress are
+     all treated as "active" in dashboard KPI cards.
+   • New SharePoint list required: AuditResponseLinks (see Column
+     Guide for column definitions — Simon must create this).
 
   Changes since v4.2:
    • DocName column relabelled "Document Category" — is now a
@@ -189,6 +202,10 @@ body{background:var(--bg);color:#1a1a1a;font-size:13px;min-height:100vh}
 .fb-lbl{font-size:11px;color:#555;font-weight:600;margin-left:4px}
 .fb-sep{font-size:10px;color:#888}
 .instr-body{display:none}.instr-body.open{display:block}
+.wh-dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.wh-ok{background:#22c55e}.wh-empty{background:#d1d5db}
+.aud-req-row:hover{background:var(--st-p)}
+.rl-row input{height:24px}
 
 /* ── TABLE ── */
 .tw{overflow-x:auto;border-radius:var(--rad-lg);border:.5px solid var(--border);background:#fff}
@@ -320,6 +337,7 @@ td.dc{min-width:170px;max-width:270px}
     <button class="hdr-btn" onclick="exportBackup()">⬇ Backup</button>
     <button class="hdr-btn" onclick="openM('m-restore')">⬆ Restore</button>
     <button class="hdr-btn" onclick="openM('m-guide')">📋 Column Guide</button>
+    <button class="hdr-btn" onclick="openM('m-webhook');loadWebhookUI()">🔔 Webhooks</button>
     <button class="hdr-btn" onclick="removeDuplicates()">🧹 Remove Duplicates</button>
     <button class="hdr-btn" onclick="window.print()">🖨</button>
   </div>
@@ -484,7 +502,7 @@ td.dc{min-width:170px;max-width:270px}
     </div>
     <div class="tw"><table><thead><tr>
       <th class="n">#</th><th>Date</th><th>From</th><th style="min-width:190px">Description</th>
-      <th>Urgency</th><th>Status</th><th>Assigned To</th><th>Date Resolved</th><th>Response Link</th><th>Notes</th>
+      <th>Urgency</th><th>Status</th><th>Assigned To</th><th>Date Resolved</th><th>Documents</th><th></th>
     </tr></thead><tbody id="body-aud-requests"></tbody></table></div>
   </div>
 
@@ -528,6 +546,26 @@ td.dc{min-width:170px;max-width:270px}
 
 <input type="file" id="file-upload-input" style="display:none" onchange="handleFileUpload(this)">
 </div><!-- /content -->
+
+<!-- WEBHOOK CONFIG MODAL -->
+<div class="ov" id="m-webhook"><div class="modal" style="max-width:540px">
+  <h3>Teams Webhook — Auditor Notifications</h3>
+  <div class="mn">When an Auditor Request is set to Resolved, a notification card is posted to this Teams channel. The auditor does not need to keep checking the dashboard.</div>
+  <div class="mn" style="margin-top:8px">
+    <strong>How to get the webhook URL:</strong> In Teams, open the auditor channel → ••• → Workflows → Post to a channel when a webhook request is received → copy the URL.
+  </div>
+  <div style="margin:14px 0 6px;display:flex;align-items:center;gap:8px">
+    <span class="wh-dot wh-empty" id="wh-dot"></span>
+    <label style="font-size:11px;font-weight:700;color:var(--tx2)">External Auditors channel webhook URL</label>
+  </div>
+  <input type="url" id="wh-auditor-url" placeholder="https://studietrust.webhook.office.com/webhookb2/…"
+    style="width:100%;border:1px solid var(--bdr);border-radius:5px;padding:7px 10px;font-size:12px;font-family:'Courier New',monospace;box-sizing:border-box;margin-bottom:10px">
+  <div class="ma" style="flex-wrap:wrap;gap:8px">
+    <button class="btn" onclick="closeM('m-webhook')">Cancel</button>
+    <button class="btn btn-sec" onclick="testWebhook()">🔔 Test</button>
+    <button class="btn btn-p" onclick="saveWebhooks()">Save Webhook URL</button>
+  </div>
+</div></div>
 
 <!-- ═══════════ MODALS ═══════════ -->
 
@@ -589,6 +627,9 @@ td.dc{min-width:170px;max-width:270px}
   <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditRequests</p>
   <div class="cg"><span>Year</span> · <span>RequestDate</span><em> Date</em> · <span>RequestedBy</span><em> Text</em> · <span>Description</span><em> Multi-text</em> · <span>Urgency</span><em> Choice (Normal·High·Urgent)</em> · <span>Status</span><em> Choice (Open · Submitted · In Progress · Resolved · Closed)</em> · <span>AssignedTo</span><em> Text</em> · <span>DateResolved</span><em> Date</em> · <span>ResponseLink</span><em> Text</em> · <span>Notes</span><em> Multi-text</em></div>
   <div class="ma"><button class="btn btn-p" onclick="closeM('m-guide')">Close</button></div>
+  <p style="font-size:11px;font-weight:700;color:var(--st);margin-top:10px;margin-bottom:4px">AuditResponseLinks (new list — Simon must create in SharePoint)</p>
+  <div class="cg"><span>Year</span><em> Text</em> &middot; <span>RequestID</span><em> Text (parent request item ID)</em> &middot; <span>DocName</span><em> Text</em> &middot; <span>DocLink</span><em> Text or Hyperlink</em> &middot; <span>UploadedBy</span><em> Text</em> &middot; <span>UploadedDate</span><em> Date</em> &middot; <span>Notes</span><em> Text</em></div>
+  <p style="font-size:10px;color:#888;margin:3px 0 8px">One row per response document. Each row links to its parent request via RequestID (the SharePoint item ID of the AuditRequests row).</p>
 </div></div>
 
 <!-- ════════════════════ JAVASCRIPT ════════════════════ -->
@@ -626,7 +667,7 @@ const GRAPH_SCOPES = ['Sites.ReadWrite.All', 'User.Read', 'GroupMember.Read.All'
 const LISTS = {
   config:'AuditConfig', planning:'AuditPlanning', execution:'AuditExecution',
   recommendations:'AuditRecommendations', sampling:'AuditSampling', teams:'AuditTeams',
-  register:'AuditRegister', auditorRequests:'AuditRequests'
+  register:'AuditRegister', auditorRequests:'AuditRequests', responseLinks:'AuditResponseLinks'
 };
 
 // ── Field mapping: app key → SharePoint column name ──
@@ -638,6 +679,7 @@ const F = {
   teams:           { email:'Email', requestedBy:'RequestedBy', dateRequested:'DateRequested', dateConnected:'DateConnected', status:'Status', responsible:'Responsible', remarks:'Remarks' },
   register:        { dateRequested:'DateRequested', doc:'Title', requester:'Requester', requestedFrom:'RequestedFrom', submitter:'Submitter', dateSubmitted:'DateSubmitted', docName:'DocName', docLink:'DocLink', comment:'Comment' },
   auditorRequests: { date:'RequestDate', requestedBy:'RequestedBy', description:'Title', urgency:'Urgency', status:'Status', assignedTo:'AssignedTo', dateResolved:'DateResolved', responseLink:'ResponseLink', notes:'Notes' },
+  responseLinks:    { requestId:'RequestID', docName:'DocName', docLink:'DocLink', uploadedBy:'UploadedBy', uploadedDate:'UploadedDate', notes:'Notes' },
   config:          { id:'Year', label:'Label', fyEnd:'FYEnd', deadline:'Deadline', auditStart:'AuditStart', shadower:'Shadower', firm:'Firm' }
 };
 
@@ -831,7 +873,7 @@ function getCatFolder(catLabel) {
   return lib + '/' + c.path;
 }
 let years = [], currentYear = '2025', currentRole = 'admin', currentYearCfg = {};
-let appData = { planning:[], execution:[], recommendations:[], sampling:[], teams:[], register:[], auditorRequests:[] };
+let appData = { planning:[], execution:[], recommendations:[], sampling:[], teams:[], register:[], auditorRequests:[], responseLinks:[] };
 
 // ════════════════════════════════════════════════
 // LOAD DATA
@@ -855,9 +897,10 @@ async function loadYears() {
 async function loadData(year) {
   setLoad('Loading FY ' + year + ' from SharePoint…');
   try {
-  const [plan,exec,recs,samp,tms,reg,reqs] = await Promise.all([
+  const [plan,exec,recs,samp,tms,reg,reqs,respLinks] = await Promise.all([
     spGet(LISTS.planning,year), spGet(LISTS.execution,year), spGet(LISTS.recommendations,year),
-    spGet(LISTS.sampling,year), spGet(LISTS.teams,year), spGet(LISTS.register,year), spGet(LISTS.auditorRequests,year)
+    spGet(LISTS.sampling,year), spGet(LISTS.teams,year), spGet(LISTS.register,year),
+    spGet(LISTS.auditorRequests,year), spGet(LISTS.responseLinks,year)
   ]);
   appData = {
     planning:        plan.map(s=>fromSpItem('planning',s)),
@@ -866,7 +909,8 @@ async function loadData(year) {
     sampling:        samp.map(s=>fromSpItem('sampling',s)),
     teams:           tms.map(s=>fromSpItem('teams',s)),
     register:        reg.map(s=>fromSpItem('register',s)),
-    auditorRequests: reqs.map(s=>fromSpItem('auditorRequests',s))
+    auditorRequests: reqs.map(s=>fromSpItem('auditorRequests',s)),
+  responseLinks:   (respLinks||[]).map(s=>fromSpItem('responseLinks',s))
   };
   currentYearCfg = years.find(y=>y.id===year) || {};
   } catch(e) {
@@ -884,6 +928,7 @@ async function loadData(year) {
 async function upd(tab, spId, field, value) {
   const item = appData[tab].find(x=>x._spId===spId);
   if (!item) return;
+  const prevValue = item[field];
   item[field] = value;
   updateAll();
   const spField = (F[tab]||{})[field] || field;
@@ -891,7 +936,120 @@ async function upd(tab, spId, field, value) {
   try {
     await spPatch(LISTS[tab], spId, { [spField]: spValue });
     toast('Saved ✓','ok');
+    // Fire Teams notification when an Auditor Request is resolved
+    if(tab==='auditorRequests' && field==='status' && value==='Resolved' && prevValue!=='Resolved'){
+      fireResolvedNotif(item);
+    }
   } catch(e) { toast('Save failed: '+e.message,'err'); }
+}
+
+// ════════════════════════════════════════════════
+// WEBHOOK SYSTEM — Auditor notification on Resolved
+// ════════════════════════════════════════════════
+const WEBHOOK_KEY = 'st_audit_webhooks';
+function loadWebhooks(){ try { return JSON.parse(localStorage.getItem(WEBHOOK_KEY)||'{}'); } catch(e){ return {}; } }
+function saveWebhooks(){
+  const url = (document.getElementById('wh-auditor-url')||{}).value?.trim()||'';
+  localStorage.setItem(WEBHOOK_KEY, JSON.stringify({ auditor: url }));
+  updateWebhookDot(url);
+  toast('Webhook URL saved.','ok');
+}
+function updateWebhookDot(url){
+  const dot = document.getElementById('wh-dot');
+  if(dot) dot.className = 'wh-dot ' + (url ? 'wh-ok' : 'wh-empty');
+}
+async function testWebhook(){
+  const url = (document.getElementById('wh-auditor-url')||{}).value?.trim();
+  if(!url){ toast('Paste a webhook URL first.','err'); return; }
+  try {
+    await sendAdaptiveCard(url, '🔔 Test notification', 'StudyTrust Audit Tracker', 'Webhook connection confirmed. Auditors will receive notifications here when requests are resolved.');
+    toast('Test card sent. Check the Teams channel.','ok');
+  } catch(e){ toast('Webhook test failed: '+e.message,'err'); }
+}
+async function sendAdaptiveCard(webhookUrl, title, subtitle, body){
+  const payload = {
+    type: 'message',
+    attachments: [{
+      contentType: 'application/vnd.microsoft.card.adaptive',
+      content: {
+        '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json',
+        type: 'AdaptiveCard', version: '1.4',
+        body: [
+          { type:'TextBlock', size:'Medium', weight:'Bolder', text: title, color:'Accent' },
+          { type:'TextBlock', text: subtitle, isSubtle: true, spacing:'None' },
+          { type:'TextBlock', text: body, wrap: true, spacing:'Small' }
+        ],
+        actions: [{
+          type: 'Action.OpenUrl', title: 'Open Audit Tracker',
+          url: 'https://studytrust1974-art.github.io/studytrust-apps/StudyTrust_Audit_Dashboard.html'
+        }]
+      }
+    }]
+  };
+  const r = await fetch(webhookUrl, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  if(!r.ok) throw new Error('HTTP '+r.status);
+}
+async function fireResolvedNotif(req){
+  const wh = loadWebhooks();
+  if(!wh.auditor) return;
+  const links = (appData.responseLinks||[]).filter(x=>x.requestId===req._spId);
+  const linkCount = links.length;
+  const linkSummary = linkCount > 0
+    ? linkCount + ' response document' + (linkCount>1?'s have':' has') + ' been provided.'
+    : 'A response has been provided.';
+  const body = `Your request has been resolved by ${req.assignedTo||'the StudyTrust team'}.
+${linkSummary}
+Request: ${req.description||''}`;
+  try {
+    await sendAdaptiveCard(wh.auditor, '✅ Request Resolved', 'StudyTrust Audit Tracker', body);
+  } catch(e){ console.warn('Webhook fire failed:', e.message); }
+}
+function loadWebhookUI(){
+  const wh = loadWebhooks();
+  const inp = document.getElementById('wh-auditor-url');
+  if(inp) inp.value = wh.auditor||'';
+  updateWebhookDot(wh.auditor||'');
+}
+
+// ════════════════════════════════════════════════
+// RESPONSE LINKS — multiple documents per request
+// ════════════════════════════════════════════════
+async function addResponseLink(requestSpId){
+  const item = { requestId: requestSpId, docName:'', docLink:'', uploadedBy: userName||'', uploadedDate: td(), notes:'' };
+  try {
+    const cr = await spPost(LISTS.responseLinks, toSpFields('responseLinks', item, currentYear));
+    item._spId = cr.id;
+    appData.responseLinks.push(item);
+    renderAudReqs();
+    toast('Response row added.','ok');
+  } catch(e){ toast('Failed to add response: '+e.message,'err'); }
+}
+async function updResponseLink(spId, field, value){
+  const item = appData.responseLinks.find(x=>x._spId===spId);
+  if(!item) return;
+  item[field] = value;
+  const spField = (F.responseLinks||{})[field] || field;
+  const spValue = spWriteValue(field, value, item);
+  try {
+    await spPatch(LISTS.responseLinks, spId, { [spField]: spValue });
+    toast('Saved ✓','ok');
+  } catch(e){ toast('Save failed: '+e.message,'err'); }
+}
+async function deleteResponseLink(spId, requestSpId){
+  if(!confirm('Remove this response document?')) return;
+  try {
+    await spDeleteItem(LISTS.responseLinks, spId);
+    appData.responseLinks = appData.responseLinks.filter(x=>x._spId!==spId);
+    renderAudReqs();
+    toast('Response removed.','ok');
+  } catch(e){ toast('Remove failed: '+e.message,'err'); }
+}
+function uploadResponseFile(requestSpId, rlSpId){
+  const inp = document.getElementById('file-upload-input');
+  inp.dataset.tab = '__responseLink';
+  inp.dataset.spid = rlSpId;
+  inp.dataset.reqid = requestSpId;
+  inp.click();
 }
 
 // ════════════════════════════════════════════════
@@ -1288,6 +1446,32 @@ async function handleFileUpload(input) {
   const item = (appData[tab]||[]).find(r => r._spId === spId);
   if (!item) { toast('Row not found.','err'); input.value=''; return; }
 
+  // Response link upload — routed to Auditor Requests folder
+  if(tab === '__responseLink') {
+    const rlSpId = input.dataset.spid;
+    const rlItem = appData.responseLinks.find(x=>x._spId===rlSpId);
+    if(!rlItem){ toast('Response row not found.','err'); input.value=''; return; }
+    const libName = 'Audit ' + currentYear;
+    const folderPath = 'Auditor Requests';
+    const fileName = file.name;
+    toast('Uploading ' + fileName + ' …','ok');
+    try {
+      const token = await getToken();
+      const driveId = await getDriveId(libName);
+      const sid = await getSiteId();
+      const url = `${GRAPH_BASE}/sites/${sid}/drives/${driveId}/root:/${encodeURIComponent(folderPath)}/${encodeURIComponent(fileName)}:/content`;
+      const r = await fetch(url, { method:'PUT', headers:{'Authorization':'Bearer '+token,'Content-Type':file.type||'application/octet-stream'}, body: await file.arrayBuffer() });
+      if(!r.ok){ const e=await r.json().catch(()=>({})); throw new Error(e?.error?.message||'HTTP '+r.status); }
+      const result = await r.json();
+      rlItem.docLink = result.webUrl;
+      rlItem.docName = fileName.replace(/\.[^.]+$/,'');
+      await updResponseLink(rlSpId, 'docLink', rlItem.docLink);
+      await updResponseLink(rlSpId, 'docName', rlItem.docName);
+      renderAudReqs(); toast('Uploaded: ' + fileName,'ok');
+    } catch(e){ toast('Upload failed: '+e.message,'err'); }
+    input.value=''; return;
+  }
+
   const cat = item.docName;
   const catDef = DOC_CATEGORIES.find(c => c.label === cat);
   if (!catDef) {
@@ -1507,17 +1691,76 @@ function renderRegister(){
 
 function renderAudReqs(){
   const body=document.getElementById('body-aud-requests'); if(!body) return;
-  body.innerHTML=appData.auditorRequests.map((r,i)=>`<tr>
-    <td class="n">${i+1}</td><td style="white-space:nowrap;color:#666">${esc(r.date||'')}</td>
-    <td>${esc(r.requestedBy||'')}</td>
-    <td class="dc"><input type="text" class="ie it" style="width:100%" value="${esc(r.description||'')}" onchange="upd('auditorRequests','${r._spId}','description',this.value)" title="${esc(r.description||'')}"></td>
-    <td><span class="${r.urgency==='Urgent'?'bl':r.urgency==='High'?'ni-badge req':''}">${esc(r.urgency||'Normal')}</span></td>
-    <td>${reqSelFld(r._spId,r.status||'Open')}</td>
-    <td>${fld('auditorRequests',r._spId,'assignedTo',r.assignedTo,'text','85px')}</td>
-    <td>${fld('auditorRequests',r._spId,'dateResolved',r.dateResolved,'date')}</td>
-    <td>${fld('auditorRequests',r._spId,'responseLink',r.responseLink,'url','108px')}</td>
-    <td>${fld('auditorRequests',r._spId,'notes',r.notes,'text','115px')}</td>
-  </tr>`).join('');
+  const rows = appData.auditorRequests;
+
+  body.innerHTML = rows.map((r,i) => {
+    const links = (appData.responseLinks||[]).filter(x=>x.requestId===r._spId);
+    const linkCount = links.length;
+    const resolved = ['Resolved','Closed'].includes(r.status);
+
+    // Build the response documents sub-panel
+    const linkRows = links.map(lk=>`
+      <div class="rl-row" style="display:flex;align-items:center;gap:6px;margin-bottom:5px;flex-wrap:wrap">
+        <input type="text" class="ie it" style="flex:2;min-width:120px;font-size:11px" placeholder="Document name"
+          value="${esc(lk.docName||'')}" onchange="updResponseLink('${lk._spId}','docName',this.value)" title="${esc(lk.docName||'')}">
+        <input type="url" class="ie il" style="flex:3;min-width:150px;font-size:11px" placeholder="Document URL"
+          value="${esc(lk.docLink||'')}" onchange="updResponseLink('${lk._spId}','docLink',this.value)" title="${esc(lk.docLink||'')}">
+        ${lk.docLink?`<a class="lb" href="${esc(lk.docLink)}" target="_blank" style="font-size:11px">📄</a>`:''}
+        <button class="btn btn-sm" style="font-size:10px;padding:2px 5px;background:var(--am-bg);color:#7a4400;border-color:#ef9f27"
+          onclick="uploadResponseFile('${r._spId}','${lk._spId}')">⬆ Upload</button>
+        <button class="btn btn-sm" style="font-size:10px;padding:2px 5px;color:#c62828;border-color:#e57373"
+          onclick="deleteResponseLink('${lk._spId}','${r._spId}')">✕</button>
+      </div>`).join('');
+
+    const subPanel = `
+      <tr id="sp-${r._spId}" style="display:none">
+        <td colspan="10" style="padding:0">
+          <div style="background:#f0f6fb;border-left:3px solid var(--st);padding:10px 14px;font-size:12px">
+            <div style="font-weight:700;color:var(--st);margin-bottom:7px">
+              📎 Response Documents for request #${i+1}
+              <span style="font-weight:400;color:#666;margin-left:6px">${linkCount} document${linkCount!==1?'s':''}</span>
+            </div>
+            <div id="rl-rows-${r._spId}">${linkRows||'<span style="color:#999;font-size:11px">No documents added yet. Click + Add Document below.</span>'}</div>
+            <div style="margin-top:8px">
+              <button class="btn btn-sm btn-sec" style="font-size:11px" onclick="addResponseLink('${r._spId}')">+ Add Document</button>
+              ${resolved?'<span style="font-size:11px;color:var(--ok-tx);margin-left:8px">✅ Resolved</span>':''}
+            </div>
+            <div style="font-size:10px;color:#999;margin-top:6px">
+              Notes: <input type="text" class="ie it" style="width:300px;font-size:11px" placeholder="Internal note on this request…"
+                value="${esc(r.notes||'')}" onchange="upd('auditorRequests','${r._spId}','notes',this.value)">
+            </div>
+          </div>
+        </td>
+      </tr>`;
+
+    const badgeCls = r.urgency==='Urgent'?'bl':r.urgency==='High'?'ni-badge req':'';
+    const mainRow = `<tr class="aud-req-row" onclick="toggleSubPanel('${r._spId}')" style="cursor:pointer" title="Click to expand response documents">
+      <td class="n">${i+1}</td>
+      <td style="white-space:nowrap;color:#666;font-size:11px">${esc(r.date||'')}</td>
+      <td style="font-size:11px">${esc(r.requestedBy||'')}</td>
+      <td class="dc" onclick="event.stopPropagation()">
+        <input type="text" class="ie it" style="width:100%" value="${esc(r.description||'')}"
+          onchange="upd('auditorRequests','${r._spId}','description',this.value)" title="${esc(r.description||'')}">
+      </td>
+      <td><span class="${badgeCls}">${esc(r.urgency||'Normal')}</span></td>
+      <td onclick="event.stopPropagation()">${reqSelFld(r._spId,r.status||'Open')}</td>
+      <td onclick="event.stopPropagation()">${fld('auditorRequests',r._spId,'assignedTo',r.assignedTo,'text','80px')}</td>
+      <td onclick="event.stopPropagation()">${fld('auditorRequests',r._spId,'dateResolved',r.dateResolved,'date')}</td>
+      <td style="text-align:center">
+        <span class="${linkCount?'lb':'lb empty'}" style="cursor:pointer" onclick="event.stopPropagation();toggleSubPanel('${r._spId}')">
+          ${linkCount?'📎 '+linkCount+' doc'+(linkCount!==1?'s':''):'No docs'}
+        </span>
+      </td>
+      <td style="text-align:center;font-size:16px;color:var(--st)">▾</td>
+    </tr>`;
+
+    return mainRow + subPanel;
+  }).join('');
+}
+
+function toggleSubPanel(spId){
+  const row = document.getElementById('sp-'+spId);
+  if(row) row.style.display = row.style.display==='none' ? '' : 'none';
 }
 
 // ── AUDITOR VIEW ──
@@ -1526,7 +1769,7 @@ function renderAudOverview(){
   const newDocs=all.filter(x=>isNew(x)&&x.docLink);
   const ready=all.filter(x=>x.status==='Completed'&&x.docLink).length;
   const pend=all.filter(x=>x.status!=='Completed').length;
-  const pReqs=appData.auditorRequests.filter(x=>x.status==='Pending').length;
+  const pReqs=appData.auditorRequests.filter(x=>x.status==='Open'||x.status==='Submitted'||x.status==='In Progress').length;
   document.getElementById('aud-cards').innerHTML=`
     <div class="card c-ok"><div class="cl">Documents Ready</div><div class="cv">${ready}</div><div class="cs">With file links</div></div>
     <div class="card c-prog"><div class="cl">Pending</div><div class="cv">${pend}</div><div class="cs">Not yet uploaded</div></div>
@@ -1581,7 +1824,12 @@ function renderMyReqs(){
       <td style="padding:6px 8px;max-width:230px">${esc(r.description||'')}</td>
       <td style="padding:6px 8px"><span class="${r.urgency==='Urgent'?'bl':''}">${esc(r.urgency)}</span></td>
       <td style="padding:6px 8px"><span class="sb sb-${(r.status||'').replace(/\s+/g,'-')}">${esc(r.status)}</span></td>
-      <td style="padding:6px 8px">${r.responseLink?`<a href="${esc(r.responseLink)}" target="_blank" class="lb">📄 View</a>`:esc(r.notes||'Awaiting response')}</td>
+      <td style="padding:6px 8px">${(()=>{
+        const rlinks=(appData.responseLinks||[]).filter(x=>x.requestId===r._spId);
+        if(rlinks.length) return rlinks.map(lk=>lk.docLink?`<a href="${esc(lk.docLink)}" target="_blank" class="lb" style="display:block;margin-bottom:3px">📄 ${esc(lk.docName||'Document')}</a>`:'').join('');
+        if(r.responseLink) return `<a href="${esc(r.responseLink)}" target="_blank" class="lb">📄 View</a>`;
+        return '<span style="color:#888;font-size:11px">Awaiting response</span>';
+      })()}</td>
     </tr>`).join('')
     +'</tbody></table></div>';
 }
@@ -1594,7 +1842,7 @@ function cntS(arr){return{ok:arr.filter(x=>x.status==='Completed').length,ip:arr
 function updateDash(){
   const all=[...appData.planning,...appData.execution,...appData.recommendations];
   const c=cntS(all), pct=c.tot?Math.round(c.ok/c.tot*100):0;
-  const lateAll=all.filter(x=>isLate(x)), pReqs=(appData.auditorRequests||[]).filter(x=>x.status==='Pending').length;
+  const lateAll=all.filter(x=>isLate(x)), pReqs=(appData.auditorRequests||[]).filter(x=>['Open','Submitted','In Progress'].includes(x.status)).length;
   document.getElementById('dash-cards').innerHTML=`
     <div class="card c-st"><div class="cl">Total Items</div><div class="cv">${c.tot}</div><div class="cs">All phases</div></div>
     <div class="card c-ok"><div class="cl">Completed</div><div class="cv">${c.ok}</div><div class="cs">${pct}%</div></div>
@@ -1629,7 +1877,7 @@ function updateNotif(){
   const all=[...appData.planning,...appData.execution,...appData.recommendations];
   const items=[];let count=0;
   if(currentRole==='admin'){
-    const late=all.filter(x=>isLate(x)),reqs=(appData.auditorRequests||[]).filter(x=>x.status==='Pending');
+    const late=all.filter(x=>isLate(x)),reqs=(appData.auditorRequests||[]).filter(x=>['Open','Submitted','In Progress'].includes(x.status));
     count=late.length+reqs.length;
     late.slice(0,5).forEach(x=>items.push({type:'late',text:(x.desc||x.weakness||'').substring(0,58),meta:'Past compliance date — '+x.dueDate}));
     reqs.slice(0,5).forEach(x=>items.push({type:'req',text:(x.description||'').substring(0,58),meta:'From '+x.requestedBy+' — '+x.date}));
@@ -1641,7 +1889,7 @@ function updateNotif(){
   nc.style.display=count>0?'flex':'none'; nc.textContent=count>99?'99+':count;
   document.getElementById('notif-title').textContent='Notifications ('+count+')';
   document.getElementById('notif-list').innerHTML=items.length?items.map(it=>`<div class="ni"><div class="ni-title"><span class="ni-badge ${it.type}">${it.type==='late'?'LATE':it.type==='new'?'NEW':'REQUEST'}</span>${esc(it.text)}…</div><div class="ni-meta">${esc(it.meta)}</div></div>`).join(''):'<div style="padding:18px;text-align:center;color:#888;font-size:12px">No notifications</div>';
-  document.querySelectorAll('[data-req]').forEach(el=>el.textContent=(appData.auditorRequests||[]).filter(x=>x.status==='Pending').length);
+  document.querySelectorAll('[data-req]').forEach(el=>el.textContent=(appData.auditorRequests||[]).filter(x=>['Open','Submitted','In Progress'].includes(x.status)).length);
 }
 
 function toggleNotif(){document.getElementById('notif-panel').classList.toggle('open');}
@@ -1775,7 +2023,7 @@ async function loadAndRender(){
   await loadYears();
   currentYear=years[0]?.id||'2025';
   await loadData(currentYear);
-  buildTabBar(); renderAll();
+  buildTabBar(); renderAll(); loadWebhookUI();
   document.getElementById('hdr-sub').textContent=currentYearCfg.label||'FY '+currentYear+' Audit';
   toast('Connected to SharePoint ✓','ok');
 }
