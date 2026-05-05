@@ -6,15 +6,25 @@
 <title>StudyTrust Audit Tracker</title>
 <!--
   ════════════════════════════════════════════════════════
-  STUDYTRUST AUDIT TRACKER  v4.2  — Microsoft Graph Edition
+  STUDYTRUST AUDIT TRACKER  v4.3  — Microsoft Graph Edition
   Works from: locally, SharePoint, any web host
 
+  Changes since v4.2:
+   • DocName column relabelled "Document Category" — is now a
+     dropdown on Planning, Execution, Recommendations, Sampling.
+   • Notes column relabelled "Document Name" (actual file name).
+   • Notes column added to Sampling tab.
+   • File upload direct from dashboard to correct SharePoint folder.
+   • Auditor Request status flow: Open > Submitted > In Progress >
+     Resolved > Closed.
+   • Conversational workflow instructions in Auditor Requests.
+   • Import Recommendations skips Closed items.
+   • Remove Duplicates function added to header toolbar.
+   • "HR" replaced with "Personnel"; em dashes removed.
+
   Changes since v4.1:
-   • Description field is now editable on Recommendations
-     (Weakness + Recommendation), Sampling, Doc Register and
-     Auditor Requests tabs. Edits save back to SharePoint.
-     (Date and Requester fields on Auditor Requests stay
-     read-only to preserve the request audit trail.)
+   • Description field editable on Recommendations, Sampling,
+     Doc Register and Auditor Requests.
 
   Changes since v4:
    • Hyperlink columns (DocLink) handled correctly on read AND write
@@ -178,6 +188,7 @@ body{background:var(--bg);color:#1a1a1a;font-size:13px;min-height:100vh}
 .fb input[type=date]{flex:0 0 auto;min-width:130px;max-width:140px}
 .fb-lbl{font-size:11px;color:#555;font-weight:600;margin-left:4px}
 .fb-sep{font-size:10px;color:#888}
+.instr-body{display:none}.instr-body.open{display:block}
 
 /* ── TABLE ── */
 .tw{overflow-x:auto;border-radius:var(--rad-lg);border:.5px solid var(--border);background:#fff}
@@ -309,13 +320,14 @@ td.dc{min-width:170px;max-width:270px}
     <button class="hdr-btn" onclick="exportBackup()">⬇ Backup</button>
     <button class="hdr-btn" onclick="openM('m-restore')">⬆ Restore</button>
     <button class="hdr-btn" onclick="openM('m-guide')">📋 Column Guide</button>
+    <button class="hdr-btn" onclick="removeDuplicates()">🧹 Remove Duplicates</button>
     <button class="hdr-btn" onclick="window.print()">🖨</button>
   </div>
   <div class="deadline-pill" id="dl-pill"><strong id="dl-val">—</strong><span id="dl-lbl">days to deadline</span></div>
 </div>
 
 <!-- ROLE BANNER -->
-<div id="role-banner" class="admin-mode">Admin Mode — Changes save live to SharePoint</div>
+<div id="role-banner" class="admin-mode">Admin Mode - Changes save live to SharePoint</div>
 
 <!-- NOTIFICATION PANEL -->
 <div id="notif-panel">
@@ -369,7 +381,7 @@ td.dc{min-width:170px;max-width:270px}
     <div class="tw"><table><thead><tr>
       <th class="n">#</th><th style="min-width:195px">Description</th><th>Compliance Date</th>
       <th>Date Uploaded</th><th>Status</th><th>Responsible</th><th>Shadower</th>
-      <th>Document Name</th><th>Document Link (URL)</th><th>Notes</th>
+      <th>Document Category</th><th>Upload / Link</th><th>Document Name</th>
     </tr></thead><tbody id="body-planning"></tbody></table></div>
   </div>
 
@@ -395,7 +407,7 @@ td.dc{min-width:170px;max-width:270px}
     <div class="tw"><table><thead><tr>
       <th class="n">#</th><th style="min-width:195px">Description</th><th>Compliance Date</th>
       <th>Date Uploaded</th><th>Status</th><th>Responsible</th><th>Shadower</th>
-      <th>Document Name</th><th>Document Link (URL)</th><th>Notes</th>
+      <th>Document Category</th><th>Upload / Link</th><th>Document Name</th>
     </tr></thead><tbody id="body-execution"></tbody></table></div>
   </div>
 
@@ -415,7 +427,7 @@ td.dc{min-width:170px;max-width:270px}
     <div class="tw"><table><thead><tr>
       <th class="n">#</th><th style="min-width:155px">Weakness</th><th style="min-width:175px">Recommendation</th>
       <th>Compliance Date</th><th>Status</th><th>Responsible</th><th>Shadower</th>
-      <th>Document Name</th><th>Document Link</th><th>Comments</th>
+      <th>Document Category</th><th>Upload / Link</th><th>Document Name</th>
     </tr></thead><tbody id="body-recommendations"></tbody></table></div>
   </div>
 
@@ -424,7 +436,7 @@ td.dc{min-width:170px;max-width:270px}
     <div class="sh"><h2>Sampling</h2><button class="btn btn-p" onclick="addRow('sampling')">+ Add</button></div>
     <div class="tw"><table><thead><tr>
       <th class="n">#</th><th>Description</th><th>Requested By</th><th>Date Requested</th>
-      <th>Date Uploaded</th><th>Status</th><th>Responsible</th><th>Document Name</th><th>Document Link</th>
+      <th>Date Uploaded</th><th>Status</th><th>Responsible</th><th>Document Category</th><th>Upload / Link</th><th>Document Name</th>
     </tr></thead><tbody id="body-sampling"></tbody></table></div>
   </div>
 
@@ -449,6 +461,27 @@ td.dc{min-width:170px;max-width:270px}
   <!-- AUDITOR REQUESTS (admin view) -->
   <div id="sec-aud-requests" class="section">
     <div class="sh"><h2>Auditor Document Requests</h2><button class="btn" onclick="exportCsv('auditorRequests')">CSV</button></div>
+
+    <div class="dc2" style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong style="color:var(--st);font-size:13px">How this tab works</strong>
+        <button class="btn btn-sm" style="font-size:10px" onclick="this.closest('.dc2').querySelector('.instr-body').classList.toggle('open')">Show / Hide</button>
+      </div>
+      <div class="instr-body" style="font-size:12px;line-height:1.7;color:var(--tx)">
+        <p style="margin:0 0 8px"><strong>What this tab is for.</strong> The Planning and Execution tabs cover everything StudyTrust prepared in advance. But once TPCSA is in the room, they will almost always need something that was not on the original checklist. This tab is where those additional requests land and are tracked from start to resolution. Every request the auditor submits arrives here immediately.</p>
+        <p style="margin:0 0 8px"><strong>How it connects to what came before.</strong> If a document was partially covered in Planning or Execution but the auditor needs a different version or a specific period, resolve it here and note the variation in the Notes field. There is no need to duplicate the entry across both tabs.</p>
+        <p style="margin:0 0 8px"><strong>The workflow, step by step.</strong></p>
+        <ol style="margin:0 0 8px;padding-left:20px">
+          <li style="margin-bottom:5px"><strong>Open.</strong> A new request arrives from the auditor. The status is Open. This is your notification that something is needed.</li>
+          <li style="margin-bottom:5px"><strong>Assign it.</strong> Click the Assigned To field and type the name of the person who can source or prepare that document. Change the status to In Progress. This tells the auditors the request has been received and someone is on it.</li>
+          <li style="margin-bottom:5px"><strong>The auditor confirms.</strong> Before the assigned person starts working, the auditor should set their request to Submitted so it is clear the request is complete and final. If they do not, you can move it to In Progress directly.</li>
+          <li style="margin-bottom:5px"><strong>Prepare and upload the document.</strong> Work with the assigned person to gather the document. Use the Upload button on any row to send the file directly to the <em>Audit {year}/Auditor Requests/</em> folder in SharePoint. The link fills in automatically.</li>
+          <li style="margin-bottom:5px"><strong>Resolve it.</strong> Set the status to Resolved and enter today's date in Date Resolved. The auditor receives a Teams notification with the link. They do not need to keep checking back.</li>
+          <li style="margin-bottom:5px"><strong>Close it.</strong> Once the auditor confirms the document meets their need, the request is set to Closed. Closed requests remain visible for the audit record but are visually distinct.</li>
+        </ol>
+        <p style="margin:0"><strong>How it connects to what comes next.</strong> After the audit, review any requests that were raised repeatedly or point to a gap in the standard checklist. These belong in the Recommendations tab so they become Planning items for next year and the same gap is not found again.</p>
+      </div>
+    </div>
     <div class="tw"><table><thead><tr>
       <th class="n">#</th><th>Date</th><th>From</th><th style="min-width:190px">Description</th>
       <th>Urgency</th><th>Status</th><th>Assigned To</th><th>Date Resolved</th><th>Response Link</th><th>Notes</th>
@@ -493,6 +526,7 @@ td.dc{min-width:170px;max-width:270px}
     <div id="my-req-list"></div>
   </div>
 
+<input type="file" id="file-upload-input" style="display:none" onchange="handleFileUpload(this)">
 </div><!-- /content -->
 
 <!-- ═══════════ MODALS ═══════════ -->
@@ -542,18 +576,18 @@ td.dc{min-width:170px;max-width:270px}
   <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditConfig</p>
   <div class="cg"><span>Year</span><em> Text</em> · <span>Label</span><em> Text</em> · <span>FYEnd</span><em> Date</em> · <span>Deadline</span><em> Date</em> · <span>AuditStart</span><em> Date</em> · <span>Shadower</span><em> Date</em> · <span>Firm</span><em> Text</em></div>
   <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditPlanning &amp; AuditExecution (same columns)</p>
-  <div class="cg"><span>Year</span><em> Text</em> · <span>Title</span><em> Text (built-in, no need to create)</em> · <span>DueDate</span><em> Date</em> · <span>Uploaded</span><em> Date</em> · <span>Status</span><em> Choice*</em> · <span>Responsible</span><em> Text</em> · <span>Shadower</span><em> Text</em> · <span>DocName</span><em> Text</em> · <span>DocLink</span><em> Text (paste full URL)</em> · <span>Notes</span><em> Multi-text</em></div>
+  <div class="cg"><span>Year</span><em> Text</em> · <span>Title</span><em> Text (built-in, no need to create)</em> · <span>DueDate</span><em> Date</em> · <span>Uploaded</span><em> Date</em> · <span>Status</span><em> Choice*</em> · <span>Responsible</span><em> Text</em> · <span>Shadower</span><em> Text</em> · <span>DocName</span><em> Text (stores the Document Category — dropdown in dashboard)</em> · <span>DocLink</span><em> Text or Hyperlink (filled automatically on upload)</em> · <span>Notes</span><em> Text (stores the Document Name / file name)</em></div>
   <p style="font-size:10px;color:#888;margin:3px 0 8px">*Status choices: Completed · In progress · Requires Attention · Not Started</p>
   <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditRecommendations</p>
-  <div class="cg"><span>Year</span> · <span>Weakness</span><em> Multi-text</em> · <span>Recommendation</span><em> Multi-text</em> · <span>DueDate</span><em> Date</em> · <span>Status</span><em> Choice</em> · <span>Responsible</span><em> Text</em> · <span>Shadower</span><em> Text</em> · <span>DocName</span><em> Text</em> · <span>DocLink</span><em> Text</em> · <span>Comments</span><em> Multi-text</em></div>
+  <div class="cg"><span>Year</span> · <span>Weakness</span><em> Multi-text</em> · <span>Recommendation</span><em> Multi-text</em> · <span>DueDate</span><em> Date</em> · <span>Status</span><em> Choice</em> · <span>Responsible</span><em> Text</em> · <span>Shadower</span><em> Text</em> · <span>DocName</span><em> Text (Document Category dropdown)</em> · <span>DocLink</span><em> Text or Hyperlink</em> · <span>Comments</span><em> Multi-text (Document Name)</em></div>
   <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditSampling</p>
-  <div class="cg"><span>Year</span> · <span>Title</span><em> Text (built-in, no need to create)</em> · <span>RequestedBy</span><em> Text</em> · <span>DateRequested</span><em> Date</em> · <span>Uploaded</span><em> Date</em> · <span>Status</span><em> Choice</em> · <span>Responsible</span><em> Text</em> · <span>DocName</span><em> Text</em> · <span>DocLink</span><em> Text</em></div>
+  <div class="cg"><span>Year</span> · <span>Title</span><em> Text (built-in, no need to create)</em> · <span>RequestedBy</span><em> Text</em> · <span>DateRequested</span><em> Date</em> · <span>Uploaded</span><em> Date</em> · <span>Status</span><em> Choice</em> · <span>Responsible</span><em> Text</em> · <span>DocName</span><em> Text (Document Category dropdown)</em> · <span>DocLink</span><em> Text or Hyperlink</em> · <span>Notes</span><em> Text (Document Name — ADD this column to AuditSampling)</em></div>
   <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditTeams</p>
   <div class="cg"><span>Year</span> · <span>Email</span><em> Text</em> · <span>RequestedBy</span><em> Text</em> · <span>DateRequested</span><em> Date</em> · <span>DateConnected</span><em> Date</em> · <span>Status</span><em> Choice</em> · <span>Responsible</span><em> Text</em> · <span>Remarks</span><em> Text</em></div>
   <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditRegister</p>
   <div class="cg"><span>Year</span> · <span>DateRequested</span><em> Date</em> · <span>Document</span><em> Multi-text</em> · <span>Requester</span><em> Text</em> · <span>RequestedFrom</span><em> Text</em> · <span>Submitter</span><em> Text</em> · <span>DateSubmitted</span><em> Date</em> · <span>DocName</span><em> Text</em> · <span>DocLink</span><em> Text</em> · <span>Comment</span><em> Multi-text</em></div>
   <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditRequests</p>
-  <div class="cg"><span>Year</span> · <span>RequestDate</span><em> Date</em> · <span>RequestedBy</span><em> Text</em> · <span>Description</span><em> Multi-text</em> · <span>Urgency</span><em> Choice (Normal·High·Urgent)</em> · <span>Status</span><em> Choice (Pending·In progress·Resolved)</em> · <span>AssignedTo</span><em> Text</em> · <span>DateResolved</span><em> Date</em> · <span>ResponseLink</span><em> Text</em> · <span>Notes</span><em> Multi-text</em></div>
+  <div class="cg"><span>Year</span> · <span>RequestDate</span><em> Date</em> · <span>RequestedBy</span><em> Text</em> · <span>Description</span><em> Multi-text</em> · <span>Urgency</span><em> Choice (Normal·High·Urgent)</em> · <span>Status</span><em> Choice (Open · Submitted · In Progress · Resolved · Closed)</em> · <span>AssignedTo</span><em> Text</em> · <span>DateResolved</span><em> Date</em> · <span>ResponseLink</span><em> Text</em> · <span>Notes</span><em> Multi-text</em></div>
   <div class="ma"><button class="btn btn-p" onclick="closeM('m-guide')">Close</button></div>
 </div></div>
 
@@ -600,7 +634,7 @@ const F = {
   planning:        { desc:'Title', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', notes:'Notes' },
   execution:       { desc:'Title', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', notes:'Notes' },
   recommendations: { weakness:'Title', recommendation:'Recommendation', dueDate:'DueDate', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', comments:'Comments' },
-  sampling:        { desc:'Title', requestedBy:'RequestedBy', dateRequested:'DateRequested', uploaded:'Uploaded', status:'Status', responsible:'Responsible', docName:'DocName', docLink:'DocLink' },
+  sampling:        { desc:'Title', requestedBy:'RequestedBy', dateRequested:'DateRequested', uploaded:'Uploaded', status:'Status', responsible:'Responsible', docName:'DocName', docLink:'DocLink', notes:'Notes' },
   teams:           { email:'Email', requestedBy:'RequestedBy', dateRequested:'DateRequested', dateConnected:'DateConnected', status:'Status', responsible:'Responsible', remarks:'Remarks' },
   register:        { dateRequested:'DateRequested', doc:'Title', requester:'Requester', requestedFrom:'RequestedFrom', submitter:'Submitter', dateSubmitted:'DateSubmitted', docName:'DocName', docLink:'DocLink', comment:'Comment' },
   auditorRequests: { date:'RequestDate', requestedBy:'RequestedBy', description:'Title', urgency:'Urgency', status:'Status', assignedTo:'AssignedTo', dateResolved:'DateResolved', responseLink:'ResponseLink', notes:'Notes' },
@@ -762,6 +796,40 @@ function fromSpItem(tab, sp) {
 // STATE
 // ════════════════════════════════════════════════
 const STATUSES = ['Completed','In progress','Requires Attention','Not Started'];
+const REQ_STATUSES = ['Open','Submitted','In Progress','Resolved','Closed'];
+
+// Document categories with their SharePoint upload destinations.
+// Library "{year}" is replaced at runtime with currentYear (e.g. "Audit 2025").
+const DOC_CATEGORIES = [
+  {label:'Legal and Registration',         lib:'Audit Standing Documents', path:'01 Legal and Registration'},
+  {label:'Organisational',                 lib:'Audit Standing Documents', path:'02 Organisational'},
+  {label:'Bank and Investment Accounts',   lib:'Audit Standing Documents', path:'03 Bank and Investment Accounts'},
+  {label:'Governance and Board',           lib:'{year}', path:'Planning/01 Governance and Board'},
+  {label:'Narrative and Annual Report',    lib:'{year}', path:'Planning/02 Narrative and Annual Report'},
+  {label:'Contracts and Agreements',       lib:'{year}', path:'Planning/03 Contracts and Agreements'},
+  {label:'Finance Narratives',             lib:'{year}', path:'Planning/04 Finance Narratives'},
+  {label:'Management Accounts',            lib:'{year}', path:'Planning/05 Management Accounts'},
+  {label:'SARS',                           lib:'{year}', path:'Planning/06 SARS'},
+  {label:'Bursaries and Revenue',          lib:'{year}', path:'Planning/07 Bursaries and Revenue'},
+  {label:'Insurance',                      lib:'{year}', path:'Planning/09 Insurance'},
+  {label:'Prior Year Reference',           lib:'{year}', path:'Planning/10 Prior Year Reference'},
+  {label:'Employment Compliance',          lib:'{year}', path:'Planning/11 Employment Compliance'},
+  {label:'Bank and Investment Statements', lib:'{year}', path:'Execution/01 Bank and Investment Statements'},
+  {label:'SARS Compliance',               lib:'{year}', path:'Execution/02 SARS Compliance'},
+  {label:'Payroll and Personnel',          lib:'{year}', path:'Execution/03 Payroll and Personnel'},
+  {label:'Personnel Contracts',            lib:'{year}', path:'Execution/03 Payroll and Personnel/Personnel Contracts'},
+  {label:'Assets and Financials',          lib:'{year}', path:'Execution/04 Assets and Financials'},
+  {label:'Suppliers',                      lib:'{year}', path:'Execution/05 Suppliers'},
+  {label:'Sampling',                       lib:'{year}', path:'Execution/07 Sampling'},
+  {label:'Auditor Requests',               lib:'{year}', path:'Auditor Requests'},
+];
+
+function getCatFolder(catLabel) {
+  const c = DOC_CATEGORIES.find(x => x.label === catLabel);
+  if (!c) return '';
+  const lib = c.lib === '{year}' ? ('Audit ' + (currentYear||'')) : c.lib;
+  return lib + '/' + c.path;
+}
 let years = [], currentYear = '2025', currentRole = 'admin', currentYearCfg = {};
 let appData = { planning:[], execution:[], recommendations:[], sampling:[], teams:[], register:[], auditorRequests:[] };
 
@@ -834,10 +902,10 @@ async function addRow(tab) {
     planning:        {desc:'New item',dueDate:'',uploaded:'',status:'Not Started',responsible:'',shadower:'',docName:'',docLink:'',notes:''},
     execution:       {desc:'New item',dueDate:'',uploaded:'',status:'Not Started',responsible:'',shadower:'',docName:'',docLink:'',notes:''},
     recommendations: {weakness:'',recommendation:'',dueDate:'',status:'Not Started',responsible:'',shadower:'',docName:'',docLink:'',comments:''},
-    sampling:        {desc:'New sample',requestedBy:'',dateRequested:'',uploaded:'',status:'Not Started',responsible:'',docName:'',docLink:''},
+    sampling:        {desc:'New sample',requestedBy:'',dateRequested:'',uploaded:'',status:'Not Started',responsible:'',docName:'',docLink:'',notes:''},
     teams:           {email:'',requestedBy:'',dateRequested:'',dateConnected:'',status:'Not Started',responsible:'',remarks:''},
     register:        {dateRequested:td(),doc:'New request',requester:'',requestedFrom:'',submitter:'',dateSubmitted:'',docName:'',docLink:'',comment:''},
-    auditorRequests: {date:td(),requestedBy:'',description:'',urgency:'Normal',status:'Pending',assignedTo:'',dateResolved:'',responseLink:'',notes:''}
+    auditorRequests: {date:td(),requestedBy:'',description:'',urgency:'Normal',status:'Open',assignedTo:'',dateResolved:'',responseLink:'',notes:''}
   }[tab];
   toast('Adding…');
   try {
@@ -887,7 +955,7 @@ const PT=[
   {desc:'Revenue recognition policy',responsible:'Renias',shadower:'Phila'},
   {desc:'Expenditure/payment policy',responsible:'Phila',shadower:'Renias'},
   {desc:'Asset management policy',responsible:'Lerato',shadower:'Simon'},
-  {desc:'HR/Personnel policy',responsible:'Engelinah',shadower:'Dirk'},
+  {desc:'Personnel policy',responsible:'Engelinah',shadower:'Dirk'},
   {desc:'Procurement policy',responsible:'Alphonse',shadower:'Dirk'},
   {desc:'IT/Systems access and security policy',responsible:'Simon',shadower:'Dirk'},
   {desc:'Fraud prevention/whistleblower policy',responsible:'Dirk',shadower:'Murray'},
@@ -1035,8 +1103,12 @@ async function importRecs() {
   if(fy===ty){alert('Source and target must be different.');return;}
   setLoad('Importing recommendations…');
   try {
-    const src=await spGet(LISTS.recommendations,fy);
-    if(!src.length){alert('No recommendations in FY '+fy+'.');return;}
+    const srcAll=await spGet(LISTS.recommendations,fy);
+    const src=srcAll.filter(sp=>{
+      const r=fromSpItem('recommendations',sp);
+      return (r.status||'').toLowerCase()!=='closed';
+    });
+    if(!src.length){alert('No open recommendations in FY '+fy+' (all may be Closed).');return;}
     for(const sp of src){
       const r=fromSpItem('recommendations',sp);
       await spPost(LISTS.planning,toSpFields('planning',{desc:'[Rec FY'+fy+'] '+r.recommendation,dueDate:due||'',uploaded:'',status:'Not Started',responsible:r.responsible,shadower:r.shadower,docName:'',docLink:'',notes:'Weakness: '+r.weakness},ty));
@@ -1055,7 +1127,7 @@ async function submitRequest() {
   const desc=document.getElementById('req-desc').value.trim();
   const urg=document.getElementById('req-urgency').value;
   if(!desc){alert('Please describe what you need.');return;}
-  const item={date:td(),requestedBy:name||'Auditor',description:desc,urgency:urg,status:'Pending',assignedTo:'',dateResolved:'',responseLink:'',notes:''};
+  const item={date:td(),requestedBy:name||'Auditor',description:desc,urgency:urg,status:'Open',assignedTo:'',dateResolved:'',responseLink:'',notes:''};
   try {
     const cr=await spPost(LISTS.auditorRequests,toSpFields('auditorRequests',item,currentYear));
     item._spId=cr.id; item.id=cr.id;
@@ -1162,6 +1234,155 @@ function selFld(tab,spId,field,val){
 }
 function lBtn(name,url){return url?`<a class="lb" href="${esc(url)}" target="_blank">📄 ${esc(name||'Open')}</a>`:`<span class="lb empty">No link yet</span>`;}
 
+// Document Category dropdown with folder tooltip
+function catFld(tab, spId, val) {
+  const folder = getCatFolder(val||'');
+  const tip = folder ? 'Uploads to: '+folder : 'Select a category to see the upload destination';
+  return `<select class="ie" style="width:130px;font-size:11px" title="${esc(tip)}"
+    onchange="upd('${tab}','${spId}','docName',this.value);this.title='Uploads to: '+getCatFolder(this.value)">
+    <option value="">-- select category --</option>
+    ${DOC_CATEGORIES.map(c=>`<option value="${esc(c.label)}"${c.label===val?' selected':''}
+      title="Uploads to: ${esc(c.lib==='{year}'?'Audit '+(currentYear||''):c.lib)}/${esc(c.path)}"
+      >${esc(c.label)}</option>`).join('')}
+  </select>`;
+}
+
+// Upload button wired to the hidden file input
+function uploadBtn(tab, spId) {
+  return `<button class="btn btn-sm" style="font-size:10px;padding:2px 6px;margin-left:3px" title="Upload file directly to SharePoint" onclick="triggerUpload('${tab}','${spId}')">⬆ Upload</button>`;
+}
+
+// Auditor Requests status dropdown
+function reqSelFld(spId, val) {
+  const c = (val||'Open').replace(/\s+/g,'-');
+  return `<select class="ie is sb sb-${c}" onchange="upd('auditorRequests','${spId}','status',this.value);this.className='ie is sb sb-'+this.value.replace(/\s+/g,'-')">
+    ${REQ_STATUSES.map(s=>`<option value="${s}"${s===val?' selected':''}>${s}</option>`).join('')}
+  </select>`;
+}
+
+// ── FILE UPLOAD FROM DASHBOARD ──
+let _driveCache = {};
+
+async function getDriveId(libraryName) {
+  if (_driveCache[libraryName]) return _driveCache[libraryName];
+  const sid = await getSiteId();
+  const data = await graphFetch(`/sites/${sid}/drives`);
+  const drive = (data.value||[]).find(d => d.name === libraryName);
+  if (!drive) throw new Error(`Document library "${libraryName}" not found. Check SharePoint site contents.`);
+  _driveCache[libraryName] = drive.id;
+  return drive.id;
+}
+
+function triggerUpload(tab, spId) {
+  const inp = document.getElementById('file-upload-input');
+  inp.dataset.tab = tab;
+  inp.dataset.spid = spId;
+  inp.click();
+}
+
+async function handleFileUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const tab = input.dataset.tab;
+  const spId = input.dataset.spid;
+  const item = (appData[tab]||[]).find(r => r._spId === spId);
+  if (!item) { toast('Row not found.','err'); input.value=''; return; }
+
+  const cat = item.docName;
+  const catDef = DOC_CATEGORIES.find(c => c.label === cat);
+  if (!catDef) {
+    toast('Please select a Document Category before uploading.','err');
+    input.value=''; return;
+  }
+
+  const libName = catDef.lib === '{year}' ? ('Audit ' + currentYear) : catDef.lib;
+  const folderPath = catDef.path;
+  const fileName = file.name;
+  toast('Uploading ' + fileName + ' …','ok');
+
+  try {
+    const token = await getToken();
+    const driveId = await getDriveId(libName);
+    const sid = await getSiteId();
+    // encode path segments individually, preserve slashes
+    const encodedPath = folderPath.split('/').map(encodeURIComponent).join('/');
+    const url = `${GRAPH_BASE}/sites/${sid}/drives/${driveId}/root:/${encodedPath}/${encodeURIComponent(fileName)}:/content`;
+
+    const arrBuf = await file.arrayBuffer();
+    const resp = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Authorization': 'Bearer '+token, 'Content-Type': file.type||'application/octet-stream' },
+      body: arrBuf
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(()=>({}));
+      throw new Error(err?.error?.message||'HTTP '+resp.status);
+    }
+    const result = await resp.json();
+    const fileUrl = result.webUrl;
+
+    // Auto-set link and document name
+    item.docLink = fileUrl;
+    if (!item.notes) item.notes = fileName.replace(/\.[^.]+$/,'');
+    await upd(tab, spId, 'docLink', fileUrl);
+    if (item.notes) await upd(tab, spId, 'notes', item.notes);
+    renderAll();
+    toast('Uploaded and linked: ' + fileName,'ok');
+  } catch(e) { toast('Upload failed: '+e.message,'err'); }
+  input.value='';
+}
+
+// ── REMOVE DUPLICATES ──
+async function removeDuplicates() {
+  const keyMap = {
+    planning:'desc', execution:'desc', recommendations:'weakness',
+    sampling:'desc', register:'doc', auditorRequests:'description'
+  };
+  let toDelete = [];
+  for (const [tab, key] of Object.entries(keyMap)) {
+    const items = appData[tab]||[];
+    const groups = {};
+    for (const item of items) {
+      const k = (item[key]||'').trim().toLowerCase();
+      if (!k) continue;
+      if (!groups[k]) groups[k] = [];
+      groups[k].push(item);
+    }
+    for (const group of Object.values(groups)) {
+      if (group.length < 2) continue;
+      const scored = group.map(item => ({
+        item, tab,
+        score: Object.values(item).filter(v=>v&&v!==''&&v!=='_spId').length
+      }));
+      scored.sort((a,b)=>b.score-a.score);
+      for (let i=1; i<scored.length; i++) toDelete.push(scored[i]);
+    }
+  }
+  if (!toDelete.length) { toast('No duplicates found across any tab.','ok'); return; }
+  if (!confirm(`Found ${toDelete.length} duplicate row${toDelete.length>1?'s':''} across all tabs.\n\nThe most complete record of each will be kept.\n\nDelete duplicates now?`)) return;
+  let ok=0, fail=0;
+  for (const d of toDelete) {
+    try { await spDeleteItem(LISTS[d.tab], d.item._spId); ok++; }
+    catch(e) { fail++; console.warn('Delete failed:', e.message); }
+  }
+  const msg = `Removed ${ok} duplicate${ok!==1?'s':''}${fail?' ('+fail+' failed - refresh and retry)':'.'}`;
+  toast(msg, ok>0?'ok':'err');
+  if (ok>0) { await loadData(currentYear); renderAll(); }
+}
+
+async function spDeleteItem(listName, spId) {
+  const sid = await getSiteId();
+  const token = await getToken();
+  const r = await fetch(`${GRAPH_BASE}/sites/${sid}/lists/${listName}/items/${spId}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer '+token }
+  });
+  if (r.status !== 204 && !r.ok) {
+    const err = await r.json().catch(()=>({}));
+    throw new Error(err?.error?.message||'HTTP '+r.status);
+  }
+}
+
 // ════════════════════════════════════════════════
 // RENDER FUNCTIONS
 // ════════════════════════════════════════════════
@@ -1181,8 +1402,8 @@ function renderPE(tab){
       <td>${selFld(tab,r._spId,'status',r.status)}</td>
       <td>${fld(tab,r._spId,'responsible',r.responsible,'text','78px')}</td>
       <td>${fld(tab,r._spId,'shadower',r.shadower,'text','78px')}</td>
-      <td>${fld(tab,r._spId,'docName',r.docName,'text','108px')}</td>
-      <td>${fld(tab,r._spId,'docLink',r.docLink,'url','115px')}</td>
+      <td>${catFld(tab,r._spId,r.docName)}</td>
+      <td>${fld(tab,r._spId,'docLink',r.docLink,'url','115px')}${uploadBtn(tab,r._spId)}</td>
       <td>${fld(tab,r._spId,'notes',r.notes,'text','115px')}</td>
     </tr>`;
   }).join('');
@@ -1202,6 +1423,7 @@ async function moveToExecution(spId){
     execFields[F.execution.shadower]=item.shadower||null;
     execFields[F.execution.docName]=item.docName||null;
     execFields[F.execution.docLink]=item.docLink||null;
+    execFields[F.execution.docName]=item.docName||null;
     execFields[F.execution.notes]=(item.notes?item.notes+' ':'')+'[Moved from Planning]';
     execFields[F.execution.status]='Not Started';
     execFields['Year']=currentYear;
@@ -1230,8 +1452,8 @@ function renderRecs(){
       <td>${selFld('recommendations',r._spId,'status',r.status)}</td>
       <td>${fld('recommendations',r._spId,'responsible',r.responsible,'text','78px')}</td>
       <td>${fld('recommendations',r._spId,'shadower',r.shadower,'text','78px')}</td>
-      <td>${fld('recommendations',r._spId,'docName',r.docName,'text','108px')}</td>
-      <td>${fld('recommendations',r._spId,'docLink',r.docLink,'url','108px')}</td>
+      <td>${catFld('recommendations',r._spId,r.docName)}</td>
+      <td>${fld('recommendations',r._spId,'docLink',r.docLink,'url','108px')}${uploadBtn('recommendations',r._spId)}</td>
       <td>${fld('recommendations',r._spId,'comments',r.comments,'text','125px')}</td>
     </tr>`;
   }).join('');
@@ -1248,8 +1470,9 @@ function renderSampling(){
     <td>${fld('sampling',r._spId,'uploaded',r.uploaded,'date')}</td>
     <td>${selFld('sampling',r._spId,'status',r.status)}</td>
     <td>${fld('sampling',r._spId,'responsible',r.responsible,'text','78px')}</td>
-    <td>${fld('sampling',r._spId,'docName',r.docName,'text','108px')}</td>
-    <td>${fld('sampling',r._spId,'docLink',r.docLink,'url','108px')}</td>
+    <td>${catFld('sampling',r._spId,r.docName)}</td>
+    <td>${fld('sampling',r._spId,'docLink',r.docLink,'url','108px')}${uploadBtn('sampling',r._spId)}</td>
+    <td>${fld('sampling',r._spId,'notes',r.notes,'text','115px')}</td>
   </tr>`).join('');
 }
 
@@ -1289,7 +1512,7 @@ function renderAudReqs(){
     <td>${esc(r.requestedBy||'')}</td>
     <td class="dc"><input type="text" class="ie it" style="width:100%" value="${esc(r.description||'')}" onchange="upd('auditorRequests','${r._spId}','description',this.value)" title="${esc(r.description||'')}"></td>
     <td><span class="${r.urgency==='Urgent'?'bl':r.urgency==='High'?'ni-badge req':''}">${esc(r.urgency||'Normal')}</span></td>
-    <td>${selFld('auditorRequests',r._spId,'status',r.status||'Pending')}</td>
+    <td>${reqSelFld(r._spId,r.status||'Open')}</td>
     <td>${fld('auditorRequests',r._spId,'assignedTo',r.assignedTo,'text','85px')}</td>
     <td>${fld('auditorRequests',r._spId,'dateResolved',r.dateResolved,'date')}</td>
     <td>${fld('auditorRequests',r._spId,'responseLink',r.responseLink,'url','108px')}</td>
