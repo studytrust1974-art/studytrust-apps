@@ -6,8 +6,20 @@
 <title>StudyTrust Audit Tracker</title>
 <!--
   ════════════════════════════════════════════════════════
-  STUDYTRUST AUDIT TRACKER  v4.4  — Microsoft Graph Edition
+  STUDYTRUST AUDIT TRACKER  v4.5  — Microsoft Graph Edition
   Works from: locally, SharePoint, any web host
+
+  Changes since v4.4:
+   • Personnel tab added — visible only to Dashboards - HR-Authorised-Personnel
+     group members (detected at sign-in via AAD group lookup).
+   • AuditPersonnel SharePoint list tracks personnel documents separately
+     from Planning/Execution, with restricted permissions.
+   • Each Personnel row has an AccessLevel field (Internal Only /
+     Grant Auditor Access) for case-by-case auditor visibility control.
+   • Uploads from the Personnel tab route to the restricted
+     Personnel Contracts subfolder automatically.
+   • Simon must: create AuditPersonnel list, break permission
+     inheritance, grant access only to Personnel-Authorised group.
 
   Changes since v4.3:
    • Auditor Requests: expandable sub-panel per request holds multiple
@@ -545,6 +557,58 @@ td.dc{min-width:170px;max-width:270px}
   </div>
 
 <input type="file" id="file-upload-input" style="display:none" onchange="handleFileUpload(this)">
+  <!-- PERSONNEL DOCUMENTS (restricted — Dashboards - HR-Authorised-Personnel only) -->
+  <div id="sec-personnel" class="section">
+    <div class="sh">
+      <h2>Personnel Documents</h2>
+      <button class="btn btn-p" onclick="addRow('personnel')">+ Add</button>
+      <button class="btn" onclick="exportCsv('personnel')">CSV</button>
+    </div>
+
+    <div class="dc2" style="margin-bottom:12px;background:#fce4ec;border-color:#f48fb1">
+      <div style="font-size:12px;line-height:1.7;color:#5d0a26">
+        <strong>🔒 Restricted access.</strong>
+        This tab is visible only to members of <strong>Dashboards - HR-Authorised-Personnel</strong>
+        (Dirk Lourens, Murray Hofmeyr, Phila Mkandla, Engelinah Mtande, Siphokazi Kwakweni).
+        Rows marked <em>Internal Only</em> are not visible to auditors even when they have dashboard access.
+        Change a row to <em>Grant Auditor Access</em> only for the duration of a specific audit request,
+        then change it back to Internal Only once the request is Closed.
+        Simon Letsela manages the SharePoint folder-level permissions separately.
+      </div>
+    </div>
+
+    <div class="fb" style="margin-bottom:8px">
+      <input type="text" id="f-personnel-q" placeholder="Search personnel documents…" oninput="filterTab('personnel')" style="max-width:280px">
+      <select id="f-personnel-s" onchange="filterTab('personnel')"><option value="">All Statuses</option></select>
+      <button class="btn" style="padding:4px 9px;font-size:11px" onclick="clearFilters('personnel')">Clear</button>
+    </div>
+
+    <div class="tw"><table><thead><tr>
+      <th class="n">#</th>
+      <th style="min-width:180px">Description</th>
+      <th>Compliance Date</th>
+      <th>Uploaded</th>
+      <th>Status</th>
+      <th>Responsible</th>
+      <th>Document Category</th>
+      <th>Upload / Link</th>
+      <th>Auditor Access</th>
+    </tr></thead><tbody id="body-personnel"></tbody></table></div>
+
+    <div class="dc2" style="margin-top:14px;background:#e8f5e9;border-color:#a5d6a7">
+      <div style="font-size:12px;line-height:1.7;color:#1b5e20">
+        <strong>Auditor Access — How it works.</strong>
+        When TPCSA requests a personnel document, change the relevant row to
+        <em>Grant Auditor Access</em>. This does two things: it flags the row as visible in
+        the auditor-facing document list, and it reminds Simon Letsela to grant temporary
+        SharePoint folder access for that specific auditor to the Personnel Contracts subfolder.
+        Once the auditor confirms receipt and the Auditor Request is Closed, change the row
+        back to <em>Internal Only</em> and notify Simon to revoke the folder access.
+        Auditors must never have standing access to personnel documents between audit cycles.
+      </div>
+    </div>
+  </div>
+
 </div><!-- /content -->
 
 <!-- WEBHOOK CONFIG MODAL -->
@@ -627,6 +691,9 @@ td.dc{min-width:170px;max-width:270px}
   <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditRequests</p>
   <div class="cg"><span>Year</span> · <span>RequestDate</span><em> Date</em> · <span>RequestedBy</span><em> Text</em> · <span>Description</span><em> Multi-text</em> · <span>Urgency</span><em> Choice (Normal·High·Urgent)</em> · <span>Status</span><em> Choice (Open · Submitted · In Progress · Resolved · Closed)</em> · <span>AssignedTo</span><em> Text</em> · <span>DateResolved</span><em> Date</em> · <span>ResponseLink</span><em> Text</em> · <span>Notes</span><em> Multi-text</em></div>
   <div class="ma"><button class="btn btn-p" onclick="closeM('m-guide')">Close</button></div>
+  <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditPersonnel (restricted list — Dashboards - HR-Authorised-Personnel only)</p>
+  <div class="cg"><span>Year</span><em> Text</em> &middot; <span>Title</span><em> Text (built-in)</em> &middot; <span>DueDate</span><em> Date</em> &middot; <span>Uploaded</span><em> Date</em> &middot; <span>Status</span><em> Choice (same as Planning)</em> &middot; <span>Responsible</span><em> Text</em> &middot; <span>DocName</span><em> Text (Document Category)</em> &middot; <span>DocLink</span><em> Text or Hyperlink</em> &middot; <span>Notes</span><em> Text (Document Name)</em> &middot; <span>AccessLevel</span><em> Choice: Internal | Auditor</em></div>
+  <p style="font-size:10px;color:#888;margin:3px 0 8px">Break permission inheritance on this list. Grant Edit only to Dashboards - HR-Authorised-Personnel and Dashboards - Governance-Admins. Remove all other groups. Simon Letsela manages this in SharePoint list settings &rarr; Permissions.</p>
   <p style="font-size:11px;font-weight:700;color:var(--st);margin-top:10px;margin-bottom:4px">AuditResponseLinks (new list — Simon must create in SharePoint)</p>
   <div class="cg"><span>Year</span><em> Text</em> &middot; <span>RequestID</span><em> Text (parent request item ID)</em> &middot; <span>DocName</span><em> Text</em> &middot; <span>DocLink</span><em> Text or Hyperlink</em> &middot; <span>UploadedBy</span><em> Text</em> &middot; <span>UploadedDate</span><em> Date</em> &middot; <span>Notes</span><em> Text</em></div>
   <p style="font-size:10px;color:#888;margin:3px 0 8px">One row per response document. Each row links to its parent request via RequestID (the SharePoint item ID of the AuditRequests row).</p>
@@ -667,7 +734,8 @@ const GRAPH_SCOPES = ['Sites.ReadWrite.All', 'User.Read', 'GroupMember.Read.All'
 const LISTS = {
   config:'AuditConfig', planning:'AuditPlanning', execution:'AuditExecution',
   recommendations:'AuditRecommendations', sampling:'AuditSampling', teams:'AuditTeams',
-  register:'AuditRegister', auditorRequests:'AuditRequests', responseLinks:'AuditResponseLinks'
+  register:'AuditRegister', auditorRequests:'AuditRequests', responseLinks:'AuditResponseLinks',
+  personnel:'AuditPersonnel'
 };
 
 // ── Field mapping: app key → SharePoint column name ──
@@ -680,6 +748,7 @@ const F = {
   register:        { dateRequested:'DateRequested', doc:'Title', requester:'Requester', requestedFrom:'RequestedFrom', submitter:'Submitter', dateSubmitted:'DateSubmitted', docName:'DocName', docLink:'DocLink', comment:'Comment' },
   auditorRequests: { date:'RequestDate', requestedBy:'RequestedBy', description:'Title', urgency:'Urgency', status:'Status', assignedTo:'AssignedTo', dateResolved:'DateResolved', responseLink:'ResponseLink', notes:'Notes' },
   responseLinks:    { requestId:'RequestID', docName:'DocName', docLink:'DocLink', uploadedBy:'UploadedBy', uploadedDate:'UploadedDate', notes:'Notes' },
+  personnel:        { desc:'Title', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', docName:'DocName', docLink:'DocLink', notes:'Notes', accessLevel:'AccessLevel' },
   config:          { id:'Year', label:'Label', fyEnd:'FYEnd', deadline:'Deadline', auditStart:'AuditStart', shadower:'Shadower', firm:'Firm' }
 };
 
@@ -720,7 +789,8 @@ async function initMsal() {
     try {
       const r = await msalApp.acquireTokenSilent({ scopes: GRAPH_SCOPES, account: accounts[0] });
       graphToken = r.accessToken;
-      document.getElementById('user-name').textContent = accounts[0].name || accounts[0].username;
+      userName = accounts[0].name || accounts[0].username;
+      document.getElementById('user-name').textContent = userName;
       return true; // already signed in
     } catch(e) { graphToken = null; }
   }
@@ -736,7 +806,8 @@ async function doSignIn() {
   try {
     const result = await msalApp.acquireTokenPopup({ scopes: GRAPH_SCOPES });
     graphToken = result.accessToken;
-    document.getElementById('user-name').textContent = result.account?.name || result.account?.username || 'Signed in';
+    userName = result.account?.name || result.account?.username || 'Signed in';
+    document.getElementById('user-name').textContent = userName;
     document.getElementById('signin-screen').classList.add('hidden');
     await loadAndRender();
   } catch(e) {
@@ -873,7 +944,9 @@ function getCatFolder(catLabel) {
   return lib + '/' + c.path;
 }
 let years = [], currentYear = '2025', currentRole = 'admin', currentYearCfg = {};
-let appData = { planning:[], execution:[], recommendations:[], sampling:[], teams:[], register:[], auditorRequests:[], responseLinks:[] };
+let userName = '', userHasPersonnelAccess = false;
+const PERSONNEL_GROUP = 'Dashboards - HR-Authorised-Personnel';
+let appData = { planning:[], execution:[], recommendations:[], sampling:[], teams:[], register:[], auditorRequests:[], responseLinks:[], personnel:[] };
 
 // ════════════════════════════════════════════════
 // LOAD DATA
@@ -910,9 +983,12 @@ async function loadData(year) {
     teams:           tms.map(s=>fromSpItem('teams',s)),
     register:        reg.map(s=>fromSpItem('register',s)),
     auditorRequests: reqs.map(s=>fromSpItem('auditorRequests',s)),
-  responseLinks:   (respLinks||[]).map(s=>fromSpItem('responseLinks',s))
+  responseLinks:   (respLinks||[]).map(s=>fromSpItem('responseLinks',s)),
+  personnel:       []
   };
   currentYearCfg = years.find(y=>y.id===year) || {};
+  // Load personnel data only for authorised users
+  if(userHasPersonnelAccess) await loadPersonnelData(year);
   } catch(e) {
     toast('Load error: '+e.message,'err');
     console.error('loadData error:',e);
@@ -941,6 +1017,68 @@ async function upd(tab, spId, field, value) {
       fireResolvedNotif(item);
     }
   } catch(e) { toast('Save failed: '+e.message,'err'); }
+}
+
+// ════════════════════════════════════════════════
+// PERSONNEL SECURITY
+// ════════════════════════════════════════════════
+async function detectPersonnelAccess(){
+  // Check whether the signed-in user is in Dashboards - HR-Authorised-Personnel.
+  // This runs independently of the admin/auditor role — an admin who is also
+  // in the personnel group sees both the admin tabs AND the Personnel tab.
+  try {
+    const d = await gFetch('/me/memberOf?$select=displayName&$top=200');
+    const groups = (d.value||[]).map(g=>g.displayName||'');
+    return groups.some(g=>g.toLowerCase()===PERSONNEL_GROUP.toLowerCase());
+  } catch(e) {
+    console.warn('Personnel group check failed:', e.message);
+    return false;
+  }
+}
+
+async function loadPersonnelData(year){
+  try {
+    const rows = await spGet(LISTS.personnel, year);
+    appData.personnel = rows.map(s=>fromSpItem('personnel',s));
+  } catch(e){
+    // List may not exist yet — fail silently, show setup message in the tab
+    appData.personnel = [];
+    console.warn('AuditPersonnel list not found or no access:', e.message);
+  }
+}
+
+function renderPersonnel(){
+  const body = document.getElementById('body-personnel'); if(!body) return;
+  if(!appData.personnel.length){
+    body.innerHTML='<tr><td colspan="9" style="padding:24px;text-align:center;color:#888;font-size:12px">'
+      +'No personnel items yet. Click + Add to begin, or check that the AuditPersonnel SharePoint list exists.</td></tr>';
+    return;
+  }
+  body.innerHTML = appData.personnel.map((r,i)=>{
+    const lt=isLate(r);
+    const accessBadge = r.accessLevel==='Auditor'
+      ? `<span style="background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;border-radius:10px;font-size:10px;padding:1px 7px;font-weight:600">Auditor Access</span>`
+      : `<span style="background:#fce4ec;color:#880e4f;border:1px solid #f48fb1;border-radius:10px;font-size:10px;padding:1px 7px">Internal Only</span>`;
+    return `<tr data-status="${esc(r.status)}" data-person="${esc(r.responsible)}" data-due="${esc(r.dueDate||'')}" data-up="${esc(r.uploaded||'')}">
+      <td class="n">${i+1}</td>
+      <td class="dc"><input type="text" class="ie it" style="width:100%" value="${esc(r.desc||'')}" onchange="upd('personnel','${r._spId}','desc',this.value)" title="${esc(r.desc||'')}">
+        ${lt?'<br><span class="bl">⚠ LATE</span>':''}</td>
+      <td>${fld('personnel',r._spId,'dueDate',r.dueDate,'date')}</td>
+      <td>${fld('personnel',r._spId,'uploaded',r.uploaded,'date')}</td>
+      <td>${selFld('personnel',r._spId,'status',r.status)}</td>
+      <td>${fld('personnel',r._spId,'responsible',r.responsible,'text','78px')}</td>
+      <td>${catFld('personnel',r._spId,r.docName)}</td>
+      <td>${fld('personnel',r._spId,'docLink',r.docLink,'url','115px')}${uploadBtn('personnel',r._spId)}</td>
+      <td>
+        ${accessBadge}<br>
+        <select class="ie" style="width:110px;font-size:10px;margin-top:3px"
+          onchange="upd('personnel','${r._spId}','accessLevel',this.value)">
+          <option value="Internal"${r.accessLevel==='Auditor'?'':' selected'}>Internal Only</option>
+          <option value="Auditor"${r.accessLevel==='Auditor'?' selected':''}>Grant Auditor Access</option>
+        </select>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 // ════════════════════════════════════════════════
@@ -1063,7 +1201,8 @@ async function addRow(tab) {
     sampling:        {desc:'New sample',requestedBy:'',dateRequested:'',uploaded:'',status:'Not Started',responsible:'',docName:'',docLink:'',notes:''},
     teams:           {email:'',requestedBy:'',dateRequested:'',dateConnected:'',status:'Not Started',responsible:'',remarks:''},
     register:        {dateRequested:td(),doc:'New request',requester:'',requestedFrom:'',submitter:'',dateSubmitted:'',docName:'',docLink:'',comment:''},
-    auditorRequests: {date:td(),requestedBy:'',description:'',urgency:'Normal',status:'Open',assignedTo:'',dateResolved:'',responseLink:'',notes:''}
+    auditorRequests: {date:td(),requestedBy:'',description:'',urgency:'Normal',status:'Open',assignedTo:'',dateResolved:'',responseLink:'',notes:''},
+    personnel:       {desc:'New item',dueDate:'',uploaded:'',status:'Not Started',responsible:'',docName:'',docLink:'',notes:'',accessLevel:'Internal'}
   }[tab];
   toast('Adding…');
   try {
@@ -1447,6 +1586,31 @@ async function handleFileUpload(input) {
   if (!item) { toast('Row not found.','err'); input.value=''; return; }
 
   // Response link upload — routed to Auditor Requests folder
+  // Personnel document upload — routes to Personnel Contracts folder
+  if(tab === 'personnel') {
+    const catDef = DOC_CATEGORIES.find(c=>c.label==='Personnel Contracts');
+    const libName = 'Audit ' + currentYear;
+    const folderPath = catDef ? catDef.path : 'Execution/03 Payroll and Personnel/Personnel Contracts';
+    const fileName = file.name;
+    toast('Uploading to Personnel Contracts (restricted)…','ok');
+    try {
+      const token = await getToken();
+      const driveId = await getDriveId(libName);
+      const sid = await getSiteId();
+      const url = `${GRAPH_BASE}/sites/${sid}/drives/${driveId}/root:/${folderPath.split('/').map(encodeURIComponent).join('/')}/${encodeURIComponent(fileName)}:/content`;
+      const r = await fetch(url, { method:'PUT', headers:{'Authorization':'Bearer '+token,'Content-Type':file.type||'application/octet-stream'}, body: await file.arrayBuffer() });
+      if(!r.ok){ const e=await r.json().catch(()=>({})); throw new Error(e?.error?.message||'HTTP '+r.status); }
+      const result = await r.json();
+      item.docLink = result.webUrl;
+      item.notes = fileName.replace(/\.[^.]+$/,'');
+      await upd('personnel', spId, 'docLink', item.docLink);
+      await upd('personnel', spId, 'notes', item.notes);
+      renderPersonnel();
+      toast('Uploaded to restricted Personnel Contracts folder: '+fileName,'ok');
+    } catch(e){ toast('Upload failed: '+e.message,'err'); }
+    input.value=''; return;
+  }
+
   if(tab === '__responseLink') {
     const rlSpId = input.dataset.spid;
     const rlItem = appData.responseLinks.find(x=>x._spId===rlSpId);
@@ -1954,7 +2118,12 @@ const ADMIN_TABS=[{id:'dashboard',lb:'Dashboard'},{id:'planning',lb:'Planning'},
 const AUDITOR_TABS=[{id:'aud-overview',lb:'Overview'},{id:'aud-docs',lb:'Documents'},{id:'aud-my-requests',lb:'My Requests'}];
 
 function buildTabBar(){
-  const tabs=currentRole==='admin'?ADMIN_TABS:AUDITOR_TABS;
+  let tabs = currentRole==='admin' ? [...ADMIN_TABS] : [...AUDITOR_TABS];
+  // Personnel tab: shown only when user is in Dashboards - HR-Authorised-Personnel.
+  // It appears for authorised admins AND for personnel officers who signed in as auditor role.
+  if(userHasPersonnelAccess && !tabs.find(t=>t.id==='personnel')){
+    tabs.push({id:'personnel',lb:'🔒 Personnel'});
+  }
   document.getElementById('tab-bar').innerHTML=tabs.map((t,i)=>
     `<button class="tab-btn${i===0?' active':''}" onclick="showTab('${t.id}',this)">${t.lb}${t.badge?`<span class="tc req" data-req>0</span>`:''}</button>`
   ).join('');
@@ -1968,6 +2137,7 @@ function showTab(id,btn){
   if(id==='aud-overview') renderAudOverview();
   if(id==='aud-docs') renderAudDocs();
   if(id==='aud-my-requests') renderMyReqs();
+  if(id==='personnel') renderPersonnel();
 }
 
 function setRole(role){
@@ -2008,6 +2178,7 @@ document.querySelectorAll('.ov').forEach(el=>el.addEventListener('click',e=>{if(
 function renderAll(){
   renderPE('planning'); renderPE('execution'); renderRecs();
   renderSampling(); renderTeams(); renderRegister(); renderAudReqs();
+  if(userHasPersonnelAccess) renderPersonnel();
   updateDash(); updateNotif(); updateCountdown(); populateYearDDs();
 }
 function updateAll(){
@@ -2022,6 +2193,8 @@ async function loadAndRender(){
   setLoad('Loading year configuration…');
   await loadYears();
   currentYear=years[0]?.id||'2025';
+  // Detect personnel group membership (separate from admin/auditor role)
+  userHasPersonnelAccess = await detectPersonnelAccess();
   await loadData(currentYear);
   buildTabBar(); renderAll(); loadWebhookUI();
   document.getElementById('hdr-sub').textContent=currentYearCfg.label||'FY '+currentYear+' Audit';
