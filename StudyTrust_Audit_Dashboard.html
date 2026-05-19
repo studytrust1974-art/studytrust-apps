@@ -6,8 +6,26 @@
 <title>StudyTrust Audit Tracker</title>
 <!--
   ════════════════════════════════════════════════════════
-  STUDYTRUST AUDIT TRACKER  v4.5  — Microsoft Graph Edition
+  STUDYTRUST AUDIT TRACKER  v4.6  — Microsoft Graph Edition
   Works from: locally, SharePoint, any web host
+
+  Changes since v4.5:
+   • Bug fix: gFetch reference in detectPersonnelAccess corrected to
+     graphFetch — Personnel tab group detection now works correctly.
+   • Bug fix: getDriveId now normalises library name for matching,
+     fixing uploads not reaching SharePoint.
+   • DOC_CATEGORIES: 28 categories in alphabetical order, including
+     new folders Budget and Going Concern, Funder Agreements, Internal
+     Policies, IT Systems and Access, Miscellaneous, Related Parties,
+     Risk and Control Framework from the updated folder architecture.
+   • Description column widened on Planning and Execution.
+   • Comments column added to Planning and Execution tabs.
+   • Questions tab added for text-only Q&A (no document required).
+   • Multi-file folder upload: green 📁 Multi button creates a named
+     subfolder in SharePoint and uploads multiple files at once; the
+     folder link fills in automatically.
+   • New SharePoint lists required: AuditQuestions (see Column Guide).
+     Comments column must be added to AuditPlanning and AuditExecution.
 
   Changes since v4.4:
    • Personnel tab added — visible only to Dashboards - HR-Authorised-Personnel
@@ -230,7 +248,7 @@ tbody tr.rl{background:#FFF5F5;border-left:3px solid var(--late-border)}
 tbody tr.rn{border-left:3px solid var(--new-border)}
 td{padding:6px 8px;vertical-align:top;line-height:1.45}
 td.n{text-align:center;color:#aaa;font-size:11px;font-weight:700}
-td.dc{min-width:170px;max-width:270px}
+td.dc{min-width:220px;max-width:360px}
 
 /* ── INLINE CONTROLS ── */
 .ie{border:1px solid #d8dde5;border-radius:4px;padding:3px 5px;font-size:11px;background:#fff;color:#333;max-width:100%}
@@ -411,7 +429,7 @@ td.dc{min-width:170px;max-width:270px}
     <div class="tw"><table><thead><tr>
       <th class="n">#</th><th style="min-width:195px">Description</th><th>Compliance Date</th>
       <th>Date Uploaded</th><th>Status</th><th>Responsible</th><th>Shadower</th>
-      <th>Document Category</th><th>Upload / Link</th><th>Document Name</th>
+      <th>Document Category</th><th>Upload / Link</th><th>Document Name</th><th>Comments</th>
     </tr></thead><tbody id="body-planning"></tbody></table></div>
   </div>
 
@@ -437,7 +455,7 @@ td.dc{min-width:170px;max-width:270px}
     <div class="tw"><table><thead><tr>
       <th class="n">#</th><th style="min-width:195px">Description</th><th>Compliance Date</th>
       <th>Date Uploaded</th><th>Status</th><th>Responsible</th><th>Shadower</th>
-      <th>Document Category</th><th>Upload / Link</th><th>Document Name</th>
+      <th>Document Category</th><th>Upload / Link</th><th>Document Name</th><th>Comments</th>
     </tr></thead><tbody id="body-execution"></tbody></table></div>
   </div>
 
@@ -557,6 +575,37 @@ td.dc{min-width:170px;max-width:270px}
   </div>
 
 <input type="file" id="file-upload-input" style="display:none" onchange="handleFileUpload(this)">
+<input type="file" id="multi-upload-input" style="display:none" multiple onchange="handleFolderUpload(this)">
+  <!-- AUDIT QUESTIONS — anticipate and record Q&A, no documents needed -->
+  <div id="sec-questions" class="section">
+    <div class="sh">
+      <h2>Audit Questions</h2>
+      <button class="btn btn-p" onclick="addRow('questions')">+ Add</button>
+      <button class="btn" onclick="exportCsv('questions')">CSV</button>
+    </div>
+    <div class="dc2" style="margin-bottom:12px">
+      <div style="font-size:12px;line-height:1.7">
+        <strong>What this tab is for.</strong>
+        Use this tab for information that auditors request verbally or in writing, where the answer is text only — no document to upload. This includes anticipated questions based on prior years, questions already answered in previous audits, and clarifications the audit team asks during fieldwork. Each row has a Question, a Source (Anticipated / Prior Year / Auditor), an Answer, a Status, and a Responsible person. Nothing here requires a SharePoint link.
+      </div>
+    </div>
+    <div class="fb" style="margin-bottom:8px">
+      <input type="text" id="f-questions-q" placeholder="Search questions…" oninput="filterTab('questions')" style="max-width:280px">
+      <select id="f-questions-s" onchange="filterTab('questions')"><option value="">All Statuses</option><option>Open</option><option>In Progress</option><option>Answered</option><option>Referred</option></select>
+      <select id="f-questions-src" onchange="filterTab('questions')"><option value="">All Sources</option><option>Anticipated</option><option>Prior Year</option><option>Auditor</option></select>
+      <button class="btn" style="padding:4px 9px;font-size:11px" onclick="clearFilters('questions')">Clear</button>
+    </div>
+    <div class="tw"><table><thead><tr>
+      <th class="n">#</th>
+      <th style="min-width:220px">Question</th>
+      <th>Source</th>
+      <th>Status</th>
+      <th>Responsible</th>
+      <th style="min-width:280px">Answer / Response</th>
+      <th>Notes</th>
+    </tr></thead><tbody id="body-questions"></tbody></table></div>
+  </div>
+
   <!-- PERSONNEL DOCUMENTS (restricted — Dashboards - HR-Authorised-Personnel only) -->
   <div id="sec-personnel" class="section">
     <div class="sh">
@@ -735,19 +784,20 @@ const LISTS = {
   config:'AuditConfig', planning:'AuditPlanning', execution:'AuditExecution',
   recommendations:'AuditRecommendations', sampling:'AuditSampling', teams:'AuditTeams',
   register:'AuditRegister', auditorRequests:'AuditRequests', responseLinks:'AuditResponseLinks',
-  personnel:'AuditPersonnel'
+  personnel:'AuditPersonnel', questions:'AuditQuestions'
 };
 
 // ── Field mapping: app key → SharePoint column name ──
 const F = {
-  planning:        { desc:'Title', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', notes:'Notes' },
-  execution:       { desc:'Title', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', notes:'Notes' },
+  planning:        { desc:'Title', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', notes:'Notes', comments:'Comments' },
+  execution:       { desc:'Title', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', notes:'Notes', comments:'Comments' },
   recommendations: { weakness:'Title', recommendation:'Recommendation', dueDate:'DueDate', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', comments:'Comments' },
   sampling:        { desc:'Title', requestedBy:'RequestedBy', dateRequested:'DateRequested', uploaded:'Uploaded', status:'Status', responsible:'Responsible', docName:'DocName', docLink:'DocLink', notes:'Notes' },
   teams:           { email:'Email', requestedBy:'RequestedBy', dateRequested:'DateRequested', dateConnected:'DateConnected', status:'Status', responsible:'Responsible', remarks:'Remarks' },
   register:        { dateRequested:'DateRequested', doc:'Title', requester:'Requester', requestedFrom:'RequestedFrom', submitter:'Submitter', dateSubmitted:'DateSubmitted', docName:'DocName', docLink:'DocLink', comment:'Comment' },
   auditorRequests: { date:'RequestDate', requestedBy:'RequestedBy', description:'Title', urgency:'Urgency', status:'Status', assignedTo:'AssignedTo', dateResolved:'DateResolved', responseLink:'ResponseLink', notes:'Notes' },
   responseLinks:    { requestId:'RequestID', docName:'DocName', docLink:'DocLink', uploadedBy:'UploadedBy', uploadedDate:'UploadedDate', notes:'Notes' },
+  questions:        { desc:'Title', source:'Source', answer:'Answer', status:'Status', responsible:'Responsible', notes:'Notes' },
   personnel:        { desc:'Title', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', docName:'DocName', docLink:'DocLink', notes:'Notes', accessLevel:'AccessLevel' },
   config:          { id:'Year', label:'Label', fyEnd:'FYEnd', deadline:'Deadline', auditStart:'AuditStart', shadower:'Shadower', firm:'Firm' }
 };
@@ -913,28 +963,37 @@ const REQ_STATUSES = ['Open','Submitted','In Progress','Resolved','Closed'];
 
 // Document categories with their SharePoint upload destinations.
 // Library "{year}" is replaced at runtime with currentYear (e.g. "Audit 2025").
+// Document categories — ALPHABETICAL ORDER
+// lib: '{year}' = 'Audit [year]' (annual library), exact name = permanent library
 const DOC_CATEGORIES = [
-  {label:'Legal and Registration',         lib:'Audit Standing Documents', path:'01 Legal and Registration'},
-  {label:'Organisational',                 lib:'Audit Standing Documents', path:'02 Organisational'},
-  {label:'Bank and Investment Accounts',   lib:'Audit Standing Documents', path:'03 Bank and Investment Accounts'},
-  {label:'Governance and Board',           lib:'{year}', path:'Planning/01 Governance and Board'},
-  {label:'Narrative and Annual Report',    lib:'{year}', path:'Planning/02 Narrative and Annual Report'},
-  {label:'Contracts and Agreements',       lib:'{year}', path:'Planning/03 Contracts and Agreements'},
-  {label:'Finance Narratives',             lib:'{year}', path:'Planning/04 Finance Narratives'},
-  {label:'Management Accounts',            lib:'{year}', path:'Planning/05 Management Accounts'},
-  {label:'SARS',                           lib:'{year}', path:'Planning/06 SARS'},
-  {label:'Bursaries and Revenue',          lib:'{year}', path:'Planning/07 Bursaries and Revenue'},
-  {label:'Insurance',                      lib:'{year}', path:'Planning/09 Insurance'},
-  {label:'Prior Year Reference',           lib:'{year}', path:'Planning/10 Prior Year Reference'},
-  {label:'Employment Compliance',          lib:'{year}', path:'Planning/11 Employment Compliance'},
-  {label:'Bank and Investment Statements', lib:'{year}', path:'Execution/01 Bank and Investment Statements'},
-  {label:'SARS Compliance',               lib:'{year}', path:'Execution/02 SARS Compliance'},
-  {label:'Payroll and Personnel',          lib:'{year}', path:'Execution/03 Payroll and Personnel'},
-  {label:'Personnel Contracts',            lib:'{year}', path:'Execution/03 Payroll and Personnel/Personnel Contracts'},
-  {label:'Assets and Financials',          lib:'{year}', path:'Execution/04 Assets and Financials'},
-  {label:'Suppliers',                      lib:'{year}', path:'Execution/05 Suppliers'},
-  {label:'Sampling',                       lib:'{year}', path:'Execution/07 Sampling'},
+  {label:'Assets and Financials',          lib:'{year}', path:'Execution/04_Assets_and_Financials'},
   {label:'Auditor Requests',               lib:'{year}', path:'Auditor Requests'},
+  {label:'Bank and Investment Accounts',   lib:'Audit Standing Documents', path:'03_Bank_and_Investment_Accounts'},
+  {label:'Bank and Investment Statements', lib:'{year}', path:'Execution/01_Bank_and_Investment_Statements'},
+  {label:'Budget and Going Concern',       lib:'{year}', path:'Planning/13_Budget_and_Going_Concern'},
+  {label:'Bursaries and Revenue',          lib:'{year}', path:'Planning/07_Bursaries_and_Revenue'},
+  {label:'Contracts and Agreements',       lib:'{year}', path:'Planning/03_Contracts_and_Agreements'},
+  {label:'Employment Compliance',          lib:'{year}', path:'Planning/11_Employment_Compliance'},
+  {label:'Finance Narratives',             lib:'{year}', path:'Planning/04_Finance_Narratives'},
+  {label:'Funder Agreements',              lib:'{year}', path:'Execution/06_Funder_Agreements'},
+  {label:'Governance and Board',           lib:'{year}', path:'Planning/01_Governance_and_Board'},
+  {label:'Insurance',                      lib:'{year}', path:'Planning/09_Insurance'},
+  {label:'Internal Policies',             lib:'Audit Standing Documents', path:'04_Internal_Policies'},
+  {label:'IT Systems and Access',          lib:'{year}', path:'Execution/08_IT_Systems_and_Access'},
+  {label:'Legal and Registration',         lib:'Audit Standing Documents', path:'01_Legal_and_Registration'},
+  {label:'Management Accounts',            lib:'{year}', path:'Planning/05_Management_Accounts'},
+  {label:'Miscellaneous',                  lib:'{year}', path:'Planning/08_Miscellaneous'},
+  {label:'Narrative and Annual Report',    lib:'{year}', path:'Planning/02_Narrative_and_Annual_Report'},
+  {label:'Organisational',                 lib:'Audit Standing Documents', path:'02_Organisational'},
+  {label:'Payroll and Personnel',          lib:'{year}', path:'Execution/03_Payroll_and_Personnel'},
+  {label:'Personnel Contracts',            lib:'{year}', path:'Execution/03_Payroll_and_Personnel/Personnel_Contracts'},
+  {label:'Prior Year Reference',           lib:'{year}', path:'Planning/10_Prior_Year_Reference'},
+  {label:'Related Parties',               lib:'{year}', path:'Planning/14_Related_Parties'},
+  {label:'Risk and Control Framework',     lib:'{year}', path:'Planning/12_Risk_and_Control_Framework'},
+  {label:'SARS',                           lib:'{year}', path:'Planning/06_SARS'},
+  {label:'SARS Compliance',               lib:'{year}', path:'Execution/02_SARS_Compliance'},
+  {label:'Sampling',                       lib:'{year}', path:'Execution/07_Sampling'},
+  {label:'Suppliers',                      lib:'{year}', path:'Execution/05_Suppliers'},
 ];
 
 function getCatFolder(catLabel) {
@@ -946,7 +1005,7 @@ function getCatFolder(catLabel) {
 let years = [], currentYear = '2025', currentRole = 'admin', currentYearCfg = {};
 let userName = '', userHasPersonnelAccess = false;
 const PERSONNEL_GROUP = 'Dashboards - HR-Authorised-Personnel';
-let appData = { planning:[], execution:[], recommendations:[], sampling:[], teams:[], register:[], auditorRequests:[], responseLinks:[], personnel:[] };
+let appData = { planning:[], execution:[], recommendations:[], sampling:[], teams:[], register:[], auditorRequests:[], responseLinks:[], personnel:[], questions:[] };
 
 // ════════════════════════════════════════════════
 // LOAD DATA
@@ -989,6 +1048,10 @@ async function loadData(year) {
   currentYearCfg = years.find(y=>y.id===year) || {};
   // Load personnel data only for authorised users
   if(userHasPersonnelAccess) await loadPersonnelData(year);
+  try {
+    const qrows = await spGet(LISTS.questions, year);
+    appData.questions = qrows.map(s=>fromSpItem('questions',s));
+  } catch(e){ appData.questions=[]; }
   } catch(e) {
     toast('Load error: '+e.message,'err');
     console.error('loadData error:',e);
@@ -1027,7 +1090,7 @@ async function detectPersonnelAccess(){
   // This runs independently of the admin/auditor role — an admin who is also
   // in the personnel group sees both the admin tabs AND the Personnel tab.
   try {
-    const d = await gFetch('/me/memberOf?$select=displayName&$top=200');
+    const d = await graphFetch('/me/memberOf?$select=displayName&$top=200');
     const groups = (d.value||[]).map(g=>g.displayName||'');
     return groups.some(g=>g.toLowerCase()===PERSONNEL_GROUP.toLowerCase());
   } catch(e) {
@@ -1079,6 +1142,107 @@ function renderPersonnel(){
       </td>
     </tr>`;
   }).join('');
+}
+
+// ════════════════════════════════════════════════
+// FOLDER CREATION + MULTI-FILE UPLOAD
+// ════════════════════════════════════════════════
+
+// Create a new subfolder inside a SharePoint document library path
+async function createSPFolder(libraryName, parentPath, folderName) {
+  const token = await getToken();
+  const driveId = await getDriveId(libraryName);
+  const sid = await getSiteId();
+  const encodedParent = parentPath.split('/').map(encodeURIComponent).join('/');
+  const url = `${GRAPH_BASE}/sites/${sid}/drives/${driveId}/root:/${encodedParent}:/children`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer '+token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: folderName, folder: {}, '@microsoft.graph.conflictBehavior': 'rename' })
+  });
+  if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e?.error?.message||'HTTP '+r.status); }
+  return await r.json(); // has .webUrl
+}
+
+// Upload a single file to a specific path, return its webUrl
+async function uploadOneFile(libraryName, folderPath, file) {
+  const token = await getToken();
+  const driveId = await getDriveId(libraryName);
+  const sid = await getSiteId();
+  const encodedPath = (folderPath+'/'+file.name).split('/').map(encodeURIComponent).join('/');
+  const url = `${GRAPH_BASE}/sites/${sid}/drives/${driveId}/root:/${encodedPath}:/content`;
+  const r = await fetch(url, {
+    method: 'PUT',
+    headers: { Authorization: 'Bearer '+token, 'Content-Type': file.type||'application/octet-stream' },
+    body: await file.arrayBuffer()
+  });
+  if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e?.error?.message||'HTTP '+r.status); }
+  return await r.json();
+}
+
+// Get the web URL of an existing folder
+async function getSPFolderUrl(libraryName, folderPath) {
+  const token = await getToken();
+  const driveId = await getDriveId(libraryName);
+  const sid = await getSiteId();
+  const encodedPath = folderPath.split('/').map(encodeURIComponent).join('/');
+  const url = `${GRAPH_BASE}/sites/${sid}/drives/${driveId}/root:/${encodedPath}`;
+  const r = await fetch(url, { headers: { Authorization: 'Bearer '+token } });
+  if (!r.ok) throw new Error('Folder not found: '+folderPath);
+  const data = await r.json();
+  return data.webUrl;
+}
+
+// Hidden multi-file input
+function triggerFolderUpload(tab, spId) {
+  const inp = document.getElementById('multi-upload-input');
+  inp.dataset.tab = tab;
+  inp.dataset.spid = spId;
+  inp.click();
+}
+
+async function handleFolderUpload(input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  const tab = input.dataset.tab;
+  const spId = input.dataset.spid;
+  const item = (appData[tab]||[]).find(r=>r._spId===spId);
+  if (!item) { toast('Row not found.','err'); input.value=''; return; }
+
+  const cat = item.docName;
+  const catDef = DOC_CATEGORIES.find(c=>c.label===cat);
+  if (!catDef) { toast('Select a Document Category first.','err'); input.value=''; return; }
+
+  const libName = catDef.lib==='{year}' ? ('Audit '+currentYear) : catDef.lib;
+  const parentPath = catDef.path;
+
+  // Auto-name the folder: date + first few words of description
+  const datePart = new Date().toISOString().slice(0,10);
+  const descPart = (item.desc||item.doc||item.description||'Documents')
+    .replace(/[^a-zA-Z0-9\s]/g,'').trim().split(/\s+/).slice(0,4).join('_');
+  const folderName = datePart + '_' + descPart;
+
+  const countMsg = files.length + ' file' + (files.length>1?'s':'');
+  toast(`Creating folder and uploading ${countMsg}…`, 'ok');
+
+  try {
+    const folderResult = await createSPFolder(libName, parentPath, folderName);
+    const folderPath = parentPath + '/' + folderResult.name;
+    let uploaded = 0;
+    for (const file of files) {
+      await uploadOneFile(libName, folderPath, file);
+      uploaded++;
+      toast(`Uploading ${uploaded}/${files.length}: ${file.name}`, 'ok');
+    }
+    const folderUrl = folderResult.webUrl;
+    item.docLink = folderUrl;
+    item.notes = folderResult.name + ' (' + countMsg + ')';
+    await upd(tab, spId, 'docLink', folderUrl);
+    await upd(tab, spId, 'notes', item.notes);
+    renderAll();
+    toast(`✓ Folder created with ${countMsg}: ${folderResult.name}`, 'ok');
+  } catch(e) { toast('Folder upload failed: '+e.message,'err'); }
+  input.value='';
 }
 
 // ════════════════════════════════════════════════
@@ -1195,14 +1359,15 @@ function uploadResponseFile(requestSpId, rlSpId){
 // ════════════════════════════════════════════════
 async function addRow(tab) {
   const blank = {
-    planning:        {desc:'New item',dueDate:'',uploaded:'',status:'Not Started',responsible:'',shadower:'',docName:'',docLink:'',notes:''},
-    execution:       {desc:'New item',dueDate:'',uploaded:'',status:'Not Started',responsible:'',shadower:'',docName:'',docLink:'',notes:''},
+    planning:        {desc:'New item',dueDate:'',uploaded:'',status:'Not Started',responsible:'',shadower:'',docName:'',docLink:'',notes:'',comments:''},
+    execution:       {desc:'New item',dueDate:'',uploaded:'',status:'Not Started',responsible:'',shadower:'',docName:'',docLink:'',notes:'',comments:''},
     recommendations: {weakness:'',recommendation:'',dueDate:'',status:'Not Started',responsible:'',shadower:'',docName:'',docLink:'',comments:''},
     sampling:        {desc:'New sample',requestedBy:'',dateRequested:'',uploaded:'',status:'Not Started',responsible:'',docName:'',docLink:'',notes:''},
     teams:           {email:'',requestedBy:'',dateRequested:'',dateConnected:'',status:'Not Started',responsible:'',remarks:''},
     register:        {dateRequested:td(),doc:'New request',requester:'',requestedFrom:'',submitter:'',dateSubmitted:'',docName:'',docLink:'',comment:''},
     auditorRequests: {date:td(),requestedBy:'',description:'',urgency:'Normal',status:'Open',assignedTo:'',dateResolved:'',responseLink:'',notes:''},
-    personnel:       {desc:'New item',dueDate:'',uploaded:'',status:'Not Started',responsible:'',docName:'',docLink:'',notes:'',accessLevel:'Internal'}
+    personnel:       {desc:'New item',dueDate:'',uploaded:'',status:'Not Started',responsible:'',docName:'',docLink:'',notes:'',accessLevel:'Internal'},
+    questions:       {desc:'',source:'Anticipated',answer:'',status:'Open',responsible:'',notes:''}
   }[tab];
   toast('Adding…');
   try {
@@ -1564,8 +1729,17 @@ async function getDriveId(libraryName) {
   if (_driveCache[libraryName]) return _driveCache[libraryName];
   const sid = await getSiteId();
   const data = await graphFetch(`/sites/${sid}/drives`);
-  const drive = (data.value||[]).find(d => d.name === libraryName);
-  if (!drive) throw new Error(`Document library "${libraryName}" not found. Check SharePoint site contents.`);
+  const norm = s => s.toLowerCase().replace(/[_\s-]+/g,' ').trim();
+  const drive = (data.value||[]).find(d =>
+    d.name === libraryName ||
+    (d.name||'').toLowerCase() === libraryName.toLowerCase() ||
+    norm(d.name||'') === norm(libraryName) ||
+    norm(d.webUrl?.split('/').pop()||'') === norm(libraryName)
+  );
+  if (!drive) {
+    const available = (data.value||[]).map(d=>d.name).join(', ');
+    throw new Error(`Library "${libraryName}" not found. Available: ${available}`);
+  }
   _driveCache[libraryName] = drive.id;
   return drive.id;
 }
@@ -1751,8 +1925,9 @@ function renderPE(tab){
       <td>${fld(tab,r._spId,'responsible',r.responsible,'text','78px')}</td>
       <td>${fld(tab,r._spId,'shadower',r.shadower,'text','78px')}</td>
       <td>${catFld(tab,r._spId,r.docName)}</td>
-      <td>${fld(tab,r._spId,'docLink',r.docLink,'url','115px')}${uploadBtn(tab,r._spId)}</td>
+      <td>${fld(tab,r._spId,'docLink',r.docLink,'url','100px')}${uploadBtn(tab,r._spId)}<button class="btn btn-sm" style="font-size:10px;padding:2px 5px;margin-left:2px;background:#e8f5e9;color:#1b5e20;border-color:#a5d6a7" title="Create folder and upload multiple files" onclick="triggerFolderUpload('${tab}','${r._spId}')">📁 Multi</button></td>
       <td>${fld(tab,r._spId,'notes',r.notes,'text','115px')}</td>
+      <td>${fld(tab,r._spId,'comments',r.comments,'text','130px')}</td>
     </tr>`;
   }).join('');
   populateFilters(tab); updatePct(tab);
@@ -1786,6 +1961,43 @@ async function moveToExecution(spId){
     renderAll();
     toast(`"${item.desc}" moved to Execution. Planning row marked Completed.`,'success');
   }catch(e){toast('Move failed: '+e.message,'error');}
+}
+
+
+const Q_STATUSES = ['Open','In Progress','Answered','Referred'];
+const Q_SOURCES  = ['Anticipated','Prior Year','Auditor'];
+
+function renderQuestions(){
+  const body = document.getElementById('body-questions'); if(!body) return;
+  const items = appData.questions||[];
+  if(!items.length){
+    body.innerHTML='<tr><td colspan="7" style="padding:24px;text-align:center;color:#888;font-size:12px">No questions yet. Click + Add to begin. Requires the AuditQuestions list in SharePoint.</td></tr>';
+    return;
+  }
+  const q   = ((document.getElementById('f-questions-q')||{}).value||'').toLowerCase();
+  const sf  = ((document.getElementById('f-questions-s')||{}).value||'');
+  const src = ((document.getElementById('f-questions-src')||{}).value||'');
+  body.innerHTML = items.map((r,i)=>{
+    const txt=(r.desc+' '+r.answer+' '+r.notes+' '+r.responsible).toLowerCase();
+    if(q && !txt.includes(q)) return '';
+    if(sf && r.status!==sf) return '';
+    if(src && r.source!==src) return '';
+    return `<tr>
+      <td class="n">${i+1}</td>
+      <td class="dc"><input type="text" class="ie it" style="width:100%" value="${esc(r.desc||'')}"
+        onchange="upd('questions','${r._spId}','desc',this.value)" title="${esc(r.desc||'')}"></td>
+      <td><select class="ie" style="width:90px;font-size:11px" onchange="upd('questions','${r._spId}','source',this.value)">
+        ${Q_SOURCES.map(s=>`<option value="${s}"${s===r.source?' selected':''}>${s}</option>`).join('')}
+      </select></td>
+      <td><select class="ie" style="width:90px;font-size:11px" onchange="upd('questions','${r._spId}','status',this.value)">
+        ${Q_STATUSES.map(s=>`<option value="${s}"${s===r.status?' selected':''}>${s}</option>`).join('')}
+      </select></td>
+      <td>${fld('questions',r._spId,'responsible',r.responsible,'text','75px')}</td>
+      <td><textarea class="ie" style="width:100%;min-height:40px;font-size:11px;resize:vertical"
+        onblur="upd('questions','${r._spId}','answer',this.value)">${esc(r.answer||'')}</textarea></td>
+      <td>${fld('questions',r._spId,'notes',r.notes,'text','90px')}</td>
+    </tr>`;
+  }).filter(Boolean).join('');
 }
 
 function renderRecs(){
@@ -2114,7 +2326,7 @@ function clearFilters(tab){
 // ════════════════════════════════════════════════
 // TABS & ROLE
 // ════════════════════════════════════════════════
-const ADMIN_TABS=[{id:'dashboard',lb:'Dashboard'},{id:'planning',lb:'Planning'},{id:'execution',lb:'Execution'},{id:'recommendations',lb:'Recommendations'},{id:'sampling',lb:'Sampling'},{id:'teams',lb:'Teams Access'},{id:'register',lb:'Doc Register'},{id:'aud-requests',lb:'Auditor Requests',badge:true}];
+const ADMIN_TABS=[{id:'dashboard',lb:'Dashboard'},{id:'planning',lb:'Planning'},{id:'execution',lb:'Execution'},{id:'recommendations',lb:'Recommendations'},{id:'sampling',lb:'Sampling'},{id:'teams',lb:'Teams Access'},{id:'register',lb:'Doc Register'},{id:'aud-requests',lb:'Auditor Requests',badge:true},{id:'questions',lb:'❓ Questions'}];
 const AUDITOR_TABS=[{id:'aud-overview',lb:'Overview'},{id:'aud-docs',lb:'Documents'},{id:'aud-my-requests',lb:'My Requests'}];
 
 function buildTabBar(){
@@ -2138,6 +2350,7 @@ function showTab(id,btn){
   if(id==='aud-docs') renderAudDocs();
   if(id==='aud-my-requests') renderMyReqs();
   if(id==='personnel') renderPersonnel();
+  if(id==='questions') renderQuestions();
 }
 
 function setRole(role){
@@ -2179,6 +2392,7 @@ function renderAll(){
   renderPE('planning'); renderPE('execution'); renderRecs();
   renderSampling(); renderTeams(); renderRegister(); renderAudReqs();
   if(userHasPersonnelAccess) renderPersonnel();
+  renderQuestions();
   updateDash(); updateNotif(); updateCountdown(); populateYearDDs();
 }
 function updateAll(){
