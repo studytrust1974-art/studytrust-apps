@@ -142,6 +142,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
 .br{background:var(--rd-bg);color:var(--rd-tx)}.bb{background:#e3f2fd;color:#0d47a1}
 .bp{background:var(--pu-bg);color:var(--pu-tx)}.bt{background:var(--tl-bg);color:var(--tl-tx)}
 .btr{background:var(--tr-bg);color:var(--tr-tx)}.bgy{background:var(--bg);color:var(--tx2);border:1px solid var(--bdr)}
+.bpr{background:#ede7f6;color:#4527a0;border:1px solid #b39ddb}
 .overdue{color:var(--rd-tx);font-weight:600}
 
 /* ── DOC LINK BUTTONS ── */
@@ -316,7 +317,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L3 7v10l9 5 9-5V7L12 2z"/><line x1="12" y1="22" x2="12" y2="12"/><line x1="3" y1="7" x2="12" y2="12"/><line x1="21" y1="7" x2="12" y2="12"/></svg>
     </div>
     <div>
-      <div class="hdr-title">StudyTrust Governance Hub <span style="font-size:10px;opacity:.45;font-weight:400">v4.2</span></div>
+      <div class="hdr-title">StudyTrust Governance Hub <span style="font-size:10px;opacity:.45;font-weight:400">v4.3</span></div>
       <div class="hdr-sub">Policies · SOPs · Compliance · Risk · 000-601 NPO · IT3895/11(T)</div>
     </div>
   </div>
@@ -455,6 +456,9 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <select id="pol-tier" onchange="renderPol()"><option value="">All Tiers</option><option>T1</option><option>T2</option><option>T3</option><option>T4</option></select>
         <select id="pol-status" onchange="renderPol()"><option value="">All Statuses</option></select>
         <select id="pol-risk" onchange="renderPol()"><option value="">All Risk Levels</option><option>High Strategic</option><option>High Operational</option><option>Medium</option><option>Low</option></select>
+        <select id="pol-approver" onchange="renderPol()" style="border:.5px solid #ccc;border-radius:5px;padding:4px 7px;font-size:11px"><option value="">All Approvers</option></select>
+        <select id="pol-custodian" onchange="renderPol()" style="border:.5px solid #ccc;border-radius:5px;padding:4px 7px;font-size:11px"><option value="">All Custodians</option></select>
+        <select id="pol-owner" onchange="renderPol()" style="border:.5px solid #ccc;border-radius:5px;padding:4px 7px;font-size:11px"><option value="">All Owners</option></select>
         <span style="font-size:11px;color:#555;font-weight:600;margin-left:4px">Review:</span>
         <input type="date" id="pol-rev-from" onchange="renderPol()" title="Review date from" style="border:.5px solid #ccc;border-radius:5px;padding:4px 7px;font-size:11px">
         <span style="font-size:10px;color:#888">to</span>
@@ -464,7 +468,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
       <div class="tbl-wrap"><table class="dt">
         <thead><tr>
           <th>ID</th><th style="min-width:180px">Title</th><th>Category</th><th>Tier</th><th>Ver</th>
-          <th>Status</th><th>Risk</th><th>Approver</th><th>Review Date</th><th>Owner</th>
+          <th>Status</th><th>Risk</th><th>Approver</th><th>Review Date</th><th>Custodian</th><th>Owner</th>
           <th>Document</th><th id="pol-act-hdr" style="display:none">Actions</th>
         </tr></thead>
         <tbody id="pol-body"></tbody>
@@ -487,6 +491,8 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <input type="text" id="sop-q" placeholder="Search SOPs…" oninput="renderSop()">
         <select id="sop-cat" onchange="renderSop()"><option value="">All Categories</option></select>
         <select id="sop-status" onchange="renderSop()"><option value="">All Statuses</option></select>
+        <select id="sop-custodian" onchange="renderSop()" style="border:.5px solid #ccc;border-radius:5px;padding:4px 7px;font-size:11px"><option value="">All Custodians</option></select>
+        <select id="sop-owner" onchange="renderSop()" style="border:.5px solid #ccc;border-radius:5px;padding:4px 7px;font-size:11px"><option value="">All Owners</option></select>
         <span style="font-size:11px;color:#555;font-weight:600">Review:</span>
         <input type="date" id="sop-rev-from" onchange="renderSop()" title="Review date from" style="border:.5px solid #ccc;border-radius:5px;padding:4px 7px;font-size:11px">
         <span style="font-size:10px;color:#888">to</span>
@@ -496,7 +502,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
       <div class="tbl-wrap"><table class="dt">
         <thead><tr>
           <th>ID</th><th style="min-width:180px">Title</th><th>Category</th><th>Linked Policy</th>
-          <th>Status</th><th>Ver</th><th>Review Date</th><th>Owner</th>
+          <th>Status</th><th>Ver</th><th>Review Date</th><th>Custodian</th><th>Owner</th>
           <th>Document</th><th id="sop-act-hdr" style="display:none">Actions</th>
         </tr></thead>
         <tbody id="sop-body"></tbody>
@@ -939,7 +945,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
       </div>
       <div class="f-grid">
         <div class="f-row"><label>Risk Level</label><select id="f-pol-risk" onchange="autoFillApprover()"><option>High Strategic</option><option>High Operational</option><option selected>Medium</option><option>Low</option></select></div>
-        <div class="f-row"><label>Status</label><select id="f-pol-status"><option>Draft</option><option>Consult</option><option>PTT Review</option></select></div>
+        <div class="f-row"><label>Status</label><select id="f-pol-status"><option value="Proposed">Proposed — idea registered, not yet drafting</option><option selected>Draft</option><option>Consult</option><option>PTT Review</option></select></div>
       </div>
       <div class="f-row"><label>Approver (auto-filled from Tier/Risk)</label><input type="text" id="f-pol-app"></div>
       <div class="f-grid">
@@ -947,6 +953,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <div class="f-row"><label>Custodian</label><input type="text" id="f-pol-cust"></div>
       </div>
       <div class="f-row"><label>Scheduled Review Date</label><input type="date" id="f-pol-rev"></div>
+      <div class="f-row"><label>Notes / Rationale</label><input type="text" id="f-pol-notes" placeholder="For Proposed: explain why this policy is needed and who requested it"></div>
       <div class="f-row"><label>Draft Document URL (optional)</label><input type="url" id="f-pol-draft-url" placeholder="https://studietrust.sharepoint.com/…"></div>
     </div>
     <div class="modal-actions"><button class="btn btn-sec" onclick="closeM('m-pol')">Cancel</button><button class="btn btn-pri" onclick="submitPol()">Register Policy →</button></div>
@@ -968,9 +975,11 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <div class="f-row"><label>Linked Policy</label><select id="f-sop-pol"></select></div>
       </div>
       <div class="f-grid">
-        <div class="f-row"><label>Status</label><select id="f-sop-status"><option>Draft</option><option>Consult</option><option>PTT Review</option></select></div>
+        <div class="f-row"><label>Status</label><select id="f-sop-status"><option value="Proposed">Proposed — idea registered, not yet drafting</option><option selected>Draft</option><option>Consult</option><option>PTT Review</option></select></div>
         <div class="f-row"><label>Owner</label><input type="text" id="f-sop-owner"></div>
+        <div class="f-row"><label>Custodian</label><input type="text" id="f-sop-cust"></div>
       </div>
+      <div class="f-row"><label>Notes / Rationale</label><input type="text" id="f-sop-notes" placeholder="For Proposed: explain why this SOP is needed and who requested it"></div>
       <div class="f-row"><label>Draft Document URL (optional)</label><input type="url" id="f-sop-draft-url" placeholder="https://studietrust.sharepoint.com/…"></div>
     </div>
     <div class="modal-actions"><button class="btn btn-sec" onclick="closeM('m-sop')">Cancel</button><button class="btn btn-pri" onclick="submitSop()">Register SOP →</button></div>
@@ -1082,10 +1091,10 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
     <div class="modal-body">
       <div class="info-box info-bl">Create 3 lists in SharePoint. Title exists automatically — do not create it. Use exact column names as shown.</div>
       <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:5px">GovPolicies</p>
-      <div class="cg"><span>Title</span><em> Text (built-in = policy title)</em> · <span>PolicyID</span><em> Text</em> · <span>Category</span><em> Text</em> · <span>Tier</span><em> Text</em> · <span>PolicyVersion</span><em> Text</em> · <span>Status</span><em> Choice*</em> · <span>Risk</span><em> Text</em> · <span>Approver</span><em> Text</em> · <span>ReviewDate</span><em> Date</em> · <span>Owner</span><em> Text</em> · <span>Custodian</span><em> Text</em> · <span>DraftUrl</span><em> Text</em> · <span>PublishedUrl</span><em> Text</em> · <span>ArchiveUrl</span><em> Text</em></div>
-      <p style="font-size:10px;color:var(--tx3);margin-bottom:10px">*Status choices: Draft · Consult · PTT Review · Approved · New · Published · Review Due · Archived</p>
+      <div class="cg"><span>Title</span><em> Text (built-in = policy title)</em> · <span>PolicyID</span><em> Text</em> · <span>Category</span><em> Text</em> · <span>Tier</span><em> Text</em> · <span>PolicyVersion</span><em> Text</em> · <span>Status</span><em> Choice*</em> · <span>Risk</span><em> Text</em> · <span>Approver</span><em> Text</em> · <span>ReviewDate</span><em> Date</em> · <span>Owner</span><em> Text</em> · <span>Custodian</span><em> Text</em> · <span>Notes</span><em> Text (ADD — rationale / requestor for Proposed items)</em> · <span>DraftUrl</span><em> Text</em> · <span>PublishedUrl</span><em> Text</em> · <span>ArchiveUrl</span><em> Text</em></div>
+      <p style="font-size:10px;color:var(--tx3);margin-bottom:10px">*Status choices: Proposed · Draft · Consult · PTT Review · Approved · New · Published · Review Due · Archived</p>
       <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:5px">GovSOPs</p>
-      <div class="cg"><span>Title</span><em> Text (built-in = SOP title)</em> · <span>SopID</span><em> Text</em> · <span>Category</span><em> Text</em> · <span>LinkedPolicy</span><em> Text</em> · <span>SopVersion</span><em> Text</em> · <span>Status</span><em> Choice*</em> · <span>ReviewDate</span><em> Date</em> · <span>Owner</span><em> Text</em> · <span>DraftUrl</span><em> Text</em> · <span>PublishedUrl</span><em> Text</em> · <span>ArchiveUrl</span><em> Text</em></div>
+      <div class="cg"><span>Title</span><em> Text (built-in = SOP title)</em> · <span>SopID</span><em> Text</em> · <span>Category</span><em> Text</em> · <span>LinkedPolicy</span><em> Text</em> · <span>SopVersion</span><em> Text</em> · <span>Status</span><em> Choice*</em> · <span>ReviewDate</span><em> Date</em> · <span>Owner</span><em> Text</em> · <span>Custodian</span><em> Text (ADD this column)</em> · <span>Notes</span><em> Text (ADD — rationale / requestor for Proposed items)</em> · <span>DraftUrl</span><em> Text</em> · <span>PublishedUrl</span><em> Text</em> · <span>ArchiveUrl</span><em> Text</em></div>
       <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:5px">GovChangelog</p>
       <div class="cg"><span>Title</span><em> Text (built-in = change note)</em> · <span>DocID</span><em> Text</em> · <span>DocType</span><em> Text (pol/sop)</em> · <span>FromStatus</span><em> Text</em> · <span>ToStatus</span><em> Text</em> · <span>ChangedBy</span><em> Text</em> · <span>ChangeDate</span><em> Date</em></div>
     </div>
@@ -1116,6 +1125,7 @@ const SCOPES = ['Sites.ReadWrite.All','User.Read','GroupMember.Read.All'];
 
 // Status transitions
 const STATUS_FLOW = {
+  Proposed:    ['Draft','Archived'],          // pre-draft idea
   Draft:       ['Consult','Archived'],
   Consult:     ['PTT Review','Draft','Archived'],
   'PTT Review':['Approved','Consult','Draft'],
@@ -1125,7 +1135,7 @@ const STATUS_FLOW = {
   'Review Due':['Draft','Archived'],
   Archived:    []
 };
-const DRAFT_STATUSES     = ['Draft','Consult','PTT Review'];
+const DRAFT_STATUSES     = ['Proposed','Draft','Consult','PTT Review'];
 const PUBLISHED_STATUSES = ['Approved','New','Published'];
 
 // ════════════════════════════════════════════
@@ -1159,6 +1169,7 @@ function govDocFolder(docType, docStatus, category) {
   const cat  = (category||'General').replace(/[^a-zA-Z0-9 ]/g,'').trim().replace(/\s+/g,'_');
   const year = new Date().getFullYear();
   switch(docStatus) {
+    case 'Proposed':
     case 'Draft': case 'Consult': case 'PTT Review':
       return `${base}/01_Drafts/${cat}`;
     case 'Approved':
@@ -1257,12 +1268,12 @@ async function handleGovMultiUpload(input) {
 }
 
 function clearPolFilters(){
-  ['pol-q','pol-cat','pol-tier','pol-status','pol-risk','pol-rev-from','pol-rev-to']
+  ['pol-q','pol-cat','pol-tier','pol-status','pol-risk','pol-approver','pol-custodian','pol-owner','pol-rev-from','pol-rev-to']
     .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   renderPol();
 }
 function clearSopFilters(){
-  ['sop-q','sop-cat','sop-status','sop-rev-from','sop-rev-to']
+  ['sop-q','sop-cat','sop-status','sop-custodian','sop-owner','sop-rev-from','sop-rev-to']
     .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   renderSop();
 }
@@ -1351,8 +1362,8 @@ async function spPatch(listName,itemId,fields){
 // ════════════════════════════════════════════
 // FIELD MAPPINGS
 // ════════════════════════════════════════════
-const POL_MAP={title:'Title',polId:'PolicyID',category:'Category',tier:'Tier',version:'PolicyVersion',status:'Status',risk:'Risk',approver:'Approver',reviewDate:'ReviewDate',owner:'Owner',custodian:'Custodian',draftUrl:'DraftUrl',publishedUrl:'PublishedUrl',archiveUrl:'ArchiveUrl'};
-const SOP_MAP={title:'Title',sopId:'SopID',category:'Category',linkedPolicy:'LinkedPolicy',version:'SopVersion',status:'Status',reviewDate:'ReviewDate',owner:'Owner',draftUrl:'DraftUrl',publishedUrl:'PublishedUrl',archiveUrl:'ArchiveUrl'};
+const POL_MAP={title:'Title',polId:'PolicyID',category:'Category',tier:'Tier',version:'PolicyVersion',status:'Status',risk:'Risk',approver:'Approver',reviewDate:'ReviewDate',owner:'Owner',custodian:'Custodian',notes:'Notes',draftUrl:'DraftUrl',publishedUrl:'PublishedUrl',archiveUrl:'ArchiveUrl'};
+const SOP_MAP={title:'Title',sopId:'SopID',category:'Category',linkedPolicy:'LinkedPolicy',version:'SopVersion',status:'Status',reviewDate:'ReviewDate',owner:'Owner',custodian:'Custodian',notes:'Notes',draftUrl:'DraftUrl',publishedUrl:'PublishedUrl',archiveUrl:'ArchiveUrl'};
 const LOG_MAP={note:'Title',docId:'DocID',docType:'DocType',fromStatus:'FromStatus',toStatus:'ToStatus',changedBy:'ChangedBy',changeDate:'ChangeDate'};
 
 // Hyperlink columns: SharePoint "Hyperlink or Picture" type returns/accepts {Url, Description} objects via Graph.
@@ -1626,7 +1637,7 @@ const isOverdue=d=>d&&new Date(d)<new Date();
 const isPublished=s=>['Approved','New','Published'].includes(s);
 const isDraft=s=>['Draft','Consult','PTT Review'].includes(s);
 
-function sbadge(s){const m={Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg','Review Due':'ba',Archived:'bgy'};return`<span class="bd ${m[s]||'bgy'}">${esc(s)}</span>`;}
+function sbadge(s){const m={Proposed:'bpr',Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg','Review Due':'ba',Archived:'bgy'};return`<span class="bd ${m[s]||'bgy'}">${esc(s)}</span>`;}
 function tbadge(t){return`<span class="bd bb">${esc(t)}</span>`;}
 function rbadge(r){const c=r==='High Strategic'||r==='High Operational'?'br':r==='Medium'?'ba':'bg';return`<span class="bd ${c}">${esc(r)}</span>`;}
 function datecell(d){if(!d)return'—';return isOverdue(d)?`<span class="overdue">${esc(d)} ⚠</span>`:esc(d);}
@@ -1667,6 +1678,9 @@ function renderPol(){
   const tf=(document.getElementById('pol-tier')||{}).value||'';
   const sf=(document.getElementById('pol-status')||{}).value||'';
   const rf=(document.getElementById('pol-risk')||{}).value||'';
+  const af=(document.getElementById('pol-approver')||{}).value||'';
+  const cuf=(document.getElementById('pol-custodian')||{}).value||'';
+  const owf=(document.getElementById('pol-owner')||{}).value||'';
   const prf=(document.getElementById('pol-rev-from')||{}).value||'';
   const prt=(document.getElementById('pol-rev-to')||{}).value||'';
   const ql=q.toLowerCase();
@@ -1678,12 +1692,15 @@ function renderPol(){
   const tbody=document.getElementById('pol-body'); if(!tbody) return;
   let html='',shown=0;
   visibleData.forEach(p=>{
-    const txt=[p.polId,p.title,p.category,p.tier,p.version,p.status,p.risk,p.approver,p.reviewDate,p.owner].join(' ').toLowerCase();
+    const txt=[p.polId,p.title,p.category,p.tier,p.version,p.status,p.risk,p.approver,p.reviewDate,p.owner,p.custodian,p.notes].join(' ').toLowerCase();
     if(ql&&txt.indexOf(ql)===-1) return;
     if(cf&&p.category!==cf) return;
     if(tf&&p.tier!==tf) return;
     if(sf&&p.status!==sf) return;
     if(rf&&p.risk!==rf) return;
+    if(af&&p.approver!==af) return;
+    if(cuf&&p.custodian!==cuf) return;
+    if(owf&&p.owner!==owf) return;
     if(prf&&p.reviewDate&&p.reviewDate<prf) return;
     if(prt&&p.reviewDate&&p.reviewDate>prt) return;
     shown++;
@@ -1691,7 +1708,7 @@ function renderPol(){
     const act = canChange
       ? `<td><button class="btn btn-sec btn-sm" onclick="openStatusModal('${esc(p.polId)}','pol','${esc(p.status)}')">Change Status</button></td>`
       : (seesAll ? '<td></td>' : '');
-    html+=`<tr><td>${esc(p.polId)}</td><td>${esc(p.title)}</td><td>${esc(p.category)}</td><td>${tbadge(p.tier)}</td><td>${esc(p.version)}</td><td>${sbadge(p.status)}</td><td>${rbadge(p.risk)}</td><td style="font-size:11px">${esc(p.approver)}</td><td>${datecell(p.reviewDate)}</td><td style="font-size:11px">${esc(p.owner)}</td><td>${docLinks(p,'pol')}</td>${act}</tr>`;
+    html+=`<tr><td>${esc(p.polId)}</td><td>${esc(p.title)}</td><td>${esc(p.category)}</td><td>${tbadge(p.tier)}</td><td>${esc(p.version)}</td><td>${sbadge(p.status)}</td><td>${rbadge(p.risk)}</td><td style="font-size:11px">${esc(p.approver)}</td><td>${datecell(p.reviewDate)}</td><td style="font-size:11px">${esc(p.custodian||'')}</td><td style="font-size:11px">${esc(p.owner)}</td><td>${docLinks(p,'pol')}</td>${act}</tr>`;
   });
   if(!shown){
     if(polData.length===0){
@@ -1715,6 +1732,13 @@ function renderPol(){
   // Populate category filter
   const cats=[...new Set(polData.map(p=>p.category).filter(Boolean))].sort();
   const cf2=document.getElementById('pol-cat');
+  // Populate Approver, Custodian, Owner dropdowns
+  ['pol-approver','pol-custodian','pol-owner'].forEach((id,i)=>{
+    const key=['approver','custodian','owner'][i];
+    const el=document.getElementById(id); if(!el||el.options.length>1) return;
+    [...new Set(polData.map(p=>p[key]).filter(Boolean))].sort()
+      .forEach(v=>{ const o=new Option(v,v); el.appendChild(o); });
+  });
   if(cf2&&cf2.options.length<2) cats.forEach(c=>{const o=new Option(c,c);cf2.appendChild(o);});
 
   // Status filter
@@ -1729,6 +1753,8 @@ function renderSop(){
   const q=(document.getElementById('sop-q')||{}).value||'';
   const cf=(document.getElementById('sop-cat')||{}).value||'';
   const sf=(document.getElementById('sop-status')||{}).value||'';
+  const scuf=(document.getElementById('sop-custodian')||{}).value||'';
+  const sowf=(document.getElementById('sop-owner')||{}).value||'';
   const srf=(document.getElementById('sop-rev-from')||{}).value||'';
   const srt=(document.getElementById('sop-rev-to')||{}).value||'';
   const ql=q.toLowerCase();
@@ -1739,10 +1765,12 @@ function renderSop(){
   const tbody=document.getElementById('sop-body'); if(!tbody) return;
   let html='',shown=0;
   visibleData.forEach(s=>{
-    const txt=[s.sopId,s.title,s.category,s.linkedPolicy,s.status,s.version,s.reviewDate,s.owner].join(' ').toLowerCase();
+    const txt=[s.sopId,s.title,s.category,s.linkedPolicy,s.status,s.version,s.reviewDate,s.owner,s.custodian,s.notes].join(' ').toLowerCase();
     if(ql&&txt.indexOf(ql)===-1) return;
     if(cf&&s.category!==cf) return;
     if(sf&&s.status!==sf) return;
+    if(scuf&&s.custodian!==scuf) return;
+    if(sowf&&s.owner!==sowf) return;
     if(srf&&s.reviewDate&&s.reviewDate<srf) return;
     if(srt&&s.reviewDate&&s.reviewDate>srt) return;
     shown++;
@@ -1750,7 +1778,7 @@ function renderSop(){
     const act = canChange
       ? `<td><button class="btn btn-sec btn-sm" onclick="openStatusModal('${esc(s.sopId)}','sop','${esc(s.status)}')">Change Status</button></td>`
       : (seesAll ? '<td></td>' : '');
-    html+=`<tr><td>${esc(s.sopId)}</td><td>${esc(s.title)}</td><td>${esc(s.category)}</td><td>${esc(s.linkedPolicy)}</td><td>${sbadge(s.status)}</td><td>${esc(s.version)}</td><td>${datecell(s.reviewDate)}</td><td style="font-size:11px">${esc(s.owner)}</td><td>${docLinks(s,'sop')}</td>${act}</tr>`;
+    html+=`<tr><td>${esc(s.sopId)}</td><td>${esc(s.title)}</td><td>${esc(s.category)}</td><td>${esc(s.linkedPolicy)}</td><td>${sbadge(s.status)}</td><td>${esc(s.version)}</td><td>${datecell(s.reviewDate)}</td><td style="font-size:11px">${esc(s.custodian||'')}</td><td style="font-size:11px">${esc(s.owner)}</td><td>${docLinks(s,'sop')}</td>${act}</tr>`;
   });
   if(!shown) html=`<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:20px">No SOPs match the current filters.</td></tr>`;
   tbody.innerHTML=html;
@@ -1763,6 +1791,12 @@ function renderSop(){
 
   const cats=[...new Set(sopData.map(s=>s.category).filter(Boolean))].sort();
   const cf2=document.getElementById('sop-cat');
+  ['sop-custodian','sop-owner'].forEach((id,i)=>{
+    const key=['custodian','owner'][i];
+    const el=document.getElementById(id); if(!el||el.options.length>1) return;
+    [...new Set(sopData.map(s=>s[key]).filter(Boolean))].sort()
+      .forEach(v=>{ const o=new Option(v,v); el.appendChild(o); });
+  });
   if(cf2&&cf2.options.length<2) cats.forEach(c=>{const o=new Option(c,c);cf2.appendChild(o);});
   const sf2=document.getElementById('sop-status');
   if(sf2&&sf2.options.length<2){const stats=[...new Set(sopData.map(s=>s.status))];stats.forEach(s=>{const o=new Option(s,s);sf2.appendChild(o);});}
@@ -2055,7 +2089,7 @@ async function submitPol(){
   const title=document.getElementById('f-pol-title').value.trim();
   if(!pid||!title){toast('Policy ID and Title are required.','warning');return;}
   if(polData.some(p=>p.polId===pid)){toast('Policy ID '+pid+' already exists.','error');return;}
-  const p={polId:pid,title,category:document.getElementById('f-pol-cat').value,tier:document.getElementById('f-pol-tier').value,version:document.getElementById('f-pol-ver').value||'0.1',status:document.getElementById('f-pol-status').value||'Draft',risk:document.getElementById('f-pol-risk').value||'Medium',approver:document.getElementById('f-pol-app').value,owner:document.getElementById('f-pol-owner').value,custodian:document.getElementById('f-pol-cust').value,reviewDate:document.getElementById('f-pol-rev').value,draftUrl:document.getElementById('f-pol-draft-url').value,publishedUrl:'',archiveUrl:''};
+  const p={polId:pid,title,category:document.getElementById('f-pol-cat').value,tier:document.getElementById('f-pol-tier').value,version:document.getElementById('f-pol-ver').value||'0.1',status:document.getElementById('f-pol-status').value||'Draft',risk:document.getElementById('f-pol-risk').value||'Medium',approver:document.getElementById('f-pol-app').value,owner:document.getElementById('f-pol-owner').value,custodian:document.getElementById('f-pol-cust').value,notes:document.getElementById('f-pol-notes').value,reviewDate:document.getElementById('f-pol-rev').value,draftUrl:document.getElementById('f-pol-draft-url').value,publishedUrl:'',archiveUrl:''};
   try{
     const r=await spPost(LISTS.pol,toSpPol(p));
     p._spId=r.id; polData.unshift(p);
@@ -2072,7 +2106,7 @@ async function submitSop(){
   const title=document.getElementById('f-sop-title').value.trim();
   if(!sid||!title){toast('SOP ID and Title are required.','warning');return;}
   if(sopData.some(s=>s.sopId===sid)){toast('SOP ID '+sid+' already exists.','error');return;}
-  const s={sopId:sid,title,category:document.getElementById('f-sop-cat').value,linkedPolicy:document.getElementById('f-sop-pol').value,version:document.getElementById('f-sop-ver').value||'0.1',status:document.getElementById('f-sop-status').value||'Draft',reviewDate:'',owner:document.getElementById('f-sop-owner').value,draftUrl:document.getElementById('f-sop-draft-url').value,publishedUrl:'',archiveUrl:''};
+  const s={sopId:sid,title,category:document.getElementById('f-sop-cat').value,linkedPolicy:document.getElementById('f-sop-pol').value,version:document.getElementById('f-sop-ver').value||'0.1',status:document.getElementById('f-sop-status').value||'Draft',reviewDate:'',owner:document.getElementById('f-sop-owner').value,custodian:(document.getElementById('f-sop-cust')||{}).value||'',notes:(document.getElementById('f-sop-notes')||{}).value||'',draftUrl:document.getElementById('f-sop-draft-url').value,publishedUrl:'',archiveUrl:''};
   try{
     const r=await spPost(LISTS.sop,toSpSop(s));
     s._spId=r.id; sopData.unshift(s);
