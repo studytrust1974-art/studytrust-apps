@@ -945,7 +945,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
       </div>
       <div class="f-grid">
         <div class="f-row"><label>Risk Level</label><select id="f-pol-risk" onchange="autoFillApprover()"><option>High Strategic</option><option>High Operational</option><option selected>Medium</option><option>Low</option></select></div>
-        <div class="f-row"><label>Status</label><select id="f-pol-status"><option value="Proposed">Proposed — idea registered, not yet drafting</option><option selected>Draft</option><option>Consult</option><option>PTT Review</option></select></div>
+        <div class="f-row"><label>Status</label><select id="f-pol-status"><option value="Initiated">Initiated — idea registered, not yet drafting</option><option selected>Draft</option><option>Consult</option><option>PTT Review</option></select></div>
       </div>
       <div class="f-row"><label>Approver (auto-filled from Tier/Risk)</label><input type="text" id="f-pol-app"></div>
       <div class="f-grid">
@@ -975,7 +975,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <div class="f-row"><label>Linked Policy</label><select id="f-sop-pol"></select></div>
       </div>
       <div class="f-grid">
-        <div class="f-row"><label>Status</label><select id="f-sop-status"><option value="Proposed">Proposed — idea registered, not yet drafting</option><option selected>Draft</option><option>Consult</option><option>PTT Review</option></select></div>
+        <div class="f-row"><label>Status</label><select id="f-sop-status"><option value="Initiated">Initiated — idea registered, not yet drafting</option><option selected>Draft</option><option>Consult</option><option>PTT Review</option></select></div>
         <div class="f-row"><label>Owner</label><input type="text" id="f-sop-owner"></div>
         <div class="f-row"><label>Custodian</label><input type="text" id="f-sop-cust"></div>
       </div>
@@ -1092,7 +1092,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
       <div class="info-box info-bl">Create 3 lists in SharePoint. Title exists automatically — do not create it. Use exact column names as shown.</div>
       <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:5px">GovPolicies</p>
       <div class="cg"><span>Title</span><em> Text (built-in = policy title)</em> · <span>PolicyID</span><em> Text</em> · <span>Category</span><em> Text</em> · <span>Tier</span><em> Text</em> · <span>PolicyVersion</span><em> Text</em> · <span>Status</span><em> Choice*</em> · <span>Risk</span><em> Text</em> · <span>Approver</span><em> Text</em> · <span>ReviewDate</span><em> Date</em> · <span>Owner</span><em> Text</em> · <span>Custodian</span><em> Text</em> · <span>Notes</span><em> Text (ADD — rationale / requestor for Proposed items)</em> · <span>DraftUrl</span><em> Text</em> · <span>PublishedUrl</span><em> Text</em> · <span>ArchiveUrl</span><em> Text</em></div>
-      <p style="font-size:10px;color:var(--tx3);margin-bottom:10px">*Status choices: Proposed · Draft · Consult · PTT Review · Approved · New · Published · Review Due · Archived</p>
+      <p style="font-size:10px;color:var(--tx3);margin-bottom:10px">*Status choices: Initiated · Draft · Consult · PTT Review · Approved · New · Published · Review Due · Archived</p>
       <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:5px">GovSOPs</p>
       <div class="cg"><span>Title</span><em> Text (built-in = SOP title)</em> · <span>SopID</span><em> Text</em> · <span>Category</span><em> Text</em> · <span>LinkedPolicy</span><em> Text</em> · <span>SopVersion</span><em> Text</em> · <span>Status</span><em> Choice*</em> · <span>ReviewDate</span><em> Date</em> · <span>Owner</span><em> Text</em> · <span>Custodian</span><em> Text (ADD this column)</em> · <span>Notes</span><em> Text (ADD — rationale / requestor for Proposed items)</em> · <span>DraftUrl</span><em> Text</em> · <span>PublishedUrl</span><em> Text</em> · <span>ArchiveUrl</span><em> Text</em></div>
       <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:5px">GovChangelog</p>
@@ -1125,7 +1125,7 @@ const SCOPES = ['Sites.ReadWrite.All','User.Read','GroupMember.Read.All'];
 
 // Status transitions
 const STATUS_FLOW = {
-  Proposed:    ['Draft','Archived'],          // pre-draft idea
+  Initiated:   ['Draft','Archived'],          // idea registered, not yet drafting
   Draft:       ['Consult','Archived'],
   Consult:     ['PTT Review','Draft','Archived'],
   'PTT Review':['Approved','Consult','Draft'],
@@ -1135,7 +1135,7 @@ const STATUS_FLOW = {
   'Review Due':['Draft','Archived'],
   Archived:    []
 };
-const DRAFT_STATUSES     = ['Proposed','Draft','Consult','PTT Review'];
+const DRAFT_STATUSES     = ['Initiated','Draft','Consult','PTT Review'];
 const PUBLISHED_STATUSES = ['Approved','New','Published'];
 
 // ════════════════════════════════════════════
@@ -1169,7 +1169,7 @@ function govDocFolder(docType, docStatus, category) {
   const cat  = (category||'General').replace(/[^a-zA-Z0-9 ]/g,'').trim().replace(/\s+/g,'_');
   const year = new Date().getFullYear();
   switch(docStatus) {
-    case 'Proposed':
+    case 'Initiated':
     case 'Draft': case 'Consult': case 'PTT Review':
       return `${base}/01_Drafts/${cat}`;
     case 'Approved':
@@ -1637,7 +1637,7 @@ const isOverdue=d=>d&&new Date(d)<new Date();
 const isPublished=s=>['Approved','New','Published'].includes(s);
 const isDraft=s=>['Draft','Consult','PTT Review'].includes(s);
 
-function sbadge(s){const m={Proposed:'bpr',Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg','Review Due':'ba',Archived:'bgy'};return`<span class="bd ${m[s]||'bgy'}">${esc(s)}</span>`;}
+function sbadge(s){const m={Initiated:'bpr',Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg','Review Due':'ba',Archived:'bgy'};return`<span class="bd ${m[s]||'bgy'}">${esc(s)}</span>`;}
 function tbadge(t){return`<span class="bd bb">${esc(t)}</span>`;}
 function rbadge(r){const c=r==='High Strategic'||r==='High Operational'?'br':r==='Medium'?'ba':'bg';return`<span class="bd ${c}">${esc(r)}</span>`;}
 function datecell(d){if(!d)return'—';return isOverdue(d)?`<span class="overdue">${esc(d)} ⚠</span>`:esc(d);}
