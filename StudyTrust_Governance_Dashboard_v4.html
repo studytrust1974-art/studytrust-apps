@@ -6,7 +6,7 @@
 <title>StudyTrust Governance Hub v4</title>
 <!--
   ════════════════════════════════════════════════════════
-  STUDYTRUST GOVERNANCE HUB v4  —  Microsoft Graph Edition
+  STUDYTRUST GOVERNANCE HUB v4.2  —  Microsoft Graph Edition
   ════════════════════════════════════════════════════════
   Three access levels:
     Admin     — Full edit: add policies/SOPs, change statuses,
@@ -316,7 +316,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L3 7v10l9 5 9-5V7L12 2z"/><line x1="12" y1="22" x2="12" y2="12"/><line x1="3" y1="7" x2="12" y2="12"/><line x1="21" y1="7" x2="12" y2="12"/></svg>
     </div>
     <div>
-      <div class="hdr-title">StudyTrust Governance Hub <span style="font-size:10px;opacity:.45;font-weight:400">v4.1</span></div>
+      <div class="hdr-title">StudyTrust Governance Hub <span style="font-size:10px;opacity:.45;font-weight:400">v4.2</span></div>
       <div class="hdr-sub">Policies · SOPs · Compliance · Risk · 000-601 NPO · IT3895/11(T)</div>
     </div>
   </div>
@@ -455,6 +455,11 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <select id="pol-tier" onchange="renderPol()"><option value="">All Tiers</option><option>T1</option><option>T2</option><option>T3</option><option>T4</option></select>
         <select id="pol-status" onchange="renderPol()"><option value="">All Statuses</option></select>
         <select id="pol-risk" onchange="renderPol()"><option value="">All Risk Levels</option><option>High Strategic</option><option>High Operational</option><option>Medium</option><option>Low</option></select>
+        <span style="font-size:11px;color:#555;font-weight:600;margin-left:4px">Review:</span>
+        <input type="date" id="pol-rev-from" onchange="renderPol()" title="Review date from" style="border:.5px solid #ccc;border-radius:5px;padding:4px 7px;font-size:11px">
+        <span style="font-size:10px;color:#888">to</span>
+        <input type="date" id="pol-rev-to" onchange="renderPol()" title="Review date to" style="border:.5px solid #ccc;border-radius:5px;padding:4px 7px;font-size:11px">
+        <button class="btn" style="padding:4px 9px;font-size:11px" onclick="clearPolFilters()">Clear</button>
       </div>
       <div class="tbl-wrap"><table class="dt">
         <thead><tr>
@@ -482,6 +487,11 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <input type="text" id="sop-q" placeholder="Search SOPs…" oninput="renderSop()">
         <select id="sop-cat" onchange="renderSop()"><option value="">All Categories</option></select>
         <select id="sop-status" onchange="renderSop()"><option value="">All Statuses</option></select>
+        <span style="font-size:11px;color:#555;font-weight:600">Review:</span>
+        <input type="date" id="sop-rev-from" onchange="renderSop()" title="Review date from" style="border:.5px solid #ccc;border-radius:5px;padding:4px 7px;font-size:11px">
+        <span style="font-size:10px;color:#888">to</span>
+        <input type="date" id="sop-rev-to" onchange="renderSop()" title="Review date to" style="border:.5px solid #ccc;border-radius:5px;padding:4px 7px;font-size:11px">
+        <button class="btn" style="padding:4px 9px;font-size:11px" onclick="clearSopFilters()">Clear</button>
       </div>
       <div class="tbl-wrap"><table class="dt">
         <thead><tr>
@@ -581,6 +591,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
           <div style="font-size:11px;color:var(--tx3);margin-top:4px;line-height:1.5">Members of this group can review and edit drafts (Step 4 of governance), but cannot publish, archive, or delete final documents.</div>
         </div>
         <button class="btn btn-pri btn-sm" onclick="saveGroupConfig()">Save Group Names</button>
+        <button class="btn btn-sm" style="margin-left:6px" onclick="resetGroupConfig()">Reset to Defaults</button>
         <div style="font-size:11px;color:var(--tx3);margin-top:8px">Group names are stored in localStorage. Users signing in will be assigned their role based on their Azure AD group membership.</div>
       </div></div>
 
@@ -884,9 +895,29 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
     <div class="modal-hd"><span class="modal-title" id="url-modal-title">Edit Document URLs</span><button class="modal-x" onclick="closeM('m-urls')">✕</button></div>
     <div class="modal-body">
       <div class="info-box info-am">Paste the full SharePoint URL to each version of this document. Draft URLs open in Office Online edit mode. Published URLs are visible to all users.</div>
-      <div class="f-row"><label>Draft / Review URL (opens in edit mode)</label><input type="url" id="f-url-draft" placeholder="https://studietrust.sharepoint.com/…"></div>
-      <div class="f-row"><label>Published URL (visible to all users)</label><input type="url" id="f-url-pub" placeholder="https://studietrust.sharepoint.com/…"></div>
-      <div class="f-row"><label>Archive URL (admin only)</label><input type="url" id="f-url-arch" placeholder="https://studietrust.sharepoint.com/…"></div>
+      <div class="f-row">
+        <label>Draft / Review URL <span style="font-size:10px;color:var(--tx3);font-weight:400">(uploads to 01_Drafts/[Category]/)</span></label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="url" id="f-url-draft" placeholder="https://studietrust.sharepoint.com/…" style="flex:1">
+          <button class="btn btn-sec btn-sm" onclick="triggerGovUpload('f-url-draft')" title="Upload one file to the Drafts folder">⬆ Upload</button>
+          <button class="btn btn-sm" style="background:#e8f5e9;color:#1b5e20;border-color:#a5d6a7;white-space:nowrap" onclick="triggerGovMultiUpload('f-url-draft')" title="Create a folder and upload multiple files (e.g. policy + annexures)">📁 Multi</button>
+        </div>
+        <div class="f-note">Hover over Upload to see the destination folder. Multi creates a subfolder and links it.</div>
+      </div>
+      <div class="f-row">
+        <label>Published URL <span style="font-size:10px;color:var(--tx3);font-weight:400">(uploads to 04_Published/[Category]/)</span></label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="url" id="f-url-pub" placeholder="https://studietrust.sharepoint.com/…" style="flex:1">
+          <button class="btn btn-sec btn-sm" onclick="triggerGovUpload('f-url-pub')" title="Upload the final published document">⬆ Upload</button>
+        </div>
+      </div>
+      <div class="f-row">
+        <label>Archive URL <span style="font-size:10px;color:var(--tx3);font-weight:400">(uploads to 05_Archived/[Year]/)</span></label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="url" id="f-url-arch" placeholder="https://studietrust.sharepoint.com/…" style="flex:1">
+          <button class="btn btn-sec btn-sm" onclick="triggerGovUpload('f-url-arch')" title="Upload the archived version">⬆ Upload</button>
+        </div>
+      </div>
     </div>
     <div class="modal-actions"><button class="btn btn-sec" onclick="closeM('m-urls')">Cancel</button><button class="btn btn-pri" onclick="saveUrls()">Save URLs to SharePoint</button></div>
   </div>
@@ -1099,7 +1130,146 @@ const PUBLISHED_STATUSES = ['Approved','New','Published'];
 
 // ════════════════════════════════════════════
 // MSAL + GRAPH API
-// ════════════════════════════════════════════
+// ════════════════════════════════════════════════
+// GOVERNANCE DOCUMENT UPLOAD
+// ════════════════════════════════════════════════
+
+let _govDriveCache = {};
+
+async function getGovDriveId(libraryName) {
+  if (_govDriveCache[libraryName]) return _govDriveCache[libraryName];
+  const sid = await getSiteId();
+  const data = await gFetch(`/sites/${sid}/drives`);
+  const norm = s => s.toLowerCase().replace(/[_\s\-]+/g,' ').trim();
+  const drive = (data.value||[]).find(d =>
+    d.name === libraryName ||
+    norm(d.name||'') === norm(libraryName) ||
+    norm((d.webUrl||'').split('/').pop()) === norm(libraryName)
+  );
+  if (!drive) {
+    const avail = (data.value||[]).map(d=>d.name).join(', ');
+    throw new Error(`Library "${libraryName}" not found. Available: ${avail}`);
+  }
+  _govDriveCache[libraryName] = drive.id;
+  return drive.id;
+}
+
+function govDocFolder(docType, docStatus, category) {
+  const base = docType === 'pol' ? '01_Policies' : '02_SOPs';
+  const cat  = (category||'General').replace(/[^a-zA-Z0-9 ]/g,'').trim().replace(/\s+/g,'_');
+  const year = new Date().getFullYear();
+  switch(docStatus) {
+    case 'Draft': case 'Consult': case 'PTT Review':
+      return `${base}/01_Drafts/${cat}`;
+    case 'Approved':
+      return `${base}/03_Approved_Pending_Publication`;
+    case 'Published': case 'Review Due':
+      return `${base}/04_Published/${cat}`;
+    case 'Archived':
+      return `${base}/05_Archived/${year}`;
+    default:
+      return `${base}/01_Drafts/${cat}`;
+  }
+}
+
+async function uploadGovFile(libraryName, folderPath, file) {
+  const tok = await getToken();
+  const driveId = await getGovDriveId(libraryName);
+  const sid = await getSiteId();
+  const encodedPath = (folderPath+'/'+file.name).split('/').map(encodeURIComponent).join('/');
+  const url = `${GRAPH}/sites/${sid}/drives/${driveId}/root:/${encodedPath}:/content`;
+  const r = await fetch(url, {
+    method: 'PUT',
+    headers: { Authorization: 'Bearer '+tok, 'Content-Type': file.type||'application/octet-stream' },
+    body: await file.arrayBuffer()
+  });
+  if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e?.error?.message||'HTTP '+r.status); }
+  return await r.json();
+}
+
+async function createGovFolder(libraryName, parentPath, folderName) {
+  const tok = await getToken();
+  const driveId = await getGovDriveId(libraryName);
+  const sid = await getSiteId();
+  const encodedParent = parentPath.split('/').map(encodeURIComponent).join('/');
+  const url = `${GRAPH}/sites/${sid}/drives/${driveId}/root:/${encodedParent}:/children`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer '+tok, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: folderName, folder: {}, '@microsoft.graph.conflictBehavior': 'rename' })
+  });
+  if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e?.error?.message||'HTTP '+r.status); }
+  return await r.json();
+}
+
+function triggerGovUpload(fieldId) {
+  const inp = document.getElementById('gov-file-input');
+  inp.dataset.field = fieldId; inp.click();
+}
+function triggerGovMultiUpload(fieldId) {
+  const inp = document.getElementById('gov-multi-input');
+  inp.dataset.field = fieldId; inp.click();
+}
+
+async function handleGovFileUpload(input) {
+  const file = input.files[0]; if (!file) return;
+  const fieldId = input.dataset.field;
+  const {id, type} = urlTarget||{};
+  const arr = type === 'pol' ? polData : sopData;
+  const doc = arr ? arr.find(d => (type==='pol' ? d.polId : d.sopId) === id) : null;
+  if (!doc) { toast('Open the document URL editor first.','err'); input.value=''; return; }
+  let status = doc.status;
+  if (fieldId === 'f-url-pub') status = 'Published';
+  if (fieldId === 'f-url-arch') status = 'Archived';
+  const folder = govDocFolder(type, status, doc.category);
+  toast('Uploading ' + file.name + '…', 'ok');
+  try {
+    const result = await uploadGovFile('Governance Published', folder, file);
+    document.getElementById(fieldId).value = result.webUrl||'';
+    toast('Uploaded: ' + file.name, 'ok');
+  } catch(e) { toast('Upload failed: ' + e.message, 'err'); }
+  input.value = '';
+}
+
+async function handleGovMultiUpload(input) {
+  const files = Array.from(input.files); if (!files.length) return;
+  const fieldId = input.dataset.field;
+  const {id, type} = urlTarget||{};
+  const arr = type === 'pol' ? polData : sopData;
+  const doc = arr ? arr.find(d => (type==='pol' ? d.polId : d.sopId) === id) : null;
+  if (!doc) { toast('Open the document URL editor first.','err'); input.value=''; return; }
+  let status = doc.status;
+  if (fieldId === 'f-url-pub') status = 'Published';
+  if (fieldId === 'f-url-arch') status = 'Archived';
+  const parentFolder = govDocFolder(type, status, doc.category);
+  const datePart = new Date().toISOString().slice(0,10);
+  const titlePart = (doc.title||'Documents').replace(/[^a-zA-Z0-9 ]/g,'').trim().split(/\s+/).slice(0,4).join('_');
+  const folderName = datePart + '_' + titlePart;
+  toast(`Creating folder and uploading ${files.length} file${files.length!==1?'s':''}…`, 'ok');
+  try {
+    const folderResult = await createGovFolder('Governance Published', parentFolder, folderName);
+    const folderPath = parentFolder + '/' + folderResult.name;
+    for (const file of files) { await uploadGovFile('Governance Published', folderPath, file); }
+    document.getElementById(fieldId).value = folderResult.webUrl||'';
+    toast(`Folder created with ${files.length} file${files.length!==1?'s':''}: ${folderResult.name}`, 'ok');
+  } catch(e) { toast('Upload failed: ' + e.message, 'err'); }
+  input.value = '';
+}
+
+function clearPolFilters(){
+  ['pol-q','pol-cat','pol-tier','pol-status','pol-risk','pol-rev-from','pol-rev-to']
+    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  renderPol();
+}
+function clearSopFilters(){
+  ['sop-q','sop-cat','sop-status','sop-rev-from','sop-rev-to']
+    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  renderSop();
+}
+
+// ════════════════════════════════════════════════
+// GRAPH API
+// ════════════════════════════════════════════════
 let msalApp, graphToken, graphSiteId;
 
 async function initMsal(){
@@ -1229,7 +1399,13 @@ let ADMIN_GROUP='Dashboards - Governance-Admins', TRUSTEE_GROUP='Dashboards - Bo
 
 // Load group config from localStorage
 function loadGroupConfig(){
-  const cfg=JSON.parse(localStorage.getItem('st_gov_group_cfg')||'{}');
+  let cfg=JSON.parse(localStorage.getItem('st_gov_group_cfg')||'{}');
+  // Migration: if stored config uses the old StudyTrust- prefix, discard it so
+  // the new Dashboards- defaults take effect without manual intervention.
+  if(cfg.admin && cfg.admin.toLowerCase().startsWith('studytrust-')){
+    localStorage.removeItem('st_gov_group_cfg'); cfg={};
+    console.info('Stale group config cleared — using new Dashboards- defaults.');
+  }
   ADMIN_GROUP=cfg.admin||'Dashboards - Governance-Admins';
   TRUSTEE_GROUP=cfg.trustee||'Dashboards - Board-of-Trustees';
   AUDITOR_GROUP=cfg.auditor||'Dashboards - External-Auditors';
@@ -1245,6 +1421,16 @@ function saveGroupConfig(){
   localStorage.setItem('st_gov_group_cfg',JSON.stringify({admin:ag,trustee:tg,auditor:aug,ptt:pg}));
   ADMIN_GROUP=ag; TRUSTEE_GROUP=tg; AUDITOR_GROUP=aug; PTT_GROUP=pg;
   toast('Group configuration saved.','success');
+}
+function resetGroupConfig(){
+  if(!confirm('Reset all group names to the Dashboards- defaults?')) return;
+  localStorage.removeItem('st_gov_group_cfg');
+  ADMIN_GROUP='Dashboards - Governance-Admins';
+  TRUSTEE_GROUP='Dashboards - Board-of-Trustees';
+  AUDITOR_GROUP='Dashboards - External-Auditors';
+  PTT_GROUP='Dashboards - Policy Task Team';
+  loadGroupConfig();
+  toast('Group names reset to defaults. Sign out and back in to re-detect your role.','success');
 }
 
 // ════════════════════════════════════════════
@@ -1481,6 +1667,8 @@ function renderPol(){
   const tf=(document.getElementById('pol-tier')||{}).value||'';
   const sf=(document.getElementById('pol-status')||{}).value||'';
   const rf=(document.getElementById('pol-risk')||{}).value||'';
+  const prf=(document.getElementById('pol-rev-from')||{}).value||'';
+  const prt=(document.getElementById('pol-rev-to')||{}).value||'';
   const ql=q.toLowerCase();
 
   // Admin and PTT see all statuses; trustees, auditors and personnel see only published
@@ -1496,6 +1684,8 @@ function renderPol(){
     if(tf&&p.tier!==tf) return;
     if(sf&&p.status!==sf) return;
     if(rf&&p.risk!==rf) return;
+    if(prf&&p.reviewDate&&p.reviewDate<prf) return;
+    if(prt&&p.reviewDate&&p.reviewDate>prt) return;
     shown++;
     const canChange = (currentRole==='admin') || (currentRole==='ptt' && allowedTransitions(p.status,'ptt').length>0);
     const act = canChange
@@ -1539,6 +1729,8 @@ function renderSop(){
   const q=(document.getElementById('sop-q')||{}).value||'';
   const cf=(document.getElementById('sop-cat')||{}).value||'';
   const sf=(document.getElementById('sop-status')||{}).value||'';
+  const srf=(document.getElementById('sop-rev-from')||{}).value||'';
+  const srt=(document.getElementById('sop-rev-to')||{}).value||'';
   const ql=q.toLowerCase();
 
   const seesAll = currentRole==='admin' || currentRole==='ptt';
@@ -1551,6 +1743,8 @@ function renderSop(){
     if(ql&&txt.indexOf(ql)===-1) return;
     if(cf&&s.category!==cf) return;
     if(sf&&s.status!==sf) return;
+    if(srf&&s.reviewDate&&s.reviewDate<srf) return;
+    if(srt&&s.reviewDate&&s.reviewDate>srt) return;
     shown++;
     const canChange = (currentRole==='admin') || (currentRole==='ptt' && allowedTransitions(s.status,'ptt').length>0);
     const act = canChange
@@ -2720,6 +2914,7 @@ function saveDiagGroups(){
   const aug = document.getElementById('diag-auditor-grp').value.trim();
   const pg  = (document.getElementById('diag-ptt-grp')||{}).value ? document.getElementById('diag-ptt-grp').value.trim() : PTT_GROUP;
   if(!ag||!tg||!aug||!pg){ toast('All four group names are required.','warning'); return; }
+  // Always overwrite — this also clears any stale old-prefix config
   localStorage.setItem('st_gov_group_cfg', JSON.stringify({admin:ag,trustee:tg,auditor:aug,ptt:pg}));
   ADMIN_GROUP=ag; TRUSTEE_GROUP=tg; AUDITOR_GROUP=aug; PTT_GROUP=pg;
   // Also update the hub admin panel fields if visible
@@ -2777,5 +2972,7 @@ async function init(){
 
 init();
 </script>
+<input type="file" id="gov-file-input" style="display:none" onchange="handleGovFileUpload(this)">
+<input type="file" id="gov-multi-input" style="display:none" multiple onchange="handleGovMultiUpload(this)">
 </body>
 </html>
