@@ -143,6 +143,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
 .bp{background:var(--pu-bg);color:var(--pu-tx)}.bt{background:var(--tl-bg);color:var(--tl-tx)}
 .btr{background:var(--tr-bg);color:var(--tr-tx)}.bgy{background:var(--bg);color:var(--tx2);border:1px solid var(--bdr)}
 .bpr{background:#ede7f6;color:#4527a0;border:1px solid #b39ddb}
+.reg-row:hover{background:var(--st-p);transition:background .15s}
 .overdue{color:var(--rd-tx);font-weight:600}
 
 /* ── DOC LINK BUTTONS ── */
@@ -317,7 +318,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L3 7v10l9 5 9-5V7L12 2z"/><line x1="12" y1="22" x2="12" y2="12"/><line x1="3" y1="7" x2="12" y2="12"/><line x1="21" y1="7" x2="12" y2="12"/></svg>
     </div>
     <div>
-      <div class="hdr-title">StudyTrust Governance Hub <span style="font-size:10px;opacity:.45;font-weight:400">v4.3</span></div>
+      <div class="hdr-title">StudyTrust Governance Hub <span style="font-size:10px;opacity:.45;font-weight:400">v4.4</span></div>
       <div class="hdr-sub">Policies · SOPs · Compliance · Risk · 000-601 NPO · IT3895/11(T)</div>
     </div>
   </div>
@@ -928,6 +929,69 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
     <div class="modal-actions"><button class="btn btn-sec" onclick="closeM('m-urls')">Cancel</button><button class="btn btn-pri" onclick="saveUrls()">Save URLs to SharePoint</button></div>
   </div>
 </div>
+
+<!-- EDIT POLICY / SOP MODAL -->
+<div class="modal-ov" id="m-edit">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-hd">
+      <span class="modal-title" id="edit-modal-title">Edit Policy</span>
+      <button class="modal-x" onclick="closeM('m-edit')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id">
+      <input type="hidden" id="edit-type">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
+        <div class="f-row" style="grid-column:1/-1"><label>Title</label><input type="text" id="edit-title"></div>
+        <div class="f-row"><label>ID</label><input type="text" id="edit-docid" readonly style="background:var(--bg2)"></div>
+        <div class="f-row"><label>Version</label><input type="text" id="edit-version" placeholder="e.g. 1.0"></div>
+        <div class="f-row"><label>Category</label>
+          <select id="edit-cat">
+            <option>Governance</option><option>Personnel</option><option>IT</option>
+            <option>Finance</option><option>Operations</option><option>Bursaries</option><option>Funders</option>
+          </select>
+        </div>
+        <div class="f-row"><label>Tier</label>
+          <select id="edit-tier"><option>T1</option><option>T2</option><option>T3</option><option>T4</option></select>
+        </div>
+        <div class="f-row"><label>Risk Level</label>
+          <select id="edit-risk">
+            <option>High Strategic</option><option>High Operational</option><option>Medium</option><option>Low</option>
+          </select>
+        </div>
+        <div class="f-row"><label>Status</label>
+          <select id="edit-status">
+            <option>Initiated</option><option>Draft</option><option>Consult</option>
+            <option>PTT Review</option><option>Approved</option><option>Published</option>
+            <option>Review Due</option><option>Archived</option>
+          </select>
+        </div>
+        <div class="f-row" style="grid-column:1/-1"><label>Approver</label><input type="text" id="edit-approver"></div>
+        <div class="f-row"><label>Owner</label><input type="text" id="edit-owner"></div>
+        <div class="f-row"><label>Custodian</label><input type="text" id="edit-custodian"></div>
+        <div class="f-row"><label>Review Date</label><input type="date" id="edit-rev-date"></div>
+        <div class="f-row" id="edit-linked-pol-row" style="display:none"><label>Linked Policy</label><input type="text" id="edit-linked-pol"></div>
+        <div class="f-row" style="grid-column:1/-1"><label>Notes / Rationale</label><input type="text" id="edit-notes" placeholder="Background, rationale, or context"></div>
+        <div class="f-row" style="grid-column:1/-1"><label>Draft URL</label>
+          <div style="display:flex;gap:6px"><input type="url" id="edit-draft-url" style="flex:1" placeholder="https://studietrust.sharepoint.com/…">
+          <button class="btn btn-sec btn-sm" onclick="triggerEditUpload('draft')">⬆</button></div>
+        </div>
+        <div class="f-row" style="grid-column:1/-1"><label>Published URL</label>
+          <div style="display:flex;gap:6px"><input type="url" id="edit-pub-url" style="flex:1" placeholder="https://studietrust.sharepoint.com/…">
+          <button class="btn btn-sec btn-sm" onclick="triggerEditUpload('pub')">⬆</button></div>
+        </div>
+        <div class="f-row" style="grid-column:1/-1"><label>Archive URL</label>
+          <div style="display:flex;gap:6px"><input type="url" id="edit-arch-url" style="flex:1" placeholder="https://studietrust.sharepoint.com/…">
+          <button class="btn btn-sec btn-sm" onclick="triggerEditUpload('arch')">⬆</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sec" onclick="closeM('m-edit')">Cancel</button>
+      <button class="btn btn-pri" onclick="saveEdit()">Save Changes →</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="edit-file-input" style="display:none" onchange="handleEditUpload(this)">
 
 <!-- ADD POLICY -->
 <div class="modal-ov" id="m-pol">
@@ -1635,7 +1699,7 @@ const td=()=>new Date().toISOString().slice(0,10);
 const esc=t=>String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const isOverdue=d=>d&&new Date(d)<new Date();
 const isPublished=s=>['Approved','New','Published'].includes(s);
-const isDraft=s=>['Draft','Consult','PTT Review'].includes(s);
+const isDraft=s=>['Initiated','Draft','Consult','PTT Review'].includes(s);
 
 function sbadge(s){const m={Initiated:'bpr',Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg','Review Due':'ba',Archived:'bgy'};return`<span class="bd ${m[s]||'bgy'}">${esc(s)}</span>`;}
 function tbadge(t){return`<span class="bd bb">${esc(t)}</span>`;}
@@ -1706,19 +1770,19 @@ function renderPol(){
     shown++;
     const canChange = (currentRole==='admin') || (currentRole==='ptt' && allowedTransitions(p.status,'ptt').length>0);
     const act = canChange
-      ? `<td><button class="btn btn-sec btn-sm" onclick="openStatusModal('${esc(p.polId)}','pol','${esc(p.status)}')">Change Status</button></td>`
+      ? `<td onclick="event.stopPropagation()"><button class="btn btn-sec btn-sm" onclick="openStatusModal('${esc(p.polId)}','pol','${esc(p.status)}')">Change Status</button></td>`
       : (seesAll ? '<td></td>' : '');
-    html+=`<tr><td>${esc(p.polId)}</td><td>${esc(p.title)}</td><td>${esc(p.category)}</td><td>${tbadge(p.tier)}</td><td>${esc(p.version)}</td><td>${sbadge(p.status)}</td><td>${rbadge(p.risk)}</td><td style="font-size:11px">${esc(p.approver)}</td><td>${datecell(p.reviewDate)}</td><td style="font-size:11px">${esc(p.custodian||'')}</td><td style="font-size:11px">${esc(p.owner)}</td><td>${docLinks(p,'pol')}</td>${act}</tr>`;
+    html+=`<tr class="reg-row" onclick="openEditModal('${esc(p.polId)}','pol')" style="cursor:pointer" title="Click to edit this policy"><td>${esc(p.polId)}</td><td>${esc(p.title)}</td><td>${esc(p.category)}</td><td>${tbadge(p.tier)}</td><td>${esc(p.version)}</td><td>${sbadge(p.status)}</td><td>${rbadge(p.risk)}</td><td style="font-size:11px">${esc(p.approver)}</td><td>${datecell(p.reviewDate)}</td><td style="font-size:11px">${esc(p.custodian||'')}</td><td style="font-size:11px">${esc(p.owner)}</td><td>${docLinks(p,'pol')}</td>${act}</tr>`;
   });
   if(!shown){
     if(polData.length===0){
-      html=`<tr><td colspan="12" style="text-align:center;padding:24px">
+      html=`<tr><td colspan="13" style="text-align:center;padding:24px">
         <div style="color:#856404;font-weight:600;margin-bottom:6px">No policies loaded from SharePoint.</div>
         <div style="color:#5a6172;font-size:11px">The GovPolicies list may be empty or the dashboard could not read it.<br>
         Check the ℹ Access Diagnostics panel → Test GovPolicies to verify the list connection.</div>
       </td></tr>`;
     } else {
-      html=`<tr><td colspan="12" style="text-align:center;color:var(--tx3);padding:20px">No policies match the current filters. Clear all filters to see all ${polData.length} policies.</td></tr>`;
+      html=`<tr><td colspan="13" style="text-align:center;color:var(--tx3);padding:20px">No policies match the current filters. Clear all filters to see all ${polData.length} policies.</td></tr>`;
     }
   }
   tbody.innerHTML=html;
@@ -1776,11 +1840,11 @@ function renderSop(){
     shown++;
     const canChange = (currentRole==='admin') || (currentRole==='ptt' && allowedTransitions(s.status,'ptt').length>0);
     const act = canChange
-      ? `<td><button class="btn btn-sec btn-sm" onclick="openStatusModal('${esc(s.sopId)}','sop','${esc(s.status)}')">Change Status</button></td>`
+      ? `<td onclick="event.stopPropagation()"><button class="btn btn-sec btn-sm" onclick="openStatusModal('${esc(s.sopId)}','sop','${esc(s.status)}')">Change Status</button></td>`
       : (seesAll ? '<td></td>' : '');
-    html+=`<tr><td>${esc(s.sopId)}</td><td>${esc(s.title)}</td><td>${esc(s.category)}</td><td>${esc(s.linkedPolicy)}</td><td>${sbadge(s.status)}</td><td>${esc(s.version)}</td><td>${datecell(s.reviewDate)}</td><td style="font-size:11px">${esc(s.custodian||'')}</td><td style="font-size:11px">${esc(s.owner)}</td><td>${docLinks(s,'sop')}</td>${act}</tr>`;
+    html+=`<tr class="reg-row" onclick="openEditModal('${esc(s.sopId)}','sop')" style="cursor:pointer" title="Click to edit this SOP"><td>${esc(s.sopId)}</td><td>${esc(s.title)}</td><td>${esc(s.category)}</td><td>${esc(s.linkedPolicy)}</td><td>${sbadge(s.status)}</td><td>${esc(s.version)}</td><td>${datecell(s.reviewDate)}</td><td style="font-size:11px">${esc(s.custodian||'')}</td><td style="font-size:11px">${esc(s.owner)}</td><td>${docLinks(s,'sop')}</td>${act}</tr>`;
   });
-  if(!shown) html=`<tr><td colspan="10" style="text-align:center;color:var(--tx3);padding:20px">No SOPs match the current filters.</td></tr>`;
+  if(!shown) html=`<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px">No SOPs match the current filters.</td></tr>`;
   tbody.innerHTML=html;
 
   const hdr=document.getElementById('sop-act-hdr');
@@ -1926,11 +1990,115 @@ function renderAll(){
 // ════════════════════════════════════════════
 // STATUS CHANGE
 // ════════════════════════════════════════════
+// ════════════════════════════════════════════
+// EDIT ROW MODAL
+// ════════════════════════════════════════════
+function openEditModal(docId, type){
+  const arr = type==='pol' ? polData : sopData;
+  const doc = arr.find(d => (type==='pol' ? d.polId : d.sopId) === docId);
+  if(!doc){ toast('Document not found.','error'); return; }
+  document.getElementById('edit-modal-title').textContent = (type==='pol' ? 'Edit Policy — ' : 'Edit SOP — ') + docId;
+  document.getElementById('edit-id').value = docId;
+  document.getElementById('edit-type').value = type;
+  document.getElementById('edit-docid').value = docId;
+  document.getElementById('edit-title').value = doc.title||'';
+  document.getElementById('edit-version').value = doc.version||'';
+  setSelectVal('edit-cat', doc.category||'Governance');
+  if(type==='pol'){
+    setSelectVal('edit-tier', doc.tier||'T2');
+    setSelectVal('edit-risk', doc.risk||'Medium');
+    document.getElementById('edit-approver').value = doc.approver||'';
+    document.getElementById('edit-linked-pol-row').style.display='none';
+  } else {
+    document.getElementById('edit-linked-pol-row').style.display='';
+    document.getElementById('edit-linked-pol').value = doc.linkedPolicy||'';
+    document.getElementById('edit-approver').value='';
+  }
+  setSelectVal('edit-status', doc.status||'Draft');
+  document.getElementById('edit-owner').value = doc.owner||'';
+  document.getElementById('edit-custodian').value = doc.custodian||'';
+  document.getElementById('edit-rev-date').value = doc.reviewDate||'';
+  document.getElementById('edit-notes').value = doc.notes||'';
+  document.getElementById('edit-draft-url').value = doc.draftUrl||'';
+  document.getElementById('edit-pub-url').value = doc.publishedUrl||'';
+  document.getElementById('edit-arch-url').value = doc.archiveUrl||'';
+  openM('m-edit');
+}
+
+function setSelectVal(id, val){
+  const el=document.getElementById(id); if(!el) return;
+  for(let i=0;i<el.options.length;i++){ if(el.options[i].value===val||el.options[i].text===val){ el.selectedIndex=i; return; } }
+}
+
+async function saveEdit(){
+  const type = document.getElementById('edit-type').value;
+  const id   = document.getElementById('edit-id').value;
+  const arr  = type==='pol' ? polData : sopData;
+  const doc  = arr.find(d => (type==='pol' ? d.polId : d.sopId) === id);
+  if(!doc){ toast('Document not found.','error'); return; }
+
+  doc.title      = document.getElementById('edit-title').value.trim();
+  doc.version    = document.getElementById('edit-version').value.trim();
+  doc.category   = document.getElementById('edit-cat').value;
+  doc.status     = document.getElementById('edit-status').value;
+  doc.owner      = document.getElementById('edit-owner').value.trim();
+  doc.custodian  = document.getElementById('edit-custodian').value.trim();
+  doc.reviewDate = document.getElementById('edit-rev-date').value;
+  doc.notes      = document.getElementById('edit-notes').value.trim();
+  doc.draftUrl   = document.getElementById('edit-draft-url').value.trim();
+  doc.publishedUrl = document.getElementById('edit-pub-url').value.trim();
+  doc.archiveUrl = document.getElementById('edit-arch-url').value.trim();
+  if(type==='pol'){
+    doc.tier     = document.getElementById('edit-tier').value;
+    doc.risk     = document.getElementById('edit-risk').value;
+    doc.approver = document.getElementById('edit-approver').value.trim();
+  } else {
+    doc.linkedPolicy = document.getElementById('edit-linked-pol').value.trim();
+  }
+
+  try {
+    const listKey = type==='pol' ? LISTS.pol : LISTS.sop;
+    const fields  = type==='pol' ? toSpPol(doc) : toSpSop(doc);
+    await spPatch(listKey, doc._spId, fields);
+    renderAll();
+    closeM('m-edit');
+    toast((type==='pol'?'Policy':'SOP')+' updated: '+id, 'success');
+  } catch(e){ toast('Save failed: '+e.message, 'error'); }
+}
+
+function triggerEditUpload(field){
+  const inp=document.getElementById('edit-file-input');
+  inp.dataset.field=field; inp.click();
+}
+
+async function handleEditUpload(input){
+  const file=input.files[0]; if(!file) return;
+  const field=input.dataset.field;
+  const type=document.getElementById('edit-type').value;
+  const id=document.getElementById('edit-id').value;
+  const arr=type==='pol'?polData:sopData;
+  const doc=arr.find(d=>(type==='pol'?d.polId:d.sopId)===id);
+  if(!doc){toast('Open the editor first.','error');input.value='';return;}
+  let status=doc.status;
+  if(field==='pub') status='Published';
+  if(field==='arch') status='Archived';
+  const folder=govDocFolder(type,status,doc.category);
+  toast('Uploading '+file.name+'…','ok');
+  try{
+    const result=await uploadGovFile('Governance Published',folder,file);
+    const urlField={draft:'edit-draft-url',pub:'edit-pub-url',arch:'edit-arch-url'}[field];
+    if(urlField) document.getElementById(urlField).value=result.webUrl||'';
+    toast('Uploaded: '+file.name,'ok');
+  }catch(e){toast('Upload failed: '+e.message,'error');}
+  input.value='';
+}
+
+// ════════════════════════════════════════════
 function openStatusModal(docId,type,currentStatus){
   statusTarget={id:docId,type};
   document.getElementById('status-modal-title').textContent='Change Status — '+docId;
   const cur=document.getElementById('status-current');
-  cur.textContent=currentStatus; cur.className='bd '+(({Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg','Review Due':'ba',Archived:'bgy'})[currentStatus]||'bgy');
+  cur.textContent=currentStatus; cur.className='bd '+(({Initiated:'bpr',Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg','Review Due':'ba',Archived:'bgy'})[currentStatus]||'bgy');
   document.getElementById('f-status-note').value='';
   document.getElementById('status-warn').style.display='none';
   // Reset step panels
