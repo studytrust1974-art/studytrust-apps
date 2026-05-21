@@ -1551,6 +1551,44 @@ async function spPatch(listName,itemId,fields){
   await gFetch(`/sites/${sid}/lists/${listName}/items/${itemId}`,{method:'PATCH',body:JSON.stringify({fields})});
 }
 
+// Columns that may not yet exist in SharePoint — gracefully skip if they cause errors.
+// Simon must create these columns to enable full functionality (see Admin Manual Section 2.2).
+const SP_OPTIONAL_COLS = {
+  sop: ['Custodian', 'Notes'],   // not yet in GovSOPs — Simon adds: Single line of text
+  pol: ['Notes']                  // not yet in GovPolicies — Simon adds: Single line of text
+};
+
+async function spPatchResilient(listName, itemId, fields, docType) {
+  try {
+    await spPatch(listName, itemId, fields);
+  } catch(e) {
+    // Only retry for column-not-found errors — re-throw everything else
+    const msg = (e.message||'').toLowerCase();
+    const isColErr = /column|field|property|not recognized|does not exist|invalid property/i.test(e.message||'');
+    if (!isColErr) throw e;
+    // Strip the optional columns that don't exist yet
+    const optional = SP_OPTIONAL_COLS[docType] || [];
+    if (!optional.length) throw e;
+    const stripped = Object.fromEntries(
+      Object.entries(fields).filter(([k]) => !optional.includes(k))
+    );
+    await spPatch(listName, itemId, stripped);  // retry without optional cols
+    // Warn which columns need to be created by Simon
+    const missing = optional.filter(c => c in fields && fields[c] !== null && fields[c] !== undefined);
+    if (missing.length) {
+      toast(
+        'Saved \u2713 (most fields) — but the '
+        + missing.join(' and ')
+        + ' column' + (missing.length > 1 ? 's do' : ' does')
+        + ' not exist yet in SharePoint. Ask Simon to add '
+        + (missing.length > 1 ? 'them' : 'it')
+        + ' to the Gov' + (docType==='sop' ? 'SOPs' : 'Policies')
+        + ' list as Single line of text.'
+      , 'warning');
+    }
+  }
+}
+
 // ════════════════════════════════════════════
 // FIELD MAPPINGS
 // ════════════════════════════════════════════
@@ -2214,10 +2252,12 @@ async function saveEdit(){
   try {
     const listKey = type==='pol' ? LISTS.pol : LISTS.sop;
     const fields  = type==='pol' ? toSpPol(doc) : toSpSop(doc);
-    await spPatch(listKey, doc._spId, fields);
+    await spPatchResilient(listKey, doc._spId, fields, type);
     renderAll();
     closeM('m-edit');
-    toast((type==='pol'?'Policy':'SOP')+' updated: '+id, 'success');
+    // Only show success toast if no warning was already shown by spPatchResilient
+    const warnShown = (document.querySelector('.toast-warn')||null);
+    if(!warnShown) toast((type==='pol'?'Policy':'SOP')+' updated: '+id, 'success');
   } catch(e){ toast('Save failed: '+e.message, 'error'); }
 }
 
