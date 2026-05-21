@@ -28,6 +28,7 @@
        All other signed-in users → personnel role
   ════════════════════════════════════════════════════════
 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.27.0/lib/msal-browser.min.js"></script>
 <style>
 :root{
@@ -143,6 +144,40 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
 .bp{background:var(--pu-bg);color:var(--pu-tx)}.bt{background:var(--tl-bg);color:var(--tl-tx)}
 .btr{background:var(--tr-bg);color:var(--tr-tx)}.bgy{background:var(--bg);color:var(--tx2);border:1px solid var(--bdr)}
 .bpr{background:#ede7f6;color:#4527a0;border:1px solid #b39ddb}
+
+.reg-row:hover{background:var(--st-p);transition:background .15s}
+/* ── v4.5 additions ── */
+#gs-wrap{position:relative;display:none}
+#gs-input{width:240px;padding:6px 10px 6px 30px;border-radius:20px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;font-size:12px;font-family:inherit;outline:none}
+#gs-input::placeholder{color:rgba(255,255,255,.6)}
+#gs-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.7;font-size:13px;pointer-events:none}
+#gs-results{display:none;position:absolute;top:calc(100% + 6px);left:0;width:400px;background:#fff;border-radius:var(--r);border:1px solid var(--bdr);box-shadow:0 8px 28px rgba(0,0,0,.16);z-index:500;max-height:60vh;overflow-y:auto}
+.gsr{padding:10px 14px;border-bottom:1px solid var(--bdr);cursor:pointer;display:flex;gap:10px;align-items:flex-start}
+.gsr:hover{background:var(--bg2)}
+.gsr-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap;margin-top:2px;flex-shrink:0}
+.gsr-pol{background:#e3f0fa;color:#226397}
+.gsr-sop{background:#e8f5e9;color:#1b5e20}
+.gsr-title{font-weight:600;font-size:12px;color:var(--tx)}
+.gsr-meta{font-size:11px;color:var(--tx3);margin-top:2px}
+.gs-empty{padding:16px;text-align:center;font-size:12px;color:var(--tx3)}
+.pol-cards,.sop-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;padding:4px 2px}
+.pc{background:#fff;border:1px solid var(--bdr);border-radius:var(--r);padding:14px;cursor:pointer;transition:box-shadow .15s,border-color .15s}
+.pc:hover{box-shadow:0 4px 14px rgba(0,0,0,.10);border-color:var(--pri)}
+.pc-id{font-size:11px;font-weight:700;color:var(--tx3);margin-bottom:4px}
+.pc-title{font-size:13px;font-weight:600;color:var(--tx);line-height:1.35;margin-bottom:8px}
+.pc-badges{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.pc-meta{font-size:11px;color:var(--tx3);display:flex;flex-direction:column;gap:3px}
+.view-toggle{display:flex;gap:4px;margin-left:6px}
+.vt-btn{background:none;border:1px solid var(--bdr);border-radius:5px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--tx3)}
+.vt-btn.active{background:var(--pri);color:#fff;border-color:var(--pri)}
+.rev-banner{display:none;background:#fff3e0;border:1px solid #ffb300;border-radius:var(--r);padding:10px 16px;margin-bottom:12px;font-size:12px;color:#e65100;line-height:1.6}
+.rev-banner strong{color:#bf360c}
+.ack-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--bdr);gap:12px}
+.ack-pol{font-size:13px;font-weight:600;color:var(--tx);flex:1}
+.ack-meta{font-size:11px;color:var(--tx3);margin-top:2px}
+.ack-done{font-size:11px;color:#388e3c;font-weight:600}
+.vh-row{padding:8px 0;border-bottom:1px solid var(--bdr);font-size:12px}
+.vh-date{color:var(--tx3);font-size:11px}
 .reg-row:hover{background:var(--st-p);transition:background .15s}
 .overdue{color:var(--rd-tx);font-weight:600}
 
@@ -318,7 +353,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L3 7v10l9 5 9-5V7L12 2z"/><line x1="12" y1="22" x2="12" y2="12"/><line x1="3" y1="7" x2="12" y2="12"/><line x1="21" y1="7" x2="12" y2="12"/></svg>
     </div>
     <div>
-      <div class="hdr-title">StudyTrust Governance Hub <span style="font-size:10px;opacity:.45;font-weight:400">v4.4</span></div>
+      <div class="hdr-title">StudyTrust Governance Hub <span style="font-size:10px;opacity:.45;font-weight:400">v4.5</span></div>
       <div class="hdr-sub">Policies · SOPs · Compliance · Risk · 000-601 NPO · IT3895/11(T)</div>
     </div>
   </div>
@@ -330,6 +365,11 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
       <button class="rb" id="rb-pt" onclick="setRole('ptt')">PTT</button>
       <button class="rb" id="rb-t" onclick="setRole('trustee')">Trustee</button>
       <button class="rb on" id="rb-a" onclick="setRole('admin')">Admin</button>
+    </div>
+    <div id="gs-wrap">
+      <span id="gs-icon">🔍</span>
+      <input id="gs-input" type="text" placeholder="Search all policies and SOPs…" oninput="globalSearch(this.value)" onfocus="this.closest('#gs-wrap').querySelector('#gs-results').style.display='block'" autocomplete="off">
+      <div id="gs-results"></div>
     </div>
     <span class="hdr-user" id="user-name">…</span>
     <button id="notif-btn" onclick="toggleNotif()" title="Notifications">🔔<span id="notif-count">0</span></button>
@@ -369,7 +409,13 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
 
   <!-- ── EXEC OVERVIEW ── -->
   <section id="sec-exec" class="sec">
-    <div class="slabel">Governance KPIs</div>
+    <div id="rev-reminder-banner" class="rev-banner"></div>
+    <div class="sh" style="margin-bottom:12px">
+      <div class="slabel" style="margin-bottom:0">Governance KPIs</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sec btn-sm adm" onclick="generateBoardReport()" title="Generate formatted board report">📊 Board Report</button>
+      </div>
+    </div>
     <div class="g6" id="kpi-grid" style="margin-bottom:6px"></div>
 
     <!-- TRUSTEE SUMMARY BOX (trustee only) -->
@@ -448,7 +494,12 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
           <span id="pol-prog-lbl" style="font-size:11px;color:var(--tx3)"></span>
           <button class="btn btn-pri btn-sm adm" onclick="openM('m-pol')">+ Add Policy</button>
-          <button class="btn btn-sec btn-sm" onclick="exportPolCsv()">CSV</button>
+          <button class="btn btn-sec btn-sm adm" onclick="openM('m-templates')">📄 Templates</button>
+          <button class="btn btn-sec btn-sm" onclick="exportXlsx('pol')">⬇ XLSX</button>
+          <div class="view-toggle">
+            <button class="vt-btn active" id="pol-vt-tbl" onclick="setPolView('table')" title="Table view">☰</button>
+            <button class="vt-btn" id="pol-vt-card" onclick="setPolView('card')" title="Card view">⊞</button>
+          </div>
         </div>
       </div>
       <div class="toolbar">
@@ -485,7 +536,12 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
           <span id="sop-prog-lbl" style="font-size:11px;color:var(--tx3)"></span>
           <button class="btn btn-pri btn-sm adm" onclick="openM('m-sop')">+ Add SOP</button>
-          <button class="btn btn-sec btn-sm" onclick="exportSopCsv()">CSV</button>
+          <button class="btn btn-sec btn-sm adm" onclick="openM('m-templates')">📄 Templates</button>
+          <button class="btn btn-sec btn-sm" onclick="exportXlsx('sop')">⬇ XLSX</button>
+          <div class="view-toggle">
+            <button class="vt-btn active" id="sop-vt-tbl" onclick="setSopView('table')" title="Table view">☰</button>
+            <button class="vt-btn" id="sop-vt-card" onclick="setSopView('card')" title="Card view">⊞</button>
+          </div>
         </div>
       </div>
       <div class="toolbar">
@@ -781,7 +837,35 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
     <div id="aud-req-list"><div style="color:var(--tx3);font-size:12px;padding:12px">No requests submitted yet.</div></div>
   </section>
 
-  <!-- ── BOARD OF TRUSTEES ── -->
+  <!-- ── ACKNOWLEDGEMENTS ── -->
+<section id="sec-ack" class="sec">
+  <div class="sh">
+    <div>
+      <div class="slabel">Policy Acknowledgements</div>
+      <p style="font-size:12px;color:var(--tx3);margin:4px 0 0">Track which policies each employee has formally read and acknowledged. Requires the GovAcknowledgements SharePoint list.</p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <select id="ack-pol-filter" onchange="renderAck()" style="border:.5px solid #ccc;border-radius:5px;padding:4px 10px;font-size:12px"><option value="">All Policies</option></select>
+      <button class="btn btn-sec btn-sm" onclick="exportXlsx('ack')">⬇ XLSX</button>
+    </div>
+  </div>
+  <div class="sh" style="margin-bottom:8px;margin-top:4px">
+    <div style="font-size:12px;font-weight:600;color:var(--tx3)">Summary</div>
+    <div id="ack-summary" style="font-size:12px;color:var(--tx3)"></div>
+  </div>
+  <div class="tw"><table><thead><tr>
+    <th>Policy</th><th>Version</th><th>Acknowledged By</th><th>Email</th><th>Date</th>
+  </tr></thead><tbody id="body-ack"></tbody></table></div>
+
+  <!-- Policies Needing Acknowledgement (for All Personnel view) -->
+  <div id="ack-pending-section" style="margin-top:24px;display:none">
+    <div class="slabel">Policies Requiring Your Acknowledgement</div>
+    <p style="font-size:12px;color:var(--tx3);margin-bottom:10px">The following published policies require your acknowledgement. Click Acknowledge to confirm you have read and understood each one.</p>
+    <div id="ack-pending-list"></div>
+  </div>
+</section>
+
+<!-- ── BOARD OF TRUSTEES ── -->
   <section id="sec-trustees" class="sec">
 
     <!-- Admin add panel -->
@@ -985,6 +1069,12 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         </div>
       </div>
     </div>
+    <div style="border-top:1px solid var(--bdr);margin-top:4px;padding-top:10px">
+      <div style="font-size:11px;font-weight:600;color:var(--tx3);cursor:pointer;user-select:none" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+        🕐 Version History <span style="opacity:.5;font-weight:400">(click to expand)</span>
+      </div>
+      <div id="edit-ver-hist" style="display:none;margin-top:8px;max-height:160px;overflow-y:auto"></div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-sec" onclick="closeM('m-edit')">Cancel</button>
       <button class="btn btn-pri" onclick="saveEdit()">Save Changes →</button>
@@ -992,6 +1082,44 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
   </div>
 </div>
 <input type="file" id="edit-file-input" style="display:none" onchange="handleEditUpload(this)">
+
+<!-- TEMPLATES MODAL -->
+<div class="modal-ov" id="m-templates">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-hd"><span class="modal-title">Document Templates</span><button class="modal-x" onclick="closeM('m-templates')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Download the official StudyTrust templates from SharePoint. These are the only templates approved for policy and SOP development.</p>
+      <div id="template-list">
+        <div class="ack-row"><div><div class="ack-pol">Policy Template</div><div class="ack-meta">Standard template for all Tier 1–4 policies</div></div>
+          <a id="tpl-pol-link" href="#" target="_blank" class="btn btn-sec btn-sm" onclick="openTemplateFolder()">⬇ Open Folder</a></div>
+        <div class="ack-row"><div><div class="ack-pol">SOP Template</div><div class="ack-meta">Standard template for all Standard Operating Procedures</div></div>
+          <a id="tpl-sop-link" href="#" target="_blank" class="btn btn-sec btn-sm" onclick="openTemplateFolder()">⬇ Open Folder</a></div>
+        <div class="ack-row"><div><div class="ack-pol">Annexure Template</div><div class="ack-meta">For policies requiring formal annexures</div></div>
+          <a id="tpl-ann-link" href="#" target="_blank" class="btn btn-sec btn-sm" onclick="openTemplateFolder()">⬇ Open Folder</a></div>
+      </div>
+      <div style="margin-top:12px;padding:10px;background:var(--bg2);border-radius:var(--r);font-size:11px;color:var(--tx3)">
+        Templates are stored in: <strong>Governance Published / 03_Templates/</strong><br>
+        Configure the folder link below and click Save.
+      </div>
+      <div class="f-row" style="margin-top:10px"><label>SharePoint Templates Folder URL</label>
+        <div style="display:flex;gap:6px">
+          <input type="url" id="tpl-folder-url" style="flex:1" placeholder="https://studietrust.sharepoint.com/sites/…/03_Templates">
+          <button class="btn btn-sec btn-sm" onclick="saveTemplateUrl()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ACKNOWLEDGEMENTS SECTION (injected into sec-hub for All Personnel) -->
+<div class="modal-ov" id="m-ack-detail">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-hd"><span class="modal-title">Policy Acknowledgements</span><button class="modal-x" onclick="closeM('m-ack-detail')">✕</button></div>
+    <div class="modal-body">
+      <div id="ack-detail-body" style="max-height:60vh;overflow-y:auto"></div>
+    </div>
+  </div>
+</div>
 
 <!-- ADD POLICY -->
 <div class="modal-ov" id="m-pol">
@@ -1179,7 +1307,7 @@ const SP_HOST      = 'studietrust.sharepoint.com';
 const SP_PATH      = '/sites/StudyTrustAuditTracker';
 const GRAPH        = 'https://graph.microsoft.com/v1.0';
 
-const LISTS = { pol:'GovPolicies', sop:'GovSOPs', log:'GovChangelog', trustees:'GovTrustees' };
+const LISTS = { pol:'GovPolicies', sop:'GovSOPs', log:'GovChangelog', trustees:'GovTrustees', ack:'GovAcknowledgements' };
 
 const MSAL_CFG = {
   auth:{ clientId:CLIENT_ID, authority:'https://login.microsoftonline.com/studietrust.onmicrosoft.com', redirectUri:REDIRECT_URI },
@@ -1659,7 +1787,9 @@ async function seedData(){
     await safePost(LISTS.trustees, clean(toSpTrustee(t)), t.name);
   }
 
-  await loadData(); renderAll(); hideLoad();
+  await loadData();
+  await loadAckData();
+  initTemplateUrl(); renderAll(); hideLoad();
 
   // Remove old error panel
   const oldP=document.getElementById('seed-error-panel');
@@ -1785,7 +1915,17 @@ function renderPol(){
       html=`<tr><td colspan="13" style="text-align:center;color:var(--tx3);padding:20px">No policies match the current filters. Clear all filters to see all ${polData.length} policies.</td></tr>`;
     }
   }
-  tbody.innerHTML=html;
+  const polTbl=document.querySelector('#sec-pol .tw');
+  const polCg=document.getElementById('pol-card-grid');
+  if(polView==='card'){
+    if(polTbl) polTbl.style.display='none';
+    if(polCg) polCg.style.display='grid';
+    renderPolCards(visibleData);
+  } else {
+    if(polCg) polCg.style.display='none';
+    if(polTbl) polTbl.style.display='';
+    tbody.innerHTML=html;
+  }
 
   const hdr=document.getElementById('pol-act-hdr');
   if(hdr) hdr.style.display=(currentRole==='admin'||currentRole==='ptt')?'':'none';
@@ -1845,7 +1985,17 @@ function renderSop(){
     html+=`<tr class="reg-row" onclick="openEditModal('${esc(s.sopId)}','sop')" style="cursor:pointer" title="Click to edit this SOP"><td>${esc(s.sopId)}</td><td>${esc(s.title)}</td><td>${esc(s.category)}</td><td>${esc(s.linkedPolicy)}</td><td>${sbadge(s.status)}</td><td>${esc(s.version)}</td><td>${datecell(s.reviewDate)}</td><td style="font-size:11px">${esc(s.custodian||'')}</td><td style="font-size:11px">${esc(s.owner)}</td><td>${docLinks(s,'sop')}</td>${act}</tr>`;
   });
   if(!shown) html=`<tr><td colspan="11" style="text-align:center;color:var(--tx3);padding:20px">No SOPs match the current filters.</td></tr>`;
-  tbody.innerHTML=html;
+    const sopTbl=document.querySelector('#sec-sop .tw');
+  const sopCg=document.getElementById('sop-card-grid');
+  if(sopView==='card'){
+    if(sopTbl) sopTbl.style.display='none';
+    if(sopCg) sopCg.style.display='grid';
+    renderSopCards(visibleData);
+  } else {
+    if(sopCg) sopCg.style.display='none';
+    if(sopTbl) sopTbl.style.display='';
+    tbody.innerHTML=html;
+  }
 
   const hdr=document.getElementById('sop-act-hdr');
   if(hdr) hdr.style.display=(currentRole==='admin'||currentRole==='ptt')?'':'none';
@@ -1979,12 +2129,16 @@ function renderChangelog(){
 }
 
 function renderAll(){
+  const gsw=document.getElementById('gs-wrap'); if(gsw) gsw.style.display=(currentRole==='admin'||currentRole==='ptt')?'block':'none';
   renderExec();
   renderPol();
   renderSop();
   renderMaturity();
   renderChangelog();
   renderTrustees();
+  renderAck();
+  renderPendingAck();
+  checkReviewReminders();
 }
 
 // ════════════════════════════════════════════
@@ -2023,6 +2177,7 @@ function openEditModal(docId, type){
   document.getElementById('edit-pub-url').value = doc.publishedUrl||'';
   document.getElementById('edit-arch-url').value = doc.archiveUrl||'';
   openM('m-edit');
+  loadVersionHistory(docId, type);
 }
 
 function setSelectVal(id, val){
@@ -2433,7 +2588,7 @@ function exportSopCsv(){
 // ════════════════════════════════════════════
 // TABS & ROLE
 // ════════════════════════════════════════════
-const TABS_ADMIN=[{id:'sec-exec',l:'Executive Overview'},{id:'sec-workflow',l:'Approval Workflow'},{id:'sec-pol',l:'Policy Register'},{id:'sec-sop',l:'SOP Register'},{id:'sec-mat',l:'Maturity Tracker'},{id:'sec-docs',l:'Document Libraries'},{id:'sec-trustees',l:'Board of Trustees'},{id:'sec-hub',l:'Governance Hub'}];
+const TABS_ADMIN=[{id:'sec-exec',l:'Executive Overview'},{id:'sec-workflow',l:'Approval Workflow'},{id:'sec-pol',l:'Policy Register'},{id:'sec-sop',l:'SOP Register'},{id:'sec-mat',l:'Maturity Tracker'},{id:'sec-docs',l:'Document Libraries'},{id:'sec-trustees',l:'Board of Trustees'},{id:'sec-ack',l:'✅ Acknowledgements'},{id:'sec-hub',l:'Governance Hub'}];
 const TABS_TRUSTEE=[{id:'sec-exec',l:'Governance Overview'},{id:'sec-pol',l:'Policy Register'},{id:'sec-sop',l:'SOP Register'},{id:'sec-workflow',l:'Approval Framework'},{id:'sec-mat',l:'Maturity Overview'},{id:'sec-trustees',l:'Board of Trustees'},{id:'sec-hub',l:'Governance Hub'}];
 const TABS_AUDITOR=[{id:'sec-aud-docs',l:'Policy & SOP Documents'},{id:'sec-aud-overview',l:'Governance Overview'},{id:'sec-aud-request',l:'Document Requests'}];
 const TABS_PTT=[{id:'sec-exec',l:'Governance Overview'},{id:'sec-workflow',l:'Approval Workflow'},{id:'sec-pol',l:'Policy Register'},{id:'sec-sop',l:'SOP Register'},{id:'sec-mat',l:'Maturity Tracker'},{id:'sec-docs',l:'Document Libraries'},{id:'sec-hub',l:'Quick Access'}];
@@ -2441,6 +2596,433 @@ const TABS_PERSONNEL=[{id:'sec-pol',l:'Policies'},{id:'sec-sop',l:'SOPs'},{id:'s
 
 // Status transitions allowed by role.
 // PTT may move documents within the drafting pipeline but not to Published or Archived.
+
+// ════════════════════════════════════════════════════════════════
+// v4.5 NEW FEATURES
+// ════════════════════════════════════════════════════════════════
+
+// ── GLOBAL SEARCH ────────────────────────────────────────────────
+function globalSearch(q){
+  const box = document.getElementById('gs-results');
+  if(!box) return;
+  if(!q||q.trim().length<2){ box.style.display='none'; box.innerHTML=''; return; }
+  box.style.display='block';
+  const t = q.toLowerCase();
+  const polHits = polData.filter(p=>(p.polId+p.title+p.category+p.owner+p.custodian+p.notes).toLowerCase().includes(t)).slice(0,5);
+  const sopHits = sopData.filter(s=>(s.sopId+s.title+s.category+s.owner+s.custodian).toLowerCase().includes(t)).slice(0,4);
+  if(!polHits.length && !sopHits.length){
+    box.innerHTML='<div class="gs-empty">No results for "'+esc(q)+'"</div>'; return;
+  }
+  box.innerHTML = [
+    ...polHits.map(p=>`<div class="gsr" onclick="gotoDoc('${esc(p.polId)}','pol')">
+      <span class="gsr-badge gsr-pol">${esc(p.polId)}</span>
+      <div><div class="gsr-title">${esc(p.title)}</div>
+      <div class="gsr-meta">${esc(p.category)} · ${esc(p.status)} · Owner: ${esc(p.owner||'—')}</div></div>
+    </div>`),
+    ...sopHits.map(s=>`<div class="gsr" onclick="gotoDoc('${esc(s.sopId)}','sop')">
+      <span class="gsr-badge gsr-sop">${esc(s.sopId)}</span>
+      <div><div class="gsr-title">${esc(s.title)}</div>
+      <div class="gsr-meta">${esc(s.category)} · ${esc(s.status)} · Owner: ${esc(s.owner||'—')}</div></div>
+    </div>`)
+  ].join('');
+}
+
+function gotoDoc(docId, type){
+  document.getElementById('gs-input').value='';
+  const box=document.getElementById('gs-results'); if(box) box.style.display='none';
+  showTab(type==='pol'?'sec-pol':'sec-sop');
+  setTimeout(()=>openEditModal(docId,type),150);
+}
+
+// Close search on outside click
+document.addEventListener('click', e=>{
+  const wrap=document.getElementById('gs-wrap');
+  if(wrap && !wrap.contains(e.target)){
+    const box=document.getElementById('gs-results');
+    if(box) box.style.display='none';
+  }
+});
+
+// ── REVIEW REMINDER BANNER ────────────────────────────────────────
+function checkReviewReminders(){
+  const banner=document.getElementById('rev-reminder-banner'); if(!banner) return;
+  if(currentRole!=='admin'&&currentRole!=='ptt'){banner.style.display='none';return;}
+  const today=new Date(); today.setHours(0,0,0,0);
+  const in30=new Date(today); in30.setDate(in30.getDate()+30);
+  const in60=new Date(today); in60.setDate(in60.getDate()+60);
+  const parseDate=s=>{ if(!s) return null; const d=new Date(s); return isNaN(d)?null:d; };
+  const soon30=[...polData,...sopData].filter(d=>{
+    const rd=parseDate(d.reviewDate); if(!rd||d.status==='Archived') return false;
+    return rd>today && rd<=in30;
+  });
+  const soon60=[...polData,...sopData].filter(d=>{
+    const rd=parseDate(d.reviewDate); if(!rd||d.status==='Archived') return false;
+    return rd>today && rd<=in60 && rd>in30;
+  });
+  if(!soon30.length && !soon60.length){ banner.style.display='none'; return; }
+  banner.style.display='block';
+  let msg='';
+  if(soon30.length) msg+=`<strong>⚠ Due within 30 days (${soon30.length}):</strong> `+soon30.map(d=>`${d.polId||d.sopId} (${d.reviewDate})`).join(', ')+'. ';
+  if(soon60.length) msg+=`<strong>📅 Due within 60 days (${soon60.length}):</strong> `+soon60.map(d=>`${d.polId||d.sopId} (${d.reviewDate})`).join(', ')+'.';
+  banner.innerHTML=msg;
+  // Fire webhook once per week max
+  const wkey='st_gov_rev_notif_'+new Date().toISOString().slice(0,10);
+  const fired=localStorage.getItem(wkey);
+  if(!fired&&soon30.length){
+    const wh=loadWebhooks();
+    if(wh.ptt){
+      sendAdaptiveCard(wh.ptt,'📅 Policy Reviews Due Soon',`${soon30.length} policy/SOP review(s) are due within 30 days.`,
+        soon30.map(d=>`• ${d.polId||d.sopId}: ${d.title} — due ${d.reviewDate}`).join('\n'),'ptt');
+      localStorage.setItem(wkey,'1');
+    }
+  }
+}
+
+// ── BOARD REPORT ──────────────────────────────────────────────────
+function generateBoardReport(){
+  const today=new Date().toLocaleDateString('en-ZA',{year:'numeric',month:'long',day:'numeric'});
+  const statuses=['Initiated','Draft','Consult','PTT Review','Approved','Published','Review Due','Archived'];
+  const counts={};
+  statuses.forEach(s=>counts[s]=0);
+  [...polData,...sopData].forEach(d=>{counts[d.status]=(counts[d.status]||0)+1;});
+  const published=polData.filter(p=>p.status==='Published'||p.status==='Review Due').length;
+  const overdue=[...polData,...sopData].filter(d=>isOverdue(d.reviewDate)&&d.status!=='Archived');
+  const hiRisk=polData.filter(p=>p.risk==='High Strategic'&&(p.status==='Published'||p.status==='Review Due'||p.status==='Approved'));
+  const initiated=[...polData,...sopData].filter(d=>d.status==='Initiated');
+  const matPct=Math.round((published/Math.max(polData.length+sopData.length,1))*100);
+
+  const catCounts={};
+  polData.filter(p=>p.status==='Published'||p.status==='Review Due').forEach(p=>{
+    catCounts[p.category]=(catCounts[p.category]||0)+1;
+  });
+
+  const rpt=window.open('','_blank');
+  rpt.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>StudyTrust Governance Report — ${today}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Aptos,Calibri,sans-serif;font-size:13px;color:#222;padding:32px;max-width:900px;margin:0 auto}
+h1{color:#226397;font-size:22px;margin-bottom:4px}
+h2{color:#226397;font-size:15px;margin:24px 0 10px;border-bottom:2px solid #e3f0fa;padding-bottom:5px}
+h3{font-size:13px;color:#555;margin-bottom:8px}
+.subtitle{color:#888;font-size:12px;margin-bottom:24px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.kpi{background:#f8fafc;border:1px solid #dde;border-radius:8px;padding:14px;text-align:center}
+.kpi-val{font-size:28px;font-weight:700;color:#226397}
+.kpi-lbl{font-size:11px;color:#888;margin-top:4px}
+.kpi.warn .kpi-val{color:#e65100}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px}
+th{background:#226397;color:#fff;padding:8px 10px;text-align:left;font-weight:400}
+td{padding:7px 10px;border-bottom:1px solid #eee}
+tr:nth-child(even) td{background:#f8fafc}
+.bd{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700}
+.bg{background:#e8f5e9;color:#1b5e20}.ba{background:#fff3e0;color:#e65100}
+.bt{background:#e3f0fa;color:#1565c0}.br{background:#fce4ec;color:#c62828}
+.bgy{background:#eee;color:#555}.bpr{background:#ede7f6;color:#4527a0}
+.pipeline{display:flex;border-radius:6px;overflow:hidden;height:24px;margin-bottom:8px}
+.ps{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff}
+.footer{margin-top:32px;padding-top:16px;border-top:1px solid #dde;font-size:11px;color:#aaa;text-align:center}
+@media print{body{padding:20px}.no-print{display:none}}
+</style>
+</head><body>
+<div class="no-print" style="margin-bottom:16px">
+  <button onclick="window.print()" style="background:#226397;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:13px;cursor:pointer">🖨 Print / Save as PDF</button>
+</div>
+<h1>StudyTrust Governance Report</h1>
+<div class="subtitle">000-601 NPO · IT3895/11(T) · Prepared ${today}</div>
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="kpi-val">${polData.length+sopData.length}</div><div class="kpi-lbl">Total Registered</div></div>
+  <div class="kpi"><div class="kpi-val">${published}</div><div class="kpi-lbl">Published Policies</div></div>
+  <div class="kpi ${overdue.length?'warn':''}"><div class="kpi-val">${overdue.length}</div><div class="kpi-lbl">Overdue Reviews</div></div>
+  <div class="kpi"><div class="kpi-val">${matPct}%</div><div class="kpi-lbl">Publication Rate</div></div>
+</div>
+
+<h2>Lifecycle Pipeline</h2>
+<div class="pipeline">
+  ${statuses.map((s,i)=>{
+    const n=counts[s]||0; if(!n) return '';
+    const total=polData.length+sopData.length||1;
+    const pct=Math.max(Math.round(n/total*100),4);
+    const cols=['#4527a0','#1565c0','#0277bd','#01579b','#2e7d32','#1b5e20','#e65100','#757575'];
+    return `<div class="ps" style="width:${pct}%;background:${cols[i]}" title="${s}: ${n}">${n}</div>`;
+  }).join('')}
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:#666;margin-bottom:16px">
+  ${statuses.map((s,i)=>counts[s]?`<span>${s}: ${counts[s]}</span>`:'').filter(Boolean).join(' · ')}
+</div>
+
+<h2>Published Policies by Category</h2>
+<table><tr><th>Category</th><th>Published</th><th>SOPs</th></tr>
+${['Governance','Personnel','Finance','IT','Bursaries','Funders','Operations'].map(cat=>{
+  const pols=polData.filter(p=>(p.status==='Published'||p.status==='Review Due')&&p.category===cat).length;
+  const sops=sopData.filter(s=>(s.status==='Published'||s.status==='Review Due')&&s.category===cat).length;
+  return pols||sops?`<tr><td>${cat}</td><td>${pols}</td><td>${sops}</td></tr>`:'';
+}).join('')}
+</table>
+
+${hiRisk.length?`<h2>High Strategic Policies (Board Approval Required)</h2>
+<table><tr><th>ID</th><th>Title</th><th>Status</th><th>Review Date</th><th>Approver</th></tr>
+${hiRisk.map(p=>`<tr><td>${esc(p.polId)}</td><td>${esc(p.title)}</td><td>${esc(p.status)}</td><td>${esc(p.reviewDate||'—')}</td><td>${esc(p.approver||'—')}</td></tr>`).join('')}
+</table>`:''}
+
+${overdue.length?`<h2>Overdue Reviews (${overdue.length} items)</h2>
+<table><tr><th>ID</th><th>Title</th><th>Type</th><th>Due Date</th><th>Owner</th></tr>
+${overdue.map(d=>`<tr><td>${esc(d.polId||d.sopId)}</td><td>${esc(d.title)}</td><td>${d.polId?'Policy':'SOP'}</td><td style="color:#e65100;font-weight:600">${esc(d.reviewDate)}</td><td>${esc(d.owner||'—')}</td></tr>`).join('')}
+</table>`:''}
+
+${initiated.length?`<h2>Initiated — Planned Policies Not Yet Drafted (${initiated.length})</h2>
+<table><tr><th>ID</th><th>Title</th><th>Category</th><th>Owner</th><th>Notes</th></tr>
+${initiated.map(d=>`<tr><td>${esc(d.polId||d.sopId)}</td><td>${esc(d.title)}</td><td>${esc(d.category||'—')}</td><td>${esc(d.owner||'—')}</td><td>${esc(d.notes||'—')}</td></tr>`).join('')}
+</table>`:''}
+
+<div class="footer">Generated by StudyTrust Governance Hub v4.5 · ${today} · Confidential</div>
+</body></html>`);
+  rpt.document.close();
+}
+
+// ── VERSION HISTORY IN EDIT MODAL ────────────────────────────────
+function loadVersionHistory(docId, type){
+  const vh=document.getElementById('edit-ver-hist'); if(!vh) return;
+  const entries=(logData||[]).filter(l=>(l.docId||l.polId||l.sopId)===docId||l.title===docId);
+  if(!entries.length){vh.innerHTML='<div style="font-size:12px;color:var(--tx3);padding:8px 0">No changelog entries found for this document.</div>';return;}
+  vh.innerHTML=entries.slice().reverse().slice(0,20).map(l=>`
+    <div class="vh-row">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span><strong>${esc(l.fromStatus||'—')}</strong> → <strong>${esc(l.toStatus||'—')}</strong></span>
+        <span class="vh-date">${esc(l.date||l.changed||'')}</span>
+      </div>
+      ${l.note||l.notes?'<div style="color:var(--tx3);font-size:11px;margin-top:3px">'+esc(l.note||l.notes)+'</div>':''}
+      ${l.changedBy||l.user?'<div style="color:var(--tx3);font-size:11px">By: '+esc(l.changedBy||l.user)+'</div>':''}
+    </div>`).join('');
+}
+
+// Patch openEditModal to load version history
+// openEditModal extension handled via patch below
+
+// ── TEMPLATES DOWNLOAD ────────────────────────────────────────────
+function openTemplateFolder(){
+  const url=localStorage.getItem('st_tpl_folder_url');
+  if(url){ window.open(url,'_blank'); return; }
+  closeM('m-templates');
+  toast('Please configure the Templates folder URL in the Templates modal first.','warning');
+  openM('m-templates');
+}
+function saveTemplateUrl(){
+  const url=(document.getElementById('tpl-folder-url')||{}).value||'';
+  localStorage.setItem('st_tpl_folder_url',url);
+  toast('Template folder URL saved.','success');
+}
+function initTemplateUrl(){
+  const url=localStorage.getItem('st_tpl_folder_url')||'';
+  const el=document.getElementById('tpl-folder-url');
+  if(el) el.value=url;
+  if(url){
+    ['tpl-pol-link','tpl-sop-link','tpl-ann-link'].forEach(id=>{
+      const a=document.getElementById(id); if(a) a.href=url;
+    });
+  }
+}
+
+// ── POLICY ACKNOWLEDGEMENTS ───────────────────────────────────────
+let ackData = [];
+const ACK_MAP = { title:'Title', version:'PolicyVersion', userEmail:'UserEmail',
+  userName:'UserDisplayName', date:'AcknowledgedDate', polTitle:'PolicyTitle' };
+
+async function loadAckData(){
+  try{
+    const sid=await getSiteId();
+    const data=await gFetch(`/sites/${sid}/lists/${LISTS.ack}/items?$expand=fields&$top=999&$select=id,fields`);
+    ackData=(data.value||[]).map(item=>{
+      const f=item.fields||{}; const r={_spId:item.id};
+      for(const[ak,sk] of Object.entries(ACK_MAP)) r[ak]=f[sk]||'';
+      return r;
+    });
+  } catch(e){ ackData=[]; }
+}
+
+async function acknowledgePolicy(polId, version, polTitle){
+  if(!polId) return;
+  const user=document.getElementById('user-name')?.textContent||'Unknown';
+  const email=typeof msalApp!=='undefined'?
+    (msalApp.getAllAccounts()[0]?.username||'unknown') : 'unknown';
+  try{
+    const sid=await getSiteId();
+    const fields={
+      Title: polId, PolicyVersion: version||'', PolicyTitle: polTitle||'',
+      UserEmail: email, UserDisplayName: user,
+      AcknowledgedDate: new Date().toISOString().slice(0,10)
+    };
+    await gFetch(`/sites/${sid}/lists/${LISTS.ack}/items`,{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({fields})});
+    toast('Acknowledged: '+polId+' v'+version,'success');
+    await loadAckData();
+    renderAck();
+    renderPendingAck();
+  } catch(e){ toast('Acknowledgement failed: '+e.message,'error'); }
+}
+
+function renderAck(){
+  const body=document.getElementById('body-ack'); if(!body) return;
+  const polF=(document.getElementById('ack-pol-filter')||{}).value||'';
+  const rows=ackData.filter(a=>!polF||a.title===polF);
+
+  if(!ackData.length){
+    body.innerHTML='<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--tx3)">No acknowledgements recorded yet. Requires GovAcknowledgements SharePoint list.</td></tr>';
+    document.getElementById('ack-summary').textContent='';
+  } else {
+    const uniq=[...new Set(ackData.map(a=>a.title))].length;
+    const users=[...new Set(ackData.map(a=>a.userEmail))].length;
+    document.getElementById('ack-summary').textContent=ackData.length+' acknowledgements · '+uniq+' policies · '+users+' employees';
+    body.innerHTML=rows.map((a,i)=>`<tr>
+      <td>${esc(a.title)}</td><td>${esc(a.version)}</td>
+      <td>${esc(a.userName)}</td><td>${esc(a.userEmail)}</td>
+      <td>${esc(a.date)}</td></tr>`).join('');
+  }
+
+  // Populate filter dropdown
+  const pf=document.getElementById('ack-pol-filter');
+  if(pf&&pf.options.length===1){
+    [...new Set(ackData.map(a=>a.title))].sort().forEach(id=>{
+      const o=new Option(id,id); pf.appendChild(o);
+    });
+  }
+}
+
+function renderPendingAck(){
+  const sec=document.getElementById('ack-pending-section');
+  const list=document.getElementById('ack-pending-list');
+  if(!sec||!list) return;
+  if(currentRole!=='personnel'&&currentRole!=='trustee'){ sec.style.display='none'; return; }
+  const email=typeof msalApp!=='undefined'?
+    (msalApp.getAllAccounts()[0]?.username||'') : '';
+  const myAcked=new Set(ackData.filter(a=>a.userEmail===email).map(a=>a.title+'::'+a.version));
+  const toAck=polData.filter(p=>(p.status==='Published'||p.status==='Review Due')&&
+    !myAcked.has(p.polId+'::'+p.version));
+  if(!toAck.length){
+    sec.style.display='block';
+    list.innerHTML='<div style="padding:16px;text-align:center;color:#388e3c;font-weight:600">✅ You are up to date — all published policies acknowledged.</div>';
+    return;
+  }
+  sec.style.display='block';
+  list.innerHTML=toAck.map(p=>`<div class="ack-row">
+    <div>
+      <div class="ack-pol">${esc(p.polId)} — ${esc(p.title)}</div>
+      <div class="ack-meta">${esc(p.category)} · v${esc(p.version)} · Owner: ${esc(p.owner||'—')}</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+      ${p.publishedUrl?`<a href="${esc(p.publishedUrl)}" target="_blank" class="btn btn-sec btn-sm">📄 Read</a>`:''}
+      <button class="btn btn-pri btn-sm" onclick="acknowledgePolicy('${esc(p.polId)}','${esc(p.version)}','${esc(p.title)}')">✓ Acknowledge</button>
+    </div></div>`).join('');
+}
+
+// ── CARD VIEW ────────────────────────────────────────────────────
+let polView='table', sopView='table';
+
+function setPolView(mode){
+  polView=mode;
+  document.getElementById('pol-vt-tbl').className='vt-btn'+(mode==='table'?' active':'');
+  document.getElementById('pol-vt-card').className='vt-btn'+(mode==='card'?' active':'');
+  renderPol();
+}
+function setSopView(mode){
+  sopView=mode;
+  document.getElementById('sop-vt-tbl').className='vt-btn'+(mode==='table'?' active':'');
+  document.getElementById('sop-vt-card').className='vt-btn'+(mode==='card'?' active':'');
+  renderSop();
+}
+
+function renderPolCards(data){
+  const body=document.getElementById('body-pol');
+  const tbl=document.querySelector('#sec-pol .tw');
+  if(tbl) tbl.style.display='none';
+  let grid=document.getElementById('pol-card-grid');
+  if(!grid){
+    grid=document.createElement('div'); grid.id='pol-card-grid';
+    tbl?.parentNode.appendChild(grid);
+  }
+  grid.style.display='grid';
+  grid.className='pol-cards';
+  grid.innerHTML=data.map(p=>`<div class="pc" onclick="openEditModal('${esc(p.polId)}','pol')">
+    <div class="pc-id">${esc(p.polId)}</div>
+    <div class="pc-title">${esc(p.title)}</div>
+    <div class="pc-badges">${sbadge(p.status)}${rbadge(p.risk)}${tbadge(p.tier)}</div>
+    <div class="pc-meta">
+      <span>👤 ${esc(p.owner||'—')}</span>
+      <span>📋 ${esc(p.category||'—')}</span>
+      ${p.reviewDate?'<span>📅 Review: '+esc(p.reviewDate)+'</span>':''}
+    </div>
+  </div>`).join('');
+}
+
+function renderSopCards(data){
+  const tbl=document.querySelector('#sec-sop .tw');
+  if(tbl) tbl.style.display='none';
+  let grid=document.getElementById('sop-card-grid');
+  if(!grid){
+    grid=document.createElement('div'); grid.id='sop-card-grid';
+    tbl?.parentNode.appendChild(grid);
+  }
+  grid.style.display='grid';
+  grid.className='sop-cards';
+  grid.innerHTML=data.map(s=>`<div class="pc" onclick="openEditModal('${esc(s.sopId)}','sop')">
+    <div class="pc-id">${esc(s.sopId)}</div>
+    <div class="pc-title">${esc(s.title)}</div>
+    <div class="pc-badges">${sbadge(s.status)}</div>
+    <div class="pc-meta">
+      <span>👤 ${esc(s.owner||'—')}</span>
+      <span>📋 ${esc(s.category||'—')}</span>
+      ${s.reviewDate?'<span>📅 Review: '+esc(s.reviewDate)+'</span>':''}
+    </div>
+  </div>`).join('');
+}
+
+// ── XLSX EXPORT ───────────────────────────────────────────────────
+function exportXlsx(tab){
+  if(typeof XLSX==='undefined'){
+    toast('XLSX library not loaded. Check network connection.','error'); return;
+  }
+  const wb=XLSX.utils.book_new();
+  if(tab==='pol'||tab==='all'){
+    const polRows=[
+      ['Policy ID','Title','Category','Tier','Version','Status','Risk','Approver','Review Date','Custodian','Owner','Notes'],
+      ...polData.map(p=>[p.polId,p.title,p.category,p.tier,p.version,p.status,p.risk,p.approver,p.reviewDate,p.custodian,p.owner,p.notes])
+    ];
+    const ws=XLSX.utils.aoa_to_sheet(polRows);
+    ws['!cols']=[8,30,14,6,8,14,18,20,12,20,20,30].map(w=>({wch:w}));
+    XLSX.utils.book_append_sheet(wb,ws,'Policies');
+  }
+  if(tab==='sop'||tab==='all'){
+    const sopRows=[
+      ['SOP ID','Title','Category','Linked Policy','Version','Status','Review Date','Custodian','Owner'],
+      ...sopData.map(s=>[s.sopId,s.title,s.category,s.linkedPolicy,s.version,s.status,s.reviewDate,s.custodian,s.owner])
+    ];
+    const ws=XLSX.utils.aoa_to_sheet(sopRows);
+    ws['!cols']=[8,30,14,14,8,14,12,20,20].map(w=>({wch:w}));
+    XLSX.utils.book_append_sheet(wb,ws,'SOPs');
+  }
+  if(tab==='ack'){
+    const ackRows=[
+      ['Policy ID','Policy Title','Version','Acknowledged By','Email','Date'],
+      ...ackData.map(a=>[a.title,a.polTitle,a.version,a.userName,a.userEmail,a.date])
+    ];
+    const ws=XLSX.utils.aoa_to_sheet(ackRows);
+    ws['!cols']=[10,30,8,25,30,12].map(w=>({wch:w}));
+    XLSX.utils.book_append_sheet(wb,ws,'Acknowledgements');
+  }
+  if(!wb.SheetNames.length){ toast('No data to export.','warning'); return; }
+  const date=new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb,`StudyTrust_Governance_${tab.toUpperCase()}_${date}.xlsx`);
+  toast('XLSX exported.','success');
+}
+
+// ── INIT (called after loadData) ──────────────────────────────────
+// loadData extension handled inline in loadAndRender patch below
+
+// ════════════════════════════════════════════════════════════════
+// END v4.5
+// ════════════════════════════════════════════════════════════════
+
 function allowedTransitions(currentStatus, role){
   const all = STATUS_FLOW[currentStatus] || [];
   if(role === 'admin') return all;
