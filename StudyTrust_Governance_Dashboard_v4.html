@@ -1564,8 +1564,18 @@ async function spPatchResilient(listName, itemId, fields, docType) {
   } catch(e) {
     // Only retry for column-not-found errors — re-throw everything else
     const msg = (e.message||'').toLowerCase();
-    const isColErr = /column|field|property|not recognized|does not exist|invalid property/i.test(e.message||'');
-    if (!isColErr) throw e;
+    const msg2 = e.message||'';
+    const isColErr = /column|field|property|not recognized|does not exist|invalid property/i.test(msg2);
+    const isInvalidReq = /invalid request|invalid value|bad request/i.test(msg2);
+    if (!isColErr && !isInvalidReq) throw e;
+    // If 'invalid request', convert any object-type URL values to plain strings and retry
+    if (isInvalidReq && !isColErr) {
+      const fixedUrl = Object.fromEntries(Object.entries(fields).map(([k,v])=>[
+        k, (v && typeof v==='object' && 'Url' in v) ? (v.Url||null) : v
+      ]));
+      await spPatch(listName, itemId, fixedUrl);
+      return;
+    }
     // Strip the optional columns that don't exist yet
     const optional = SP_OPTIONAL_COLS[docType] || [];
     if (!optional.length) throw e;
@@ -1598,7 +1608,9 @@ const LOG_MAP={note:'Title',docId:'DocID',docType:'DocType',fromStatus:'FromStat
 
 // Hyperlink columns: SharePoint "Hyperlink or Picture" type returns/accepts {Url, Description} objects via Graph.
 // Backward compatible: if your SP column is plain text these helpers pass strings through unchanged.
-const HYPERLINK_FIELDS = new Set(['draftUrl','publishedUrl','archiveUrl']);
+// URL columns are Single line of text in SharePoint — save as plain strings.
+// fromSpRead handles both string and {Url,Description} object formats on reading.
+const HYPERLINK_FIELDS = new Set(); // empty — URLs saved as plain strings
 const DATE_FIELDS = new Set(['reviewDate','invited','confirmed','changeDate']);
 function spWriteValue(field, value, item){
   if (HYPERLINK_FIELDS.has(field)) {
