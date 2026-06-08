@@ -1317,7 +1317,7 @@ const MSAL_CFG = {
   auth:{ clientId:CLIENT_ID, authority:'https://login.microsoftonline.com/studietrust.onmicrosoft.com', redirectUri:REDIRECT_URI },
   cache:{ cacheLocation:'sessionStorage', storeAuthStateInCookie:true }
 };
-const SCOPES = ['Sites.ReadWrite.All','User.Read','GroupMember.Read.All'];
+const SCOPES = ['Sites.ReadWrite.All','Sites.Manage.All','User.Read','GroupMember.Read.All'];
 
 // Status transitions
 const STATUS_FLOW = {
