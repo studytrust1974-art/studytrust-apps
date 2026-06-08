@@ -4202,6 +4202,7 @@ async function provisionGovTraining() {
     });
     const listId = listResp.id;
     addLog('GovTraining list created.', true);
+    await new Promise(r => setTimeout(r, 2000));
     const cols = [
       {name:'TrainingID',              type:'text'},
       {name:'LinkedDocID',             type:'text'},
