@@ -20,7 +20,7 @@
        Client ID: c5c93f6e-957d-431f-8e83-ff22e7be10a9
     2. Add this file's GitHub Pages URL as a redirect URI
        under Single-page application in Azure AD
-    3. Create 3 SharePoint lists (see ð Column Guide in Hub):
+    3. Create 3 SharePoint lists (see 📋 Column Guide in Hub):
          GovPolicies Â· GovSOPs Â· GovChangelog
     4. Create Azure AD groups:
          "Dashboards - Governance-Admins"  â admin role
@@ -30,6 +30,7 @@
 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.27.0/lib/msal-browser.min.js"></script>
+<script>const msal = msalBrowser;</script>
 <style>
 :root{
   --st:#226397;--st-d:#003d66;--st-m:#1c4e80;--st-a:#4da3d9;
@@ -316,7 +317,6 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
 /* ââ FOOTER ââ */
 .dash-footer{background:var(--st-d);color:rgba(255,255,255,.55);font-size:11px;padding:11px 20px;text-align:center;margin-top:24px}
 </style>
-<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://login.microsoftonline.com https://graph.microsoft.com;">
 </head>
 <body>
 
@@ -367,16 +367,16 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
       <button class="rb on" id="rb-a" onclick="setRole('admin')">Admin</button>
     </div>
     <div id="gs-wrap">
-      <span id="gs-icon">ð</span>
+      <span id="gs-icon">🔍</span>
       <input id="gs-input" type="text" placeholder="Search all policies and SOPsâ¦" oninput="globalSearch(this.value)" onfocus="this.closest('#gs-wrap').querySelector('#gs-results').style.display='block'" autocomplete="off">
       <div id="gs-results"></div>
     </div>
     <span class="hdr-user" id="user-name">â¦</span>
-    <button id="notif-btn" onclick="toggleNotif()" title="Notifications">ð<span id="notif-count">0</span></button>
+    <button id="notif-btn" onclick="toggleNotif()" title="Notifications">🔔<span id="notif-count">0</span></button>
     <button class="hdr-btn" onclick="openDiag()" title="Access diagnostics" style="background:rgba(255,255,255,.08);font-size:13px;padding:4px 8px">â¹</button>
     <button class="hdr-btn adm" id="btn-backup" onclick="downloadBackup()">â¬ Backup</button>
     <button class="hdr-btn adm" onclick="openM('m-restore')">â¬ Restore</button>
-    <button class="hdr-btn" onclick="openM('m-guide')">ð Col Guide</button>
+    <button class="hdr-btn" onclick="openM('m-guide')">📋 Col Guide</button>
   </div>
 </header>
 
@@ -413,7 +413,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
     <div class="sh" style="margin-bottom:12px">
       <div class="slabel" style="margin-bottom:0">Governance KPIs</div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-sec btn-sm adm" onclick="generateBoardReport()" title="Generate formatted board report">ð Board Report</button>
+        <button class="btn btn-sec btn-sm adm" onclick="generateBoardReport()" title="Generate formatted board report">📊 Board Report</button>
       </div>
     </div>
     <div class="g6" id="kpi-grid" style="margin-bottom:6px"></div>
@@ -494,7 +494,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
           <span id="pol-prog-lbl" style="font-size:11px;color:var(--tx3)"></span>
           <button class="btn btn-pri btn-sm adm" onclick="openM('m-pol')">+ Add Policy</button>
-          <button class="btn btn-sec btn-sm adm" onclick="openM('m-templates')">ð Templates</button>
+          <button class="btn btn-sec btn-sm adm" onclick="openM('m-templates')">📄 Templates</button>
           <button class="btn btn-sec btn-sm" onclick="exportXlsx('pol')">â¬ XLSX</button>
           <div class="view-toggle">
             <button class="vt-btn active" id="pol-vt-tbl" onclick="setPolView('table')" title="Table view">â°</button>
@@ -536,7 +536,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
           <span id="sop-prog-lbl" style="font-size:11px;color:var(--tx3)"></span>
           <button class="btn btn-pri btn-sm adm" onclick="openM('m-sop')">+ Add SOP</button>
-          <button class="btn btn-sec btn-sm adm" onclick="openM('m-templates')">ð Templates</button>
+          <button class="btn btn-sec btn-sm adm" onclick="openM('m-templates')">📄 Templates</button>
           <button class="btn btn-sec btn-sm" onclick="exportXlsx('sop')">â¬ XLSX</button>
           <div class="view-toggle">
             <button class="vt-btn active" id="sop-vt-tbl" onclick="setSopView('table')" title="Table view">â°</button>
@@ -581,21 +581,21 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
   <section id="sec-docs" class="sec adm-b">
     <div class="slabel">SharePoint Document Library Architecture</div>
     <div class="g3">
-      <div class="card"><div class="card-hd" style="background:var(--gn-bg);color:var(--gn-tx);border-color:#c8e6c9">ð Governance Published</div>
+      <div class="card"><div class="card-hd" style="background:var(--gn-bg);color:var(--gn-tx);border-color:#c8e6c9">📁 Governance Published</div>
         <div style="padding:12px;font-size:12px">
           <div style="font-weight:600;margin-bottom:6px">Contains:</div>
           <div style="color:var(--tx2);line-height:1.7">All <strong>Approved</strong>, <strong>New</strong>, and <strong>Published</strong> documents<br>View link visible to all users (trustees, personnel, admin)</div>
           <div style="margin-top:10px;font-size:11px;background:var(--gn-bg);padding:6px 9px;border-radius:5px;color:var(--gn-tx)"><strong>Permissions:</strong> Dashboards - Governance-Admins â Contribute<br>Dashboards - Board-of-Trustees â Read<br>All Personnel â Read</div>
         </div>
       </div>
-      <div class="card"><div class="card-hd" style="background:var(--am-bg);color:var(--am-tx);border-color:#ffe082">ð Governance Drafts</div>
+      <div class="card"><div class="card-hd" style="background:var(--am-bg);color:var(--am-tx);border-color:#ffe082">📁 Governance Drafts</div>
         <div style="padding:12px;font-size:12px">
           <div style="font-weight:600;margin-bottom:6px">Contains:</div>
           <div style="color:var(--tx2);line-height:1.7">All <strong>Draft</strong>, <strong>Consult</strong>, <strong>PTT Review</strong> documents<br>Edit links visible to admins only</div>
           <div style="margin-top:10px;font-size:11px;background:var(--am-bg);padding:6px 9px;border-radius:5px;color:var(--am-tx)"><strong>Permissions:</strong> Dashboards - Governance-Admins â Contribute<br>Dashboards - Board-of-Trustees â No access<br>All Personnel â No access</div>
         </div>
       </div>
-      <div class="card"><div class="card-hd" style="background:var(--bg);border-color:var(--bdr)">ð Governance Archive</div>
+      <div class="card"><div class="card-hd" style="background:var(--bg);border-color:var(--bdr)">🗄 Governance Archive</div>
         <div style="padding:12px;font-size:12px">
           <div style="font-weight:600;margin-bottom:6px">Contains:</div>
           <div style="color:var(--tx2);line-height:1.7">All <strong>Archived</strong> (retired) documents<br>5-year retention per Trust Deed Part 3<br>Archive links visible to admins only</div>
@@ -739,7 +739,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
           <button class="btn btn-am" onclick="openM('m-restore')">Restore from Backup</button>
         </div>
         <div style="border:1px solid var(--bdr);border-radius:var(--r);padding:14px;text-align:center">
-          <div style="font-size:22px;margin-bottom:6px">ð§¹</div>
+          <div style="font-size:22px;margin-bottom:6px">🧹</div>
           <div style="font-size:12px;font-weight:600;margin-bottom:4px">Remove Duplicates</div>
           <div style="font-size:11px;color:var(--tx2);margin-bottom:10px;line-height:1.4">Find and delete duplicate policies and SOPs keeping the most complete record of each.</div>
           <button class="btn btn-sec" onclick="deduplicateAll()">Remove Duplicates</button>
@@ -751,7 +751,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
   <!-- ââ AUDITOR: POLICY & SOP DOCUMENTS ââ -->
   <section id="sec-aud-docs" class="sec">
     <div style="background:#d1fae5;border:1px solid #6ee7b7;border-radius:var(--r);padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <span style="font-size:20px">ð</span>
+      <span style="font-size:20px">📋</span>
       <div>
         <div style="font-size:13px;font-weight:700;color:#065f46">Auditor Document Access</div>
         <div style="font-size:12px;color:#047857;margin-top:2px">You have read-only access to all published policies and SOPs. Use the Document Request tab to request additional information from the governance team.</div>
@@ -819,7 +819,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
   <!-- ââ AUDITOR: DOCUMENT REQUESTS ââ -->
   <section id="sec-aud-request" class="sec">
     <div style="background:#fff;border-radius:var(--r);border:.5px solid var(--bdr);padding:16px 18px;margin-bottom:14px">
-      <div style="font-size:13px;font-weight:700;color:#065f46;margin-bottom:12px">ð Submit a Document Request</div>
+      <div style="font-size:13px;font-weight:700;color:#065f46;margin-bottom:12px">📋 Submit a Document Request</div>
       <div style="font-size:12px;color:var(--tx2);margin-bottom:14px;line-height:1.6">Use this form to request policies, SOPs, supporting documents, or clarification from the StudyTrust governance team. Requests are sent directly to the admin team who will respond via SharePoint or email.</div>
       <div class="f-grid" style="margin-bottom:10px">
         <div class="f-row"><label>Your Name</label><input type="text" id="aud-req-name" placeholder="e.g. Denelcia Chetty"></div>
@@ -946,7 +946,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
 
       <!-- PUBLISHING STEP â shown only when target status is Published -->
       <div id="publish-step" style="display:none;margin-top:12px;background:#d1fae5;border:1px solid #6ee7b7;border-radius:var(--r);padding:14px">
-        <div style="font-size:12px;font-weight:700;color:#065f46;margin-bottom:8px">ð Publishing Step â File Movement Required</div>
+        <div style="font-size:12px;font-weight:700;color:#065f46;margin-bottom:8px">📁 Publishing Step â File Movement Required</div>
         <div style="font-size:12px;color:#047857;line-height:1.7;margin-bottom:10px">
           Before clicking Apply, move the document file in SharePoint:<br>
           <strong>From:</strong> Governance Drafts/[Policies or SOPs]/PTT Review/<br>
@@ -965,7 +965,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
 
       <!-- ARCHIVING STEP â shown only when target status is Archived -->
       <div id="archive-step" style="display:none;margin-top:12px;background:#f3e5f5;border:1px solid #ce93d8;border-radius:var(--r);padding:14px">
-        <div style="font-size:12px;font-weight:700;color:#4a1b9a;margin-bottom:8px">ð Archiving Step â File Movement Required</div>
+        <div style="font-size:12px;font-weight:700;color:#4a1b9a;margin-bottom:8px">🗄 Archiving Step â File Movement Required</div>
         <div style="font-size:12px;color:#6a1b9a;line-height:1.7;margin-bottom:10px">
           Before clicking Apply, move the document file in SharePoint:<br>
           <strong>From:</strong> Governance Published/[Policies or SOPs]/[Category]/<br>
@@ -996,7 +996,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <div style="display:flex;gap:6px;align-items:center">
           <input type="url" id="f-url-draft" placeholder="https://studietrust.sharepoint.com/â¦" style="flex:1">
           <button class="btn btn-sec btn-sm" onclick="triggerGovUpload('f-url-draft')" title="Upload one file to the Drafts folder">â¬ Upload</button>
-          <button class="btn btn-sm" style="background:#e8f5e9;color:#1b5e20;border-color:#a5d6a7;white-space:nowrap" onclick="triggerGovMultiUpload('f-url-draft')" title="Create a folder and upload multiple files (e.g. policy + annexures)">ð Multi</button>
+          <button class="btn btn-sm" style="background:#e8f5e9;color:#1b5e20;border-color:#a5d6a7;white-space:nowrap" onclick="triggerGovMultiUpload('f-url-draft')" title="Create a folder and upload multiple files (e.g. policy + annexures)">📁 Multi</button>
         </div>
         <div class="f-note">Hover over Upload to see the destination folder. Multi creates a subfolder and links it.</div>
       </div>
@@ -1076,7 +1076,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
     </div>
     <div style="border-top:1px solid var(--bdr);margin-top:4px;padding-top:10px">
       <div style="font-size:11px;font-weight:600;color:var(--tx3);cursor:pointer;user-select:none" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
-        ð Version History <span style="opacity:.5;font-weight:400">(click to expand)</span>
+        🕐 Version History <span style="opacity:.5;font-weight:400">(click to expand)</span>
       </div>
       <div id="edit-ver-hist" style="display:none;margin-top:8px;max-height:160px;overflow-y:auto"></div>
     </div>
@@ -1900,12 +1900,12 @@ function docLinks(doc,type){
     else if(isA||isP) h+='<span style="font-size:11px;color:var(--tx3)">No draft URL</span>';
   }
   if(isPub){
-    if(doc.publishedUrl) h+=`<a class="doc-btn view" href="${esc(doc.publishedUrl)}" target="_blank">ð View</a>`;
+    if(doc.publishedUrl) h+=`<a class="doc-btn view" href="${esc(doc.publishedUrl)}" target="_blank">📄 View</a>`;
     else h+='<span style="font-size:11px;color:var(--tx3)">No URL yet</span>';
     if(isA&&doc.publishedUrl) h+=`<a class="doc-btn edit" href="${esc(doc.publishedUrl)}?web=1" target="_blank">â Edit</a>`;
   }
   if(isAr&&isA){
-    if(doc.archiveUrl) h+=`<a class="doc-btn arch" href="${esc(doc.archiveUrl)}" target="_blank">ð Archive</a>`;
+    if(doc.archiveUrl) h+=`<a class="doc-btn arch" href="${esc(doc.archiveUrl)}" target="_blank">🗄 Archive</a>`;
     else h+='<span style="font-size:11px;color:var(--tx3)">No archive URL</span>';
   }
   const id=doc.polId||doc.sopId||doc._spId;
@@ -2721,7 +2721,7 @@ function checkReviewReminders(){
   banner.style.display='block';
   let msg='';
   if(soon30.length) msg+=`<strong>â  Due within 30 days (${soon30.length}):</strong> `+soon30.map(d=>`${d.polId||d.sopId} (${d.reviewDate})`).join(', ')+'. ';
-  if(soon60.length) msg+=`<strong>ð Due within 60 days (${soon60.length}):</strong> `+soon60.map(d=>`${d.polId||d.sopId} (${d.reviewDate})`).join(', ')+'.';
+  if(soon60.length) msg+=`<strong>📅 Due within 60 days (${soon60.length}):</strong> `+soon60.map(d=>`${d.polId||d.sopId} (${d.reviewDate})`).join(', ')+'.';
   banner.innerHTML=msg;
   // Fire webhook once per week max
   const wkey='st_gov_rev_notif_'+new Date().toISOString().slice(0,10);
@@ -2729,7 +2729,7 @@ function checkReviewReminders(){
   if(!fired&&soon30.length){
     const wh=loadWebhooks();
     if(wh.ptt){
-      sendAdaptiveCard(wh.ptt,'ð Policy Reviews Due Soon',`${soon30.length} policy/SOP review(s) are due within 30 days.`,
+      sendAdaptiveCard(wh.ptt,'📅 Policy Reviews Due Soon',`${soon30.length} policy/SOP review(s) are due within 30 days.`,
         soon30.map(d=>`â¢ ${d.polId||d.sopId}: ${d.title} â due ${d.reviewDate}`).join('\n'),'ptt');
       localStorage.setItem(wkey,'1');
     }
@@ -2784,7 +2784,7 @@ tr:nth-child(even) td{background:#f8fafc}
 </style>
 </head><body>
 <div class="no-print" style="margin-bottom:16px">
-  <button onclick="window.print()" style="background:#226397;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:13px;cursor:pointer">ð¨ Print / Save as PDF</button>
+  <button onclick="window.print()" style="background:#226397;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:13px;cursor:pointer">🖨 Print / Save as PDF</button>
 </div>
 <h1>StudyTrust Governance Report</h1>
 <div class="subtitle">000-601 NPO Â· IT3895/11(T) Â· Prepared ${today}</div>
@@ -2969,7 +2969,7 @@ function renderPendingAck(){
       <div class="ack-meta">${esc(p.category)} Â· v${esc(p.version)} Â· Owner: ${esc(p.owner||'â')}</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
-      ${p.publishedUrl?`<a href="${esc(p.publishedUrl)}" target="_blank" class="btn btn-sec btn-sm">ð Read</a>`:''}
+      ${p.publishedUrl?`<a href="${esc(p.publishedUrl)}" target="_blank" class="btn btn-sec btn-sm">📄 Read</a>`:''}
       <button class="btn btn-pri btn-sm" onclick="acknowledgePolicy('${esc(p.polId)}','${esc(p.version)}','${esc(p.title)}')">â Acknowledge</button>
     </div></div>`).join('');
 }
@@ -3006,9 +3006,9 @@ function renderPolCards(data){
     <div class="pc-title">${esc(p.title)}</div>
     <div class="pc-badges">${sbadge(p.status)}${rbadge(p.risk)}${tbadge(p.tier)}</div>
     <div class="pc-meta">
-      <span>ð¤ ${esc(p.owner||'â')}</span>
-      <span>ð ${esc(p.category||'â')}</span>
-      ${p.reviewDate?'<span>ð Review: '+esc(p.reviewDate)+'</span>':''}
+      <span>👤 ${esc(p.owner||'â')}</span>
+      <span>📋 ${esc(p.category||'â')}</span>
+      ${p.reviewDate?'<span>📅 Review: '+esc(p.reviewDate)+'</span>':''}
     </div>
   </div>`).join('');
 }
@@ -3028,9 +3028,9 @@ function renderSopCards(data){
     <div class="pc-title">${esc(s.title)}</div>
     <div class="pc-badges">${sbadge(s.status)}</div>
     <div class="pc-meta">
-      <span>ð¤ ${esc(s.owner||'â')}</span>
-      <span>ð ${esc(s.category||'â')}</span>
-      ${s.reviewDate?'<span>ð Review: '+esc(s.reviewDate)+'</span>':''}
+      <span>👤 ${esc(s.owner||'â')}</span>
+      <span>📋 ${esc(s.category||'â')}</span>
+      ${s.reviewDate?'<span>📅 Review: '+esc(s.reviewDate)+'</span>':''}
     </div>
   </div>`).join('');
 }
@@ -3185,7 +3185,7 @@ function renderAudPol(){
     if(ql&&txt.indexOf(ql)===-1) return;
     if(cf&&p.category!==cf) return;
     shown++;
-    const viewBtn=p.publishedUrl?`<a class="doc-btn view" href="${esc(p.publishedUrl)}" target="_blank">ð View</a>`:'<span style="font-size:11px;color:var(--tx3)">Not yet available</span>';
+    const viewBtn=p.publishedUrl?`<a class="doc-btn view" href="${esc(p.publishedUrl)}" target="_blank">📄 View</a>`:'<span style="font-size:11px;color:var(--tx3)">Not yet available</span>';
     html+=`<tr><td>${esc(p.polId)}</td><td>${esc(p.title)}</td><td>${esc(p.category)}</td><td>${tbadge(p.tier)}</td><td>${rbadge(p.risk)}</td><td>${esc(p.version)}</td><td>${datecell(p.reviewDate)}</td><td style="font-size:11px">${esc(p.approver)}</td><td>${viewBtn}</td></tr>`;
   });
   if(!shown) html=`<tr><td colspan="9" style="text-align:center;color:var(--tx3);padding:20px">No published policies match the current filters.</td></tr>`;
@@ -3208,7 +3208,7 @@ function renderAudSop(){
     if(ql&&txt.indexOf(ql)===-1) return;
     if(cf&&s.category!==cf) return;
     shown++;
-    const viewBtn=s.publishedUrl?`<a class="doc-btn view" href="${esc(s.publishedUrl)}" target="_blank">ð View</a>`:'<span style="font-size:11px;color:var(--tx3)">Not yet available</span>';
+    const viewBtn=s.publishedUrl?`<a class="doc-btn view" href="${esc(s.publishedUrl)}" target="_blank">📄 View</a>`:'<span style="font-size:11px;color:var(--tx3)">Not yet available</span>';
     html+=`<tr><td>${esc(s.sopId)}</td><td>${esc(s.title)}</td><td>${esc(s.category)}</td><td>${esc(s.linkedPolicy)}</td><td>${esc(s.version)}</td><td>${datecell(s.reviewDate)}</td><td style="font-size:11px">${esc(s.owner)}</td><td>${viewBtn}</td></tr>`;
   });
   if(!shown) html=`<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:20px">No published SOPs match the current filters.</td></tr>`;
@@ -3273,7 +3273,7 @@ function submitAudRequest(){
   const wh = loadWebhooks();
   if(wh.admin){
     sendAdaptiveCard(wh.admin,
-      'ð New Auditor Document Request',
+      '📋 New Auditor Document Request',
       `From: ${name||'Auditor'} (${org||'External'})`,
       `**Document requested:** ${doc}\n**Urgency:** ${urgency}${note ? '\n**Context:** '+note : ''}`,
       'admin'
@@ -3350,10 +3350,10 @@ function renderNotifPanel(){
   if(ttl) ttl.textContent = 'Notifications' + (unread ? ' ('+unread+' new)' : '');
 
   const typeStyle = {
-    'new-doc'      : { cls:'ni-new',    icon:'ð', label:'NEW' },
-    'status-change': { cls:'ni-change',  icon:'ð', label:'STATUS' },
+    'new-doc'      : { cls:'ni-new',    icon:'📄', label:'NEW' },
+    'status-change': { cls:'ni-change',  icon:'🔄', label:'STATUS' },
     'overdue'      : { cls:'ni-late',    icon:'â ',  label:'OVERDUE' },
-    'request'      : { cls:'ni-req',     icon:'ð', label:'REQUEST' }
+    'request'      : { cls:'ni-req',     icon:'📋', label:'REQUEST' }
   };
 
   if(!arr.length){
@@ -3470,7 +3470,7 @@ async function testWebhook(audience){
   const url = wh[audience];
   if(!url){ toast('No webhook URL configured for ' + audience + '.', 'warning'); return; }
   const ok = await sendAdaptiveCard(url,
-    'ð StudyTrust Governance Hub â Test Notification',
+    '🔔 StudyTrust Governance Hub â Test Notification',
     'This is a test notification from the StudyTrust Governance Hub.',
     `Audience: ${audience} Â· Sent by: ${userName} Â· ${new Date().toLocaleString('en-ZA')}`,
     audience
@@ -3537,17 +3537,17 @@ async function fireStatusChangeNotif(docId, docTitle, fromStatus, toStatus, chan
   const pttStatuses     = ['Consult','PTT Review'];
 
   const sends = [];
-  if(wh.admin)   sends.push(sendAdaptiveCard(wh.admin,   'ð ' + title, sub, body, 'admin'));
+  if(wh.admin)   sends.push(sendAdaptiveCard(wh.admin,   '🔄 ' + title, sub, body, 'admin'));
   if(wh.trustee && trusteeStatuses.includes(toStatus))
-                  sends.push(sendAdaptiveCard(wh.trustee, 'ð ' + title, sub, body, 'trustee'));
+                  sends.push(sendAdaptiveCard(wh.trustee, '🔄 ' + title, sub, body, 'trustee'));
   if(wh.ptt && pttStatuses.includes(toStatus)){
     const pttBody = toStatus==='PTT Review'
       ? `${docTitle} is ready for PTT review. Please open the Governance Hub and review the draft.`
       : `${docTitle} has entered consultation. Please review the draft and provide input.`;
-    sends.push(sendAdaptiveCard(wh.ptt, 'ð ' + title, sub, pttBody, 'ptt'));
+    sends.push(sendAdaptiveCard(wh.ptt, '📝 ' + title, sub, pttBody, 'ptt'));
   }
   if(wh.auditor && auditorStatuses.includes(toStatus))
-                  sends.push(sendAdaptiveCard(wh.auditor, 'ð New Published Document: ' + docId, sub, `${docTitle} has been published and is now available for review.`, 'auditor'));
+                  sends.push(sendAdaptiveCard(wh.auditor, '📄 New Published Document: ' + docId, sub, `${docTitle} has been published and is now available for review.`, 'auditor'));
 
   await Promise.allSettled(sends);
 }
@@ -3561,10 +3561,10 @@ async function fireNewDocNotif(docId, docTitle, type, status, registeredBy){
   pushNotif('new-doc', title, `Status: ${status} Â· by ${registeredBy}`);
 
   const sends = [];
-  if(wh.admin) sends.push(sendAdaptiveCard(wh.admin, 'ð ' + title, `A new ${type} has been registered in the Governance Hub.`, body, 'admin'));
+  if(wh.admin) sends.push(sendAdaptiveCard(wh.admin, '📋 ' + title, `A new ${type} has been registered in the Governance Hub.`, body, 'admin'));
   // Notify PTT when a new draft is registered (so they can pick it up for review when it advances)
   if(wh.ptt && ['Draft','Consult','PTT Review'].includes(status)){
-    sends.push(sendAdaptiveCard(wh.ptt, 'ð ' + title, `A new ${type} draft has been registered. It will reach PTT review when its drafting and consultation phases complete.`, body, 'ptt'));
+    sends.push(sendAdaptiveCard(wh.ptt, '📝 ' + title, `A new ${type} draft has been registered. It will reach PTT review when its drafting and consultation phases complete.`, body, 'ptt'));
   }
   // Auditors and trustees only notified when Published â not for drafts
   await Promise.allSettled(sends);
@@ -3885,7 +3885,10 @@ async function loadTrainingTab() {
     _trainingLoaded = true;
     _renderTrainingTab();
   } catch (err) {
-    el.innerHTML = `<p style="padding:24px;color:#C0392B;">Failed to load training data: ${esc(err.message)}</p>`;
+    _training = []; _trainingLoaded = false;
+    _renderTrainingTab();
+    const plog = document.getElementById('provision-log');
+    if(plog) plog.innerHTML = `<span style="color:#C0392B;">⚠ ${esc(err.message)}</span>`;
   }
 }
 
