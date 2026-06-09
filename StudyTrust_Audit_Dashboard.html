@@ -196,7 +196,7 @@ tbody tr.rl{background:#FFF5F5;border-left:3px solid var(--late-border)}
 tbody tr.rn{border-left:3px solid var(--new-border)}
 td{padding:6px 8px;vertical-align:top;line-height:1.45}
 td.n{text-align:center;color:#aaa;font-size:11px;font-weight:700}
-td.dc{min-width:280px;width:340px}
+td.dc{min-width:280px;width:340px}.ita{width:100%;min-width:260px;min-height:42px;resize:vertical;box-sizing:border-box}
 
 /* ── INLINE CONTROLS ── */
 .ie{border:1px solid #d8dde5;border-radius:4px;padding:3px 5px;font-size:11px;background:#fff;color:#333;max-width:100%}
@@ -1356,7 +1356,12 @@ function statusSel(val,tab,id,field='status'){
 }
 function textIn(val,tab,id,field,cls=''){
   if(userRole==='auditor') return `<span>${val||''}</span>`;
-  return `<input class="ie${cls?' '+cls:''}" value="${(val||'').replace(/"/g,'&quot;')}" onchange="quickSave('${tab}','${id}','${field}',this.value,this)" onblur="quickSave('${tab}','${id}','${field}',this.value,this)">`;
+  if(cls==='dc'){
+    // Textarea for description/weakness/recommendation — wraps to multiple lines like Governance dashboard
+    const esc=(val||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `<textarea class="ie ita" rows="2" onchange="quickSave('${tab}','${id}','${field}',this.value,this)" onblur="quickSave('${tab}','${id}','${field}',this.value,this)">${esc}</textarea>`;
+  }
+  return `<input class="ie it" value="${(val||'').replace(/"/g,'&quot;')}" onchange="quickSave('${tab}','${id}','${field}',this.value,this)" onblur="quickSave('${tab}','${id}','${field}',this.value,this)">`;
 }
 function dateIn(val,tab,id,field){
   if(userRole==='auditor') return `<span>${fmt(val)}</span>`;
@@ -1381,7 +1386,7 @@ function renderPlanExec(tab,items,body){
     const isnew=isNew(it.uploaded,cfg.auditStart);
     return `<tr class="${late?'rl':isnew?'rn':''}">
       <td class="n">${i+1}</td>
-      <td class="dc">${textIn(it.desc,tab,it.id,'desc','it')}</td>
+      <td class="dc">${textIn(it.desc,tab,it.id,'desc','dc')}</td>
       <td>${dateIn(it.dueDate,tab,it.id,'dueDate')}</td>
       <td>${dateIn(it.uploaded,tab,it.id,'uploaded')}</td>
       <td>${statusSel(it.status,tab,it.id)}</td>
@@ -1398,8 +1403,8 @@ function renderPlanExec(tab,items,body){
 function renderRec(items,body){
   body.innerHTML=items.map((it,i)=>`<tr>
     <td class="n">${i+1}</td>
-    <td class="dc">${textIn(it.weakness,'recommendations',it.id,'weakness','it')}</td>
-    <td class="dc">${textIn(it.recommendation,'recommendations',it.id,'recommendation','it')}</td>
+    <td class="dc">${textIn(it.weakness,'recommendations',it.id,'weakness','dc')}</td>
+    <td class="dc">${textIn(it.recommendation,'recommendations',it.id,'recommendation','dc')}</td>
     <td>${dateIn(it.dueDate,'recommendations',it.id,'dueDate')}</td>
     <td>${statusSel(it.status,'recommendations',it.id)}</td>
     <td>${textIn(it.responsible,'recommendations',it.id,'responsible','it')}</td>
@@ -1688,16 +1693,11 @@ async function spCreateFolder(libraryName, folderPath){
     const createUrl=parentEncoded
       ?`${GRAPH_BASE}/sites/${siteId}/drives/${driveId}/root:/${parentEncoded}:/children`
       :`${GRAPH_BASE}/sites/${siteId}/drives/${driveId}/root/children`;
-    const cr=await fetch(createUrl,{
+    await fetch(createUrl,{
       method:'POST',
       headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
       body:JSON.stringify({name:folderName,folder:{},['@microsoft.graph.conflictBehavior']:'ignore'})
-    });
-    if(!cr.ok && cr.status!==409){
-      let em=`Folder create failed: ${cr.status}`;
-      try{ const e=await cr.json(); em=e?.error?.message||em; }catch(_){}
-      throw new Error(em);
-    }
+    }).catch(()=>{});
   }
 }
 
