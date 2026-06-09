@@ -761,7 +761,7 @@ const F = {
 
 const DATE_FIELDS = new Set(['dueDate','uploaded','dateRequested','dateConnected','dateSubmitted','dateResolved','date','fyEnd','deadline','auditStart','shadower','FYEnd','Deadline','AuditStart','Shadower','DateRequested','DateConnected','DateSubmitted','DateResolved','RequestDate','Uploaded']);
 
-const HYPERLINK_FIELDS = new Set(['docLink','responseLink']);
+const HYPERLINK_FIELDS = new Set(['responseLink']); // DocLink changed to Multiple Lines — treated as plain text
 
 function spWriteValue(field, value, item){
   if (HYPERLINK_FIELDS.has(field)) {
