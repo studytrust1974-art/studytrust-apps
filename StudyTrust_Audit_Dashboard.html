@@ -196,12 +196,12 @@ tbody tr.rl{background:#FFF5F5;border-left:3px solid var(--late-border)}
 tbody tr.rn{border-left:3px solid var(--new-border)}
 td{padding:6px 8px;vertical-align:top;line-height:1.45}
 td.n{text-align:center;color:#aaa;font-size:11px;font-weight:700}
-td.dc{min-width:220px;max-width:360px}
+td.dc{min-width:280px;width:340px}
 
 /* ── INLINE CONTROLS ── */
 .ie{border:1px solid #d8dde5;border-radius:4px;padding:3px 5px;font-size:11px;background:#fff;color:#333;max-width:100%}
 .ie:focus{outline:none;border-color:var(--st);box-shadow:0 0 0 2px var(--st-l)}
-.id{width:107px}.it{width:86px}.il{width:115px;color:var(--st)}.is{cursor:pointer}
+.id{width:107px}.it{width:100%;min-width:180px}.il{width:115px;color:var(--st)}.is{cursor:pointer}
 
 /* ── STATUS BADGE ── */
 .sb{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap;border:none;cursor:pointer}
@@ -1684,11 +1684,16 @@ async function spCreateFolder(libraryName, folderPath){
     const createUrl=parentEncoded
       ?`${GRAPH_BASE}/sites/${siteId}/drives/${driveId}/root:/${parentEncoded}:/children`
       :`${GRAPH_BASE}/sites/${siteId}/drives/${driveId}/root/children`;
-    await fetch(createUrl,{
+    const cr=await fetch(createUrl,{
       method:'POST',
       headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
       body:JSON.stringify({name:folderName,folder:{},['@microsoft.graph.conflictBehavior']:'ignore'})
-    }).catch(()=>{});
+    });
+    if(!cr.ok && cr.status!==409){
+      let em=`Folder create failed: ${cr.status}`;
+      try{ const e=await cr.json(); em=e?.error?.message||em; }catch(_){}
+      throw new Error(em);
+    }
   }
 }
 
@@ -1729,6 +1734,7 @@ async function handleFileUpload(input){
   const folder=catObj?catObj.path:'';
   try{
     showLoad('Uploading '+file.name+'…');
+    if(folder) await spCreateFolder(libName,folder);
     const link=await spUploadFile(libName,folder,file);
     item.docLink=link; item.uploaded=today();
     await spPatch(getListName(pu.tab),pu.id,{DocLink:link,Uploaded:today()+'T00:00:00Z',Notes:item.notes||file.name});
