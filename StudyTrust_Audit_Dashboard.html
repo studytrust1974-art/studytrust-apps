@@ -1760,27 +1760,52 @@ function triggerUpload(tab,id,multi){
 async function handleFileUpload(input){
   const file=input.files[0]; if(!file)return;
   const pu=_pendingUpload; if(!pu)return;
+
+  // ── Response-link upload (Add Doc on an Auditor Request row) ──
+  if(pu.isRl){
+    const reqItem=reqItems.find(x=>x.id===pu.id);
+    if(!reqItem){showToast('Request not found','err');return;}
+    try{
+      showLoad('Uploading '+file.name+'…');
+      const libName='Audit '+currentYear;
+      const folder='Auditor Requests/'+pu.id;
+      const driveId=await getDriveId(libName);
+      const token=await getToken();
+      const encodedPath=folder.split('/').concat([file.name]).map(encodeURIComponent).join('/');
+      const r=await fetch(`${GRAPH_BASE}/drives/${driveId}/root:/${encodedPath}:/content`,{
+        method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':file.type||'application/octet-stream'},body:file
+      });
+      if(!r.ok)throw new Error('Upload failed: '+r.status);
+      const result=await r.json();
+      const link=result.webUrl;
+      const rl=await spPost(LISTS.responseLinks,{Year:currentYear,RequestID:String(pu.id),DocName:file.name,DocLink:link,UploadedBy:userName,UploadedDate:today()+'T00:00:00Z'});
+      rlItems.push(fromSpItem('responseLinks',rl));
+      renderAudRequests();
+      showToast('Uploaded: '+file.name,'ok');
+    }catch(e){showToast(e.message,'err');}finally{hideLoad();}
+    return;
+  }
+
+  // ── Standard upload (Planning / Execution / Recommendations etc.) ──
   const items=getItems(pu.tab);
   const item=items.find(x=>x.id===pu.id);
-  if(!item)return;
+  if(!item){showToast('Item not found','err');return;}
   const catObj=DOC_CATEGORIES.find(c=>c.label===item.docName);
   const libName=catObj?docLibForYear(catObj,currentYear):'Audit '+currentYear;
   const folder=catObj?catObj.path:'';
   try{
     showLoad('Uploading '+file.name+'…');
     const driveId=await getDriveId(libName);
-    const siteId=await getSiteId();
     const token=await getToken();
-    const encodedPath=folder?encodeURIComponent(folder)+'%2F'+encodeURIComponent(file.name):encodeURIComponent(file.name);
-    const r=await fetch(`${GRAPH_BASE}/drives/${driveId}/root:/${folder?folder+'/':''}${file.name}:/content`,{
+    const encodedPath=(folder?folder.split('/').concat([file.name]):[file.name]).map(encodeURIComponent).join('/');
+    const r=await fetch(`${GRAPH_BASE}/drives/${driveId}/root:/${encodedPath}:/content`,{
       method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':file.type||'application/octet-stream'},body:file
     });
     if(!r.ok)throw new Error('Upload failed: '+r.status);
     const result=await r.json();
     const link=result.webUrl;
     item.docLink=link; item.uploaded=today();
-    const spFields={DocLink:{Url:link,Description:file.name},Uploaded:today()+'T00:00:00Z',Notes:item.notes||file.name};
-    await spPatch(getListName(pu.tab),pu.id,spFields);
+    await spPatch(getListName(pu.tab),pu.id,{DocLink:link,Uploaded:today()+'T00:00:00Z',Notes:item.notes||file.name});
     renderTab(pu.tab);
     showToast('Uploaded: '+file.name,'ok');
   }catch(e){showToast(e.message,'err');}finally{hideLoad();}
@@ -1804,13 +1829,15 @@ async function handleFolderUpload(input){
     // Create folder
     const siteId=await getSiteId();
     const parentPath=basePath?encodeURIComponent(basePath):':';
-    await fetch(`${GRAPH_BASE}/drives/${driveId}/root:/${basePath}:/children`,{
+    const encodedBase=(basePath?basePath.split('/').map(encodeURIComponent).join('/'):'');
+    await fetch(`${GRAPH_BASE}/drives/${driveId}/root:/${encodedBase?encodedBase+':':'root'}/children`,{
       method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
       body:JSON.stringify({name:folderName,folder:{},['@microsoft.graph.conflictBehavior']:'rename'})
     });
     let folderLink='';
     for(const file of files){
-      const r=await fetch(`${GRAPH_BASE}/drives/${driveId}/root:/${subPath}/${file.name}:/content`,{
+      const encodedFilePath=subPath.split('/').concat([file.name]).map(encodeURIComponent).join('/');
+      const r=await fetch(`${GRAPH_BASE}/drives/${driveId}/root:/${encodedFilePath}:/content`,{
         method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':file.type||'application/octet-stream'},body:file
       });
       if(r.ok){ const res=await r.json(); if(!folderLink) folderLink=res.webUrl.substring(0,res.webUrl.lastIndexOf('/')); }
