@@ -1126,7 +1126,7 @@ async function loadAllTabs(){
   showLoad('Loading '+currentYear+' data…','Fetching from SharePoint…');
   try{
     [planItems,execItems,recItems,sampItems,teamsItems,regItems,reqItems,rlItems,questItems] = await Promise.all([
-      spGet(LISTS.planning,currentYear).then(r=>r.map(x=>fromSpItem('planning',x))),
+      spGet(LISTS.planning,currentYear).then(r=>{ if(r.length) console.log('[AuditDash] Planning raw fields:', Object.keys(r[0].fields||{})); return r.map(x=>fromSpItem('planning',x)); }),
       spGet(LISTS.execution,currentYear).then(r=>r.map(x=>fromSpItem('execution',x))),
       spGet(LISTS.recommendations,currentYear).then(r=>r.map(x=>fromSpItem('recommendations',x))),
       spGet(LISTS.sampling,currentYear).then(r=>r.map(x=>fromSpItem('sampling',x))),
