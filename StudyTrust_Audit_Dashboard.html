@@ -275,7 +275,8 @@ tbody tr.rl{background:#FFF5F5;border-left:3px solid var(--late-border)}
 tbody tr.rn{border-left:3px solid var(--new-border)}
 td{padding:6px 8px;vertical-align:top;line-height:1.45}
 td.n{text-align:center;color:#aaa;font-size:11px;font-weight:700}
-td.dc{min-width:220px;max-width:360px}
+td.dc{min-width:340px;max-width:600px;white-space:normal;word-wrap:break-word}
+td.dc input.ie,td.dc textarea.ie{min-width:320px;width:100%;box-sizing:border-box}
 
 /* ── INLINE CONTROLS ── */
 .ie{border:1px solid #d8dde5;border-radius:4px;padding:3px 5px;font-size:11px;background:#fff;color:#333;max-width:100%}
@@ -488,7 +489,7 @@ td.dc{min-width:220px;max-width:360px}
       <button class="btn" onclick="clearFilters('planning')" style="padding:4px 9px;font-size:11px">Clear</button>
     </div>
     <div class="tw"><table><thead><tr>
-      <th class="n">#</th><th style="min-width:195px">Description</th><th>Compliance Date</th>
+      <th class="n">#</th><th style="min-width:340px">Description</th><th>Compliance Date</th>
       <th>Date Uploaded</th><th>Status</th><th>Responsible</th><th>Shadower</th>
       <th>Document Category</th><th>Upload / Link</th><th>Document Name</th><th>Comments</th>
     </tr></thead><tbody id="body-planning"></tbody></table></div>
@@ -514,7 +515,7 @@ td.dc{min-width:220px;max-width:360px}
       <button class="btn" onclick="clearFilters('execution')" style="padding:4px 9px;font-size:11px">Clear</button>
     </div>
     <div class="tw"><table><thead><tr>
-      <th class="n">#</th><th style="min-width:195px">Description</th><th>Compliance Date</th>
+      <th class="n">#</th><th style="min-width:340px">Description</th><th>Compliance Date</th>
       <th>Date Uploaded</th><th>Status</th><th>Responsible</th><th>Shadower</th>
       <th>Document Category</th><th>Upload / Link</th><th>Document Name</th><th>Comments</th>
     </tr></thead><tbody id="body-execution"></tbody></table></div>
