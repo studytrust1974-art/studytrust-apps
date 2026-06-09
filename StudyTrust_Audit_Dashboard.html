@@ -1673,8 +1673,8 @@ async function spUploadFile(libraryName, folderPath, file){
     body: await file.arrayBuffer()
   });
   if(!r.ok){
-    let msg=`Upload failed: ${r.status}`;
-    try{ const e=await r.json(); msg=e?.error?.message||msg; }catch(_){}
+    let msg=`HTTP ${r.status}`;
+    try{ const e=await r.json(); msg=e?.error?.message||e?.error?.code||msg; }catch(_){}
     throw new Error(msg);
   }
   const result=await r.json();
@@ -1744,7 +1744,7 @@ async function handleFileUpload(input){
     await spPatch(getListName(pu.tab),pu.id,{DocLink:link,Uploaded:today()+'T00:00:00Z',Notes:item.notes||file.name});
     renderTab(pu.tab);
     showToast('Uploaded: '+file.name,'ok');
-  }catch(e){showToast(e.message,'err');}finally{hideLoad();}
+  }catch(e){showToast('Upload error [lib: '+libName+', folder: '+folder+']: '+e.message,'err');}finally{hideLoad();}
 }
 
 async function handleFolderUpload(input){
