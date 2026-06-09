@@ -1308,29 +1308,6 @@ function renderDashboard(){
 // ════════════════════════════════════════════════
 // TABLE RENDERING
 // ════════════════════════════════════════════════
-function getItems(tab){
-  if(tab==='planning')return planItems;
-  if(tab==='execution')return execItems;
-  if(tab==='recommendations')return recItems;
-  if(tab==='sampling')return sampItems;
-  if(tab==='teams')return teamsItems;
-  if(tab==='register')return regItems;
-  if(tab==='questions')return questItems;
-  if(tab==='personnel')return persItems;
-  return [];
-}
-function setItems(tab,items){
-  if(tab==='planning')planItems=items;
-  else if(tab==='execution')execItems=items;
-  else if(tab==='recommendations')recItems=items;
-  else if(tab==='sampling')sampItems=items;
-  else if(tab==='teams')teamsItems=items;
-  else if(tab==='register')regItems=items;
-  else if(tab==='questions')questItems=items;
-  else if(tab==='personnel')persItems=items;
-}
-function getListName(tab){ return LISTS[tab]||LISTS.planning; }
-
 function renderTab(tab, filterFn){
   const items=filterFn?getItems(tab).filter(filterFn):getItems(tab);
   const body=document.getElementById('body-'+tab);
@@ -2220,4 +2197,4 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 </script>
 </body>
-</html>                                                                                                            
+</html>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
