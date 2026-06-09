@@ -709,7 +709,6 @@ td.dc{min-width:280px;width:340px}.ita{width:100%;min-width:260px;min-height:42p
 
 <script>
 'use strict';
-'use strict';
 
 // ═══════════════════════════════════════════════
 //  ▶▶  IT PERSON: PASTE YOUR CLIENT ID HERE  ◀◀
@@ -1920,7 +1919,7 @@ function doRestore(input){
 // IMPORT RECOMMENDATIONS
 // ════════════════════════════════════════════════
 function openImportRecs(){
-  document.getElementById('m-importrecs').style.display='flex';
+  openM('m-importrecs');
   document.getElementById('import-recs-preview').innerHTML='';
   document.getElementById('import-recs-input').value='';
 }
@@ -2050,7 +2049,7 @@ function loadWebhookFromStorage(){
 }
 function loadWebhookUI(){
   document.getElementById('webhook-url-1').value=_webhookUrl;
-  document.getElementById('m-webhook').style.display='flex';
+  openM('m-webhook');
 }
 function saveWebhooks(){
   _webhookUrl=(document.getElementById('webhook-url-1')?.value||'').trim();
@@ -2105,7 +2104,7 @@ function gsGo(tab){
 // DIAGNOSTICS (v4.7 new)
 // ════════════════════════════════════════════════
 async function openDiag(){
-  document.getElementById('m-diag').style.display='flex';
+  openM('m-diag');
   const rows=document.getElementById('diag-rows');
   rows.innerHTML='<div style="color:#888;font-size:12px">Running diagnostics…</div>';
   const checks=[];
@@ -2115,11 +2114,12 @@ async function openDiag(){
   // Site
   try{ const sid=await getSiteId(); checks.push({label:'SharePoint site',ok:!!sid,note:sid?'Connected':'Not found'}); }
   catch(e){ checks.push({label:'SharePoint site',ok:false,note:e.message}); }
-  // Lists
+  // Lists — fetch directly with $top=1 to avoid duplicate $top
+  const siteId=await getSiteId();
   const listNames=Object.entries(LISTS);
   for(const [key,name] of listNames){
     try{
-      const r=await spGet(name+'?$top=1');
+      const r=await graphFetch(`/sites/${siteId}/lists/${name}/items?$top=1`);
       checks.push({label:'List: '+name,ok:true,note:(r.value?.length??0)+' rows sampled'});
     }catch(e){ checks.push({label:'List: '+name,ok:false,note:e.message}); }
   }
@@ -2136,7 +2136,7 @@ function openYearCfgModal(){
   document.getElementById('cfg-fieldwork-end').value=cfg.fieldworkEnd||'';
   document.getElementById('cfg-report-due').value=cfg.reportDue||'';
   document.getElementById('cfg-lead').value=cfg.lead||'';
-  document.getElementById('m-yearcfg').style.display='flex';
+  openM('m-yearcfg');
 }
 
 // ════════════════════════════════════════════════
@@ -2197,4 +2197,4 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 </script>
 </body>
-</html>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+</html>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
