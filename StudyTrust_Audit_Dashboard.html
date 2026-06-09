@@ -842,8 +842,17 @@ async function initMsal() {
   if (CLIENT_ID === 'PASTE_CLIENT_ID_HERE') throw new Error('The Application (client) ID has not been set. Open this HTML file in a text editor and paste your Azure AD Client ID.');
   msalApp = new msal.PublicClientApplication(MSAL_CONFIG);
   await msalApp.initialize();
-  // Handle redirect response (from acquireTokenRedirect / loginRedirect)
-  const redirect = await msalApp.handleRedirectPromise();
+  // Handle redirect response — wrap in try/catch so a stale MSAL redirect
+  // state (cached from an interrupted login) does not crash the sign-in screen.
+  let redirect = null;
+  try {
+    redirect = await msalApp.handleRedirectPromise();
+  } catch(e) {
+    // Stale or mismatched redirect state — clear MSAL cache and show sign-in.
+    console.warn('[AuditDash] handleRedirectPromise error (clearing cache):', e.message);
+    try { msalApp.clearCache(); } catch(_) {}
+    return false;
+  }
   if (redirect) {
     graphToken = redirect.accessToken;
     userName = redirect.account?.name || redirect.account?.username || 'Signed in';
@@ -2200,11 +2209,4 @@ function setItems(tab,arr){
 // ════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded',()=>{
-  loadWebhookFromStorage();
-  // File upload input listeners
-  const fu=document.getElementById('file-upload-input');
-  if(fu) fu.addEventListener('change',()=>handleFileUpload(fu));
-  const mu=document.getElementById('multi-upload-input');
-  if(mu) mu.addEventListener('change',()=>handleFolderUpload(mu));
-  // Close notification panel on outside 
+document.addEventListener('DOMConte
