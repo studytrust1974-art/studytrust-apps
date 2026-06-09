@@ -2209,4 +2209,24 @@ function setItems(tab,arr){
 // ════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════
-document.addEventListener('DOMConte
+async function init(){
+  try {
+    const alreadySignedIn = await initMsal();
+    if(alreadySignedIn){
+      document.getElementById('signin-screen').classList.add('hidden');
+      await loadAndRender();
+    } else {
+      hideLoad();
+      // Show sign-in screen — user clicks the button
+    }
+  } catch(e) {
+    hideLoad();
+    const errEl=document.getElementById('signin-error');
+    errEl.textContent=e.message; errEl.classList.add('show');
+  }
+}
+
+init();
+</script>
+</body>
+</html>
