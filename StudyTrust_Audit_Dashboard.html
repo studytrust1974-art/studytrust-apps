@@ -1744,11 +1744,56 @@ async function deleteRow(tab,id){
 // FILE UPLOAD
 // ════════════════════════════════════════════════
 async function getDriveId(libraryName){
+  // Kept for compatibility but uploads now use spUploadFile instead
   const siteId=await getSiteId();
   const drives=await graphFetch(`/sites/${siteId}/drives`);
   const drive=drives.value.find(d=>d.name.toLowerCase()===libraryName.toLowerCase());
   if(!drive) throw new Error(`Document library "${libraryName}" not found in SharePoint.`);
   return drive.id;
+}
+
+// Upload a file via SharePoint REST API (bypasses Graph drives endpoint)
+// Returns the full webUrl of the uploaded file
+async function spUploadFile(libraryName, folderPath, file){
+  const token = await getToken();
+  // Construct server-relative path: /sites/{site}/LibraryName/folder/path
+  const sitePath = SP_SITE_PATH; // e.g. /sites/StudyTrustAuditTracker
+  const relFolder = folderPath
+    ? `${sitePath}/${libraryName}/${folderPath}`
+    : `${sitePath}/${libraryName}`;
+  const encodedFolder = encodeURIComponent(relFolder);
+  const encodedName   = encodeURIComponent(file.name);
+  const uploadUrl = `https://${SP_SITE_HOST}${sitePath}/_api/web/GetFolderByServerRelativeUrl(@p)/Files/add(url=@f,overwrite=true)?@p='${encodedFolder}'&@f='${encodedName}'`;
+  const buf = await file.arrayBuffer();
+  const r = await fetch(uploadUrl, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token, Accept: 'application/json;odata=verbose' },
+    body: buf
+  });
+  if(!r.ok){
+    const txt = await r.text().catch(()=>'');
+    const msg = txt.match(/"message"\s*:\s*"([^"]+)"/)?.[1] || `Upload failed: ${r.status}`;
+    throw new Error(msg);
+  }
+  const data = await r.json();
+  const serverRelUrl = data?.d?.ServerRelativeUrl || data?.ServerRelativeUrl;
+  return serverRelUrl
+    ? `https://${SP_SITE_HOST}${serverRelUrl}`
+    : `https://${SP_SITE_HOST}${relFolder}/${file.name}`;
+}
+
+// Create a SharePoint folder via REST API
+async function spCreateFolder(libraryName, folderPath){
+  const token = await getToken();
+  const sitePath = SP_SITE_PATH;
+  const relFolder = `${sitePath}/${libraryName}/${folderPath}`;
+  const url = `https://${SP_SITE_HOST}${sitePath}/_api/web/folders`;
+  await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token, Accept: 'application/json;odata=verbose', 'Content-Type': 'application/json;odata=verbose' },
+    body: JSON.stringify({ __metadata:{ type:'SP.Folder' }, ServerRelativeUrl: relFolder })
+  });
+  // Ignore errors (folder may already exist)
 }
 
 function triggerUpload(tab,id,multi){
@@ -1769,15 +1814,8 @@ async function handleFileUpload(input){
       showLoad('Uploading '+file.name+'…');
       const libName='Audit '+currentYear;
       const folder='Auditor Requests/'+pu.id;
-      const driveId=await getDriveId(libName);
-      const token=await getToken();
-      const encodedPath=folder.split('/').concat([file.name]).map(encodeURIComponent).join('/');
-      const r=await fetch(`${GRAPH_BASE}/drives/${driveId}/root:/${encodedPath}:/content`,{
-        method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':file.type||'application/octet-stream'},body:file
-      });
-      if(!r.ok)throw new Error('Upload failed: '+r.status);
-      const result=await r.json();
-      const link=result.webUrl;
+      await spCreateFolder(libName,folder);
+      const link=await spUploadFile(libName,folder,file);
       const rl=await spPost(LISTS.responseLinks,{Year:currentYear,RequestID:String(pu.id),DocName:file.name,DocLink:link,UploadedBy:userName,UploadedDate:today()+'T00:00:00Z'});
       rlItems.push(fromSpItem('responseLinks',rl));
       renderAudRequests();
@@ -1795,15 +1833,7 @@ async function handleFileUpload(input){
   const folder=catObj?catObj.path:'';
   try{
     showLoad('Uploading '+file.name+'…');
-    const driveId=await getDriveId(libName);
-    const token=await getToken();
-    const encodedPath=(folder?folder.split('/').concat([file.name]):[file.name]).map(encodeURIComponent).join('/');
-    const r=await fetch(`${GRAPH_BASE}/drives/${driveId}/root:/${encodedPath}:/content`,{
-      method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':file.type||'application/octet-stream'},body:file
-    });
-    if(!r.ok)throw new Error('Upload failed: '+r.status);
-    const result=await r.json();
-    const link=result.webUrl;
+    const link=await spUploadFile(libName,folder,file);
     item.docLink=link; item.uploaded=today();
     await spPatch(getListName(pu.tab),pu.id,{DocLink:link,Uploaded:today()+'T00:00:00Z',Notes:item.notes||file.name});
     renderTab(pu.tab);
@@ -1824,26 +1854,14 @@ async function handleFolderUpload(input){
   const subPath=basePath?basePath+'/'+folderName:folderName;
   try{
     showLoad('Uploading '+files.length+' files…');
-    const driveId=await getDriveId(libName);
-    const token=await getToken();
-    // Create folder
-    const siteId=await getSiteId();
-    const parentPath=basePath?encodeURIComponent(basePath):':';
-    const encodedBase=(basePath?basePath.split('/').map(encodeURIComponent).join('/'):'');
-    await fetch(`${GRAPH_BASE}/drives/${driveId}/root:/${encodedBase?encodedBase+':':'root'}/children`,{
-      method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
-      body:JSON.stringify({name:folderName,folder:{},['@microsoft.graph.conflictBehavior']:'rename'})
-    });
+    await spCreateFolder(libName,subPath);
     let folderLink='';
     for(const file of files){
-      const encodedFilePath=subPath.split('/').concat([file.name]).map(encodeURIComponent).join('/');
-      const r=await fetch(`${GRAPH_BASE}/drives/${driveId}/root:/${encodedFilePath}:/content`,{
-        method:'PUT',headers:{Authorization:'Bearer '+token,'Content-Type':file.type||'application/octet-stream'},body:file
-      });
-      if(r.ok){ const res=await r.json(); if(!folderLink) folderLink=res.webUrl.substring(0,res.webUrl.lastIndexOf('/')); }
+      const link=await spUploadFile(libName,subPath,file);
+      if(!folderLink) folderLink=link.substring(0,link.lastIndexOf('/'));
     }
     item.docLink=folderLink; item.uploaded=today();
-    await spPatch(getListName(pu.tab),pu.id,{DocLink:{Url:folderLink,Description:folderName},Uploaded:today()+'T00:00:00Z'});
+    await spPatch(getListName(pu.tab),pu.id,{DocLink:folderLink,Uploaded:today()+'T00:00:00Z'});
     renderTab(pu.tab);
     showToast('Uploaded '+files.length+' files','ok');
   }catch(e){showToast(e.message,'err');}finally{hideLoad();}
