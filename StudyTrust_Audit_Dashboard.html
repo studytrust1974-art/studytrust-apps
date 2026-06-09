@@ -196,12 +196,12 @@ tbody tr.rl{background:#FFF5F5;border-left:3px solid var(--late-border)}
 tbody tr.rn{border-left:3px solid var(--new-border)}
 td{padding:6px 8px;vertical-align:top;line-height:1.45}
 td.n{text-align:center;color:#aaa;font-size:11px;font-weight:700}
-td.dc{min-width:280px;width:340px}.ita{width:100%;min-width:260px;min-height:42px;resize:vertical;box-sizing:border-box}
+td.dc{min-width:220px;width:260px}.ita{width:100%;min-width:200px;min-height:42px;resize:vertical;box-sizing:border-box}
 
 /* ── INLINE CONTROLS ── */
 .ie{border:1px solid #d8dde5;border-radius:4px;padding:3px 5px;font-size:11px;background:#fff;color:#333;max-width:100%}
 .ie:focus{outline:none;border-color:var(--st);box-shadow:0 0 0 2px var(--st-l)}
-.id{width:107px}.it{width:100%;min-width:180px}.il{width:115px;color:var(--st)}.is{cursor:pointer}
+.id{width:107px}.it{width:100%;min-width:130px}.il{width:115px;color:var(--st)}.is{cursor:pointer}
 
 /* ── STATUS BADGE ── */
 .sb{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap;border:none;cursor:pointer}
@@ -408,7 +408,7 @@ td.dc{min-width:280px;width:340px}.ita{width:100%;min-width:260px;min-height:42p
       <button class="btn" onclick="clearFilters('planning')" style="padding:4px 9px;font-size:11px">Clear</button>
     </div>
     <div class="tw"><table><thead><tr>
-      <th class="n">#</th><th style="min-width:195px">Description</th><th>Compliance Date</th>
+      <th class="n">#</th><th style="min-width:160px">Description</th><th>Compliance Date</th>
       <th>Date Uploaded</th><th>Status</th><th>Responsible</th><th>Shadower</th>
       <th>Document Category</th><th>Upload / Link</th><th>Notes</th><th>Comments</th>
     </tr></thead><tbody id="body-planning"></tbody></table></div>
@@ -417,7 +417,7 @@ td.dc{min-width:280px;width:340px}.ita{width:100%;min-width:260px;min-height:42p
   <!-- EXECUTION -->
   <div id="sec-execution" class="section">
     <div class="sh"><h2>Execution — Deliverable Listing</h2>
-      <div class="sa"><span id="exec-pct" style="font-size:11px;color:#888">0%</span><button class="btn btn-p" onclick="addRow('execution')">+ Add</button><button class="btn" onclick="exportCsv('execution')">CSV</button><button class="btn btn-sec" onclick="exportXlsx('execution')">XLSX</button></div>
+      <div class="sa"><span id="exec-pct" style="font-size:11px;color:#888">0%</span><button class="btn btn-a" onclick="copyPlanningToExecution()" title="Copy all Planning items into Execution (statuses reset to Not Started)">⬇ Copy from Planning</button><button class="btn btn-p" onclick="addRow('execution')">+ Add</button><button class="btn" onclick="exportCsv('execution')">CSV</button><button class="btn btn-sec" onclick="exportXlsx('execution')">XLSX</button></div>
     </div>
     <div class="fb">
       <input type="text" id="f-execution-q" placeholder="Search…" oninput="filterTab('execution')">
@@ -434,7 +434,7 @@ td.dc{min-width:280px;width:340px}.ita{width:100%;min-width:260px;min-height:42p
       <button class="btn" onclick="clearFilters('execution')" style="padding:4px 9px;font-size:11px">Clear</button>
     </div>
     <div class="tw"><table><thead><tr>
-      <th class="n">#</th><th style="min-width:195px">Description</th><th>Compliance Date</th>
+      <th class="n">#</th><th style="min-width:160px">Description</th><th>Compliance Date</th>
       <th>Date Uploaded</th><th>Status</th><th>Responsible</th><th>Shadower</th>
       <th>Document Category</th><th>Upload / Link</th><th>Notes</th><th>Comments</th>
     </tr></thead><tbody id="body-execution"></tbody></table></div>
@@ -1953,6 +1953,41 @@ async function importRecs(){
 }
 
 // ════════════════════════════════════════════════
+// COPY PLANNING → EXECUTION
+// ════════════════════════════════════════════════
+async function copyPlanningToExecution(){
+  if(userRole==='auditor'){showToast('Switch to Admin mode to copy items','err');return;}
+  if(!planItems.length){showToast('No Planning items to copy','err');return;}
+  const existing=execItems.map(x=>(x.desc||'').toLowerCase().trim());
+  const toAdd=planItems.filter(it=>{
+    const d=(it.desc||'').toLowerCase().trim();
+    return d && !existing.includes(d);
+  });
+  if(!toAdd.length){showToast('All Planning items already exist in Execution','ok');return;}
+  if(!confirm(`Copy ${toAdd.length} Planning item(s) to Execution?\n(${planItems.length-toAdd.length} already exist and will be skipped)\nStatuses will be reset to "Not Started".`))return;
+  showLoad('Copying…');
+  let copied=0;
+  try{
+    for(const it of toAdd){
+      const fields={
+        Year:currentYear,
+        Title:it.desc||'',
+        DueDate:it.dueDate?it.dueDate+'T00:00:00Z':null,
+        Status:'Not Started',
+        Responsible:it.responsible||'',
+        Shadower:it.shadower||'',
+        DocName:it.docName||''
+      };
+      const sp=await spPost(LISTS.execution,fields);
+      execItems.push(fromSpItem('execution',sp));
+      copied++;
+    }
+    renderTab('execution');
+    showToast(`Copied ${copied} item(s) to Execution`,'ok');
+  }catch(e){showToast('Copy error: '+e.message,'err');}finally{hideLoad();}
+}
+
+// ════════════════════════════════════════════════
 // REMOVE DUPLICATES
 // ════════════════════════════════════════════════
 async function removeDuplicates(tab){
@@ -2172,29 +2207,4 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(fu) fu.addEventListener('change',()=>handleFileUpload(fu));
   const mu=document.getElementById('multi-upload-input');
   if(mu) mu.addEventListener('change',()=>handleFolderUpload(mu));
-  // Close notification panel on outside click
-  document.addEventListener('click',e=>{
-    const panel=document.getElementById('notif-panel');
-    if(panel&&panel.style.display==='block'&&!panel.contains(e.target)&&!e.target.closest('#notif-btn')){
-      panel.style.display='none';
-    }
-    // Close global search
-    const gs=document.getElementById('gs-results');
-    if(gs&&!gs.contains(e.target)&&e.target.id!=='gs-input') gs.style.display='none';
-  });
-  // Attempt silent auth; only proceed if a cached session exists
-  initMsal().then(async (isAuthed)=>{
-    if(isAuthed){
-      document.getElementById('signin-screen').classList.add('hidden');
-      await loadAndRender();
-    } else {
-      document.getElementById('signin-screen').style.display='flex';
-    }
-  }).catch(()=>{
-    document.getElementById('signin-screen').style.display='flex';
-  });
-});
-
-</script>
-</body>
-</html>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+  // Close notification panel on outside 
