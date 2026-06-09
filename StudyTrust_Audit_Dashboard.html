@@ -923,9 +923,7 @@ async function getSiteId() {
 
 async function spGet(listName, year) {
   const siteId = await getSiteId();
-  // Use $expand=fields($select=*) to ensure ALL columns including Title are returned.
-  // Without explicit select, SharePoint Graph API may omit Title and other built-in columns.
-  let url = `/sites/${siteId}/lists/${listName}/items?$expand=fields($select=*)&$top=5000`;
+  let url = `/sites/${siteId}/lists/${listName}/items?$expand=fields&$select=id,fields&$top=5000`;
   let items = [];
   while (url) { const d = await graphFetch(url); items = items.concat(d.value || []); url = d['@odata.nextLink'] || null; }
   return year ? items.filter(x => x.fields?.Year === year) : items;
@@ -2216,4 +2214,10 @@ document.addEventListener('DOMContentLoaded',()=>{
       document.getElementById('signin-screen').style.display='flex';
     }
   }).catch(()=>{
-    document.getElementById('signin-s
+    document.getElementById('signin-screen').style.display='flex';
+  });
+});
+
+</script>
+</body>
+</html>                                                                                                            
