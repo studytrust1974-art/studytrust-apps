@@ -26,7 +26,7 @@
 
   ════════════════════════════════════════════════════════
 -->
-<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.27.0/lib/msal-browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
@@ -734,7 +734,7 @@ const MSAL_CONFIG = {
   cache: { cacheLocation: 'sessionStorage', storeAuthStateInCookie: true }
 };
 
-const GRAPH_SCOPES = ['Sites.ReadWrite.All', 'User.Read', 'GroupMember.Read.All'];
+const GRAPH_SCOPES = ['Sites.ReadWrite.All', 'Sites.Manage.All', 'User.Read', 'GroupMember.Read.All'];
 
 // ── SharePoint list names ──
 const LISTS = {
@@ -1655,12 +1655,13 @@ function encodeSpPath(segments){ return segments.map(s=>encodeURIComponent(s)).j
 async function spUploadFile(libraryName, folderPath, file){
   const driveId = await getDriveId(libraryName);
   const token   = await getToken();
+  const siteId  = await getSiteId();
   const parts   = folderPath ? [...folderPath.split('/'), file.name] : [file.name];
   const encodedPath = encodeSpPath(parts);
-  const r = await fetch(`${GRAPH_BASE}/drives/${driveId}/root:/${encodedPath}:/content`,{
+  const r = await fetch(`${GRAPH_BASE}/sites/${siteId}/drives/${driveId}/root:/${encodedPath}:/content`,{
     method:'PUT',
     headers:{Authorization:'Bearer '+token, 'Content-Type':file.type||'application/octet-stream'},
-    body:file
+    body: await file.arrayBuffer()
   });
   if(!r.ok){
     let msg=`Upload failed: ${r.status}`;
@@ -1675,14 +1676,14 @@ async function spUploadFile(libraryName, folderPath, file){
 async function spCreateFolder(libraryName, folderPath){
   const driveId=await getDriveId(libraryName);
   const token=await getToken();
+  const siteId=await getSiteId();
   const parts=folderPath.split('/');
   for(let i=0;i<parts.length;i++){
-    const currentParts=parts.slice(0,i+1);
     const folderName=parts[i];
     const parentEncoded=i>0?encodeSpPath(parts.slice(0,i)):null;
     const createUrl=parentEncoded
-      ?`${GRAPH_BASE}/drives/${driveId}/root:/${parentEncoded}:/children`
-      :`${GRAPH_BASE}/drives/${driveId}/root/children`;
+      ?`${GRAPH_BASE}/sites/${siteId}/drives/${driveId}/root:/${parentEncoded}:/children`
+      :`${GRAPH_BASE}/sites/${siteId}/drives/${driveId}/root/children`;
     await fetch(createUrl,{
       method:'POST',
       headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
