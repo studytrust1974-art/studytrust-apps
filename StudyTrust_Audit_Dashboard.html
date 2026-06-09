@@ -746,16 +746,16 @@ const LISTS = {
 
 // ── Field mapping: app key → SharePoint column name ──
 const F = {
-  planning:        { desc:'Title', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', notes:'Notes', comments:'Comments' },
-  execution:       { desc:'Title', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', notes:'Notes', comments:'Comments' },
-  recommendations: { weakness:'Title', recommendation:'Recommendation', dueDate:'DueDate', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink', comments:'Comments' },
-  sampling:        { desc:'Title', requestedBy:'RequestedBy', dateRequested:'DateRequested', uploaded:'Uploaded', status:'Status', responsible:'Responsible', docName:'DocName', docLink:'DocLink', notes:'Notes' },
+  planning:        { desc:'Title', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink0', notes:'Notes', comments:'Comments' },
+  execution:       { desc:'Title', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink0', notes:'Notes', comments:'Comments' },
+  recommendations: { weakness:'Title', recommendation:'Recommendation', dueDate:'DueDate', status:'Status', responsible:'Responsible', shadower:'Shadower', docName:'DocName', docLink:'DocLink0', comments:'Comments' },
+  sampling:        { desc:'Title', requestedBy:'RequestedBy', dateRequested:'DateRequested', uploaded:'Uploaded', status:'Status', responsible:'Responsible', docName:'DocName', docLink:'DocLink0', notes:'Notes' },
   teams:           { email:'Email', requestedBy:'RequestedBy', dateRequested:'DateRequested', dateConnected:'DateConnected', status:'Status', responsible:'Responsible', remarks:'Remarks' },
-  register:        { dateRequested:'DateRequested', doc:'Title', requester:'Requester', requestedFrom:'RequestedFrom', submitter:'Submitter', dateSubmitted:'DateSubmitted', docName:'DocName', docLink:'DocLink', comment:'Comment' },
+  register:        { dateRequested:'DateRequested', doc:'Title', requester:'Requester', requestedFrom:'RequestedFrom', submitter:'Submitter', dateSubmitted:'DateSubmitted', docName:'DocName', docLink:'DocLink0', comment:'Comment' },
   auditorRequests: { date:'RequestDate', requestedBy:'RequestedBy', description:'Title', urgency:'Urgency', status:'Status', assignedTo:'AssignedTo', dateResolved:'DateResolved', responseLink:'ResponseLink', notes:'Notes' },
-  responseLinks:   { requestId:'RequestID', docName:'DocName', docLink:'DocLink', uploadedBy:'UploadedBy', uploadedDate:'UploadedDate', notes:'Notes' },
+  responseLinks:   { requestId:'RequestID', docName:'DocName', docLink:'DocLink0', uploadedBy:'UploadedBy', uploadedDate:'UploadedDate', notes:'Notes' },
   questions:       { desc:'Title', source:'Source', answer:'Answer', status:'Status', responsible:'Responsible', notes:'Notes' },
-  personnel:       { desc:'Title', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', docName:'DocName', docLink:'DocLink', notes:'Notes', accessLevel:'AccessLevel' },
+  personnel:       { desc:'Title', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', docName:'DocName', docLink:'DocLink0', notes:'Notes', accessLevel:'AccessLevel' },
   config:          { id:'Year', label:'Label', fyEnd:'FYEnd', deadline:'Deadline', auditStart:'AuditStart', shadower:'Shadower', firm:'Firm' }
 };
 
@@ -1721,7 +1721,7 @@ async function handleFileUpload(input){
       const folder='Auditor Requests/'+pu.id;
       await spCreateFolder(libName,folder);
       const link=await spUploadFile(libName,folder,file);
-      const rl=await spPost(LISTS.responseLinks,{Year:currentYear,RequestID:String(pu.id),DocName:file.name,DocLink:link,UploadedBy:userName,UploadedDate:today()+'T00:00:00Z'});
+      const rl=await spPost(LISTS.responseLinks,{Year:currentYear,RequestID:String(pu.id),DocName:file.name,DocLink0:link,UploadedBy:userName,UploadedDate:today()+'T00:00:00Z'});
       rlItems.push(fromSpItem('responseLinks',rl));
       renderAudRequests();
       showToast('Uploaded: '+file.name,'ok');
@@ -1741,7 +1741,7 @@ async function handleFileUpload(input){
     if(folder) await spCreateFolder(libName,folder);
     const link=await spUploadFile(libName,folder,file);
     item.docLink=link; item.uploaded=today();
-    await spPatch(getListName(pu.tab),pu.id,{DocLink:link,Uploaded:today()+'T00:00:00Z',Notes:item.notes||file.name});
+    await spPatch(getListName(pu.tab),pu.id,{DocLink0:link,Uploaded:today()+'T00:00:00Z',Notes:item.notes||file.name});
     renderTab(pu.tab);
     showToast('Uploaded: '+file.name,'ok');
   }catch(e){showToast('Upload error [lib: '+libName+', folder: '+folder+']: '+e.message,'err');}finally{hideLoad();}
