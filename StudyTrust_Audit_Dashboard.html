@@ -2211,45 +2211,29 @@ function openYearCfgModal(){
 }
 
 // ════════════════════════════════════════════════
-// UTILITY HELPERS
+// DIAGNOSTICS
 // ════════════════════════════════════════════════
-function getListName(tab){ return LISTS[tab]||tab; }
-function getItems(tab){
-  return({planning:planItems,execution:execItems,recommendations:recItems,sampling:sampItems,
-    teams:teamsItems,register:regItems,auditorRequests:reqItems,responseLinks:rlItems,
-    questions:questItems,personnel:persItems})[tab]||[];
-}
-function setItems(tab,arr){
-  if(tab==='planning') planItems=arr;
-  else if(tab==='execution') execItems=arr;
-  else if(tab==='recommendations') recItems=arr;
-  else if(tab==='sampling') sampItems=arr;
-  else if(tab==='teams') teamsItems=arr;
-  else if(tab==='register') regItems=arr;
-  else if(tab==='auditorRequests') reqItems=arr;
-  else if(tab==='responseLinks') rlItems=arr;
-  else if(tab==='questions') questItems=arr;
-  else if(tab==='personnel') persItems=arr;
-}
-function renderTab(tab){
-  const m={planning:()=>renderPlanExec('planning'),execution:()=>renderPlanExec('execution'),
-    recommendations:renderRec,sampling:renderSampling,teams:renderTeams,
-    register:renderRegister,questions:renderQuestions,personnel:renderPersonnel,
-    auditorRequests:renderAudRequests,dashboard:renderDashboard};
-  if(m[tab]) m[tab]();
+async function runDiagnostics(){
+  const body=document.getElementById('diag-body');
+  if(!body)return;
+  const rows=[];
+  function row(label,ok,detail){
+    return `<tr><td>${label}</td><td class="${ok?'diag-ok':'diag-err'}">${ok?'✅ OK':'❌ Fail'}</td><td>${detail||''}</td></tr>`;
+  }
+  rows.push(row('Signed in', !!account, account?account.username:'not signed in'));
+  rows.push(row('Year loaded', !!currentYear, currentYear||'none'));
+  rows.push(row('Year configs', Object.keys(yearConfigs).length>0, Object.keys(yearConfigs).join(', ')||'none'));
+  rows.push(row('Planning items', planItems.length>=0, planItems.length+' items'));
+  rows.push(row('Execution items', execItems.length>=0, execItems.length+' items'));
+  rows.push(row('Recommendations', recItems.length>=0, recItems.length+' items'));
+  rows.push(row('Questions', questItems.length>=0, questItems.length+' items'));
+  rows.push(row('Role', !!userRole, userRole||'unknown'));
+  rows.push(row('Personnel access', hasPersonnelAccess!==undefined, String(hasPersonnelAccess)));
+  try{ const sid=await getSiteId(); rows.push(row('SharePoint site ID', !!sid, sid?sid.substring(0,30)+'…':'failed')); }
+  catch(e){ rows.push(row('SharePoint site ID', false, e.message)); }
+  body.innerHTML=rows.join('');
 }
 
-function showToast(msg,type){
-  let t=document.getElementById('toast');
-  if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;bottom:20px;right:20px;padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;z-index:9999;transition:.3s';document.body.appendChild(t);}
-  t.textContent=msg;t.style.background=type==='ok'?'#1b5e20':type==='err'?'#7a2020':'#1a3a5c';t.style.color='#fff';t.style.display='block';
-  clearTimeout(t._timer);t._timer=setTimeout(()=>{t.style.display='none';},3000);
-}
-function closeM(id){document.getElementById(id).style.display='none';}
-function fmt(d){if(!d)return'—';try{return new Date(d).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'});}catch{return d;}}
-function today(){return new Date().toISOString().slice(0,10);}
-function isLate(d){return d&&new Date(d)<new Date()&&!d.startsWith('9999');}
-function isNew(d,since){return d&&since&&d>=since;}
 
 // ════════════════════════════════════════════════
 // INIT
