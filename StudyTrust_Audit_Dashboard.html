@@ -2134,14 +2134,14 @@ async function testWebhook(){
   const url=(document.getElementById('webhook-url-1')?.value||'').trim();
   if(!url){showToast('Enter a webhook URL first','err');return;}
   try{
-    await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+    await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({event:'test',dashboard:'StudyTrust Audit Tracker',timestamp:new Date().toISOString(),message:'Test notification from Audit Tracker v4.7'})});
     showToast('Test sent','ok');
   }catch(e){showToast('Webhook error: '+e.message,'err');}
 }
 async function fireWebhook(req){
   if(!_webhookUrl)return;
-  await fetch(_webhookUrl,{method:'POST',headers:{'Content-Type':'application/json'},
+  await fetch(_webhookUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({event:'request_resolved',requestId:req.id,description:req.description,resolvedBy:userName,timestamp:new Date().toISOString()})});
 }
 
