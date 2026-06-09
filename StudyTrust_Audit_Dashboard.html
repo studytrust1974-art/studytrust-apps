@@ -1752,18 +1752,25 @@ async function getDriveId(libraryName){
   return drive.id;
 }
 
+// Encode each segment of a server-relative path individually (preserve /)
+function encodeSpPath(path){
+  return path.split('/').map(s=>encodeURIComponent(s)).join('/');
+}
+
 // Upload a file via SharePoint REST API (bypasses Graph drives endpoint)
 // Returns the full webUrl of the uploaded file
 async function spUploadFile(libraryName, folderPath, file){
   const token = await getToken();
-  // Construct server-relative path: /sites/{site}/LibraryName/folder/path
   const sitePath = SP_SITE_PATH; // e.g. /sites/StudyTrustAuditTracker
+  // Build decoded server-relative folder path
   const relFolder = folderPath
     ? `${sitePath}/${libraryName}/${folderPath}`
     : `${sitePath}/${libraryName}`;
-  const encodedFolder = encodeURIComponent(relFolder);
-  const encodedName   = encodeURIComponent(file.name);
-  const uploadUrl = `https://${SP_SITE_HOST}${sitePath}/_api/web/GetFolderByServerRelativeUrl(@p)/Files/add(url=@f,overwrite=true)?@p='${encodedFolder}'&@f='${encodedName}'`;
+  // Encode each path segment individually (spaces→%20, NOT slashes)
+  const encodedRelFolder = encodeSpPath(relFolder);
+  // Escape single quotes in file name for OData string literal
+  const safeFileName = file.name.replace(/'/g, "''");
+  const uploadUrl = `https://${SP_SITE_HOST}${sitePath}/_api/web/GetFolderByServerRelativeUrl('${encodedRelFolder}')/Files/add(url='${encodeURIComponent(safeFileName)}',overwrite=true)`;
   const buf = await file.arrayBuffer();
   const r = await fetch(uploadUrl, {
     method: 'POST',
@@ -1772,7 +1779,9 @@ async function spUploadFile(libraryName, folderPath, file){
   });
   if(!r.ok){
     const txt = await r.text().catch(()=>'');
-    const msg = txt.match(/"message"\s*:\s*"([^"]+)"/)?.[1] || `Upload failed: ${r.status}`;
+    const msg = txt.match(/"message"\s*:\s*\{"value"\s*:\s*"([^"]+)"/)?.[1]
+             || txt.match(/"message"\s*:\s*"([^"]+)"/)?.[1]
+             || `Upload failed: ${r.status}`;
     throw new Error(msg);
   }
   const data = await r.json();
@@ -1782,18 +1791,23 @@ async function spUploadFile(libraryName, folderPath, file){
     : `https://${SP_SITE_HOST}${relFolder}/${file.name}`;
 }
 
-// Create a SharePoint folder via REST API
+// Create a SharePoint folder (and any missing parent folders) via REST API
 async function spCreateFolder(libraryName, folderPath){
   const token = await getToken();
   const sitePath = SP_SITE_PATH;
-  const relFolder = `${sitePath}/${libraryName}/${folderPath}`;
-  const url = `https://${SP_SITE_HOST}${sitePath}/_api/web/folders`;
-  await fetch(url, {
-    method: 'POST',
-    headers: { Authorization: 'Bearer ' + token, Accept: 'application/json;odata=verbose', 'Content-Type': 'application/json;odata=verbose' },
-    body: JSON.stringify({ __metadata:{ type:'SP.Folder' }, ServerRelativeUrl: relFolder })
-  });
-  // Ignore errors (folder may already exist)
+  // Create each level of the path individually so intermediate folders exist
+  const parts = folderPath.split('/');
+  let built = `${sitePath}/${libraryName}`;
+  for(const part of parts){
+    built += '/' + part;
+    const url = `https://${SP_SITE_HOST}${sitePath}/_api/web/folders`;
+    await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token, Accept: 'application/json;odata=verbose', 'Content-Type': 'application/json;odata=verbose' },
+      body: JSON.stringify({ __metadata:{ type:'SP.Folder' }, ServerRelativeUrl: built })
+    });
+    // Ignore errors — folder already exists is fine
+  }
 }
 
 function triggerUpload(tab,id,multi){
