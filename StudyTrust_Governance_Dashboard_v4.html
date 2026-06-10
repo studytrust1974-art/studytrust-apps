@@ -576,40 +576,6 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
     </div>
   </section>
 
-  <!-- ── DOCUMENT LIBRARIES ── (admin only) -->
-  <section id="sec-docs" class="sec adm-b">
-    <div class="slabel">SharePoint Document Library Architecture</div>
-    <div class="g3">
-      <div class="card"><div class="card-hd" style="background:var(--gn-bg);color:var(--gn-tx);border-color:#c8e6c9">📁 Governance Published</div>
-        <div style="padding:12px;font-size:12px">
-          <div style="font-weight:600;margin-bottom:6px">Contains:</div>
-          <div style="color:var(--tx2);line-height:1.7">All <strong>Approved</strong>, <strong>New</strong>, and <strong>Published</strong> documents<br>View link visible to all users (trustees, personnel, admin)</div>
-          <div style="margin-top:10px;font-size:11px;background:var(--gn-bg);padding:6px 9px;border-radius:5px;color:var(--gn-tx)"><strong>Permissions:</strong> Dashboards - Governance-Admins → Contribute<br>Dashboards - Board-of-Trustees → Read<br>All Personnel → Read</div>
-        </div>
-      </div>
-      <div class="card"><div class="card-hd" style="background:var(--am-bg);color:var(--am-tx);border-color:#ffe082">📁 Governance Drafts</div>
-        <div style="padding:12px;font-size:12px">
-          <div style="font-weight:600;margin-bottom:6px">Contains:</div>
-          <div style="color:var(--tx2);line-height:1.7">All <strong>Draft</strong>, <strong>Consult</strong>, <strong>PTT Review</strong> documents<br>Edit links visible to admins only</div>
-          <div style="margin-top:10px;font-size:11px;background:var(--am-bg);padding:6px 9px;border-radius:5px;color:var(--am-tx)"><strong>Permissions:</strong> Dashboards - Governance-Admins → Contribute<br>Dashboards - Board-of-Trustees → No access<br>All Personnel → No access</div>
-        </div>
-      </div>
-      <div class="card"><div class="card-hd" style="background:var(--bg);border-color:var(--bdr)">🗄 Governance Archive</div>
-        <div style="padding:12px;font-size:12px">
-          <div style="font-weight:600;margin-bottom:6px">Contains:</div>
-          <div style="color:var(--tx2);line-height:1.7">All <strong>Archived</strong> (retired) documents<br>5-year retention per Trust Deed Part 3<br>Archive links visible to admins only</div>
-          <div style="margin-top:10px;font-size:11px;background:var(--bg);padding:6px 9px;border-radius:5px;color:var(--tx2)"><strong>Permissions:</strong> Dashboards - Governance-Admins → Read<br>Dashboards - Board-of-Trustees → No access<br>All Personnel → No access</div>
-        </div>
-      </div>
-    </div>
-    <div class="slabel">File Naming Convention</div>
-    <div class="card"><div style="padding:14px;font-size:12px">
-      <div style="margin-bottom:8px"><span class="bd ba">Draft</span> <code style="background:var(--bg);padding:2px 6px;border-radius:4px">POL-001_Foundational_Governance_Policy_v0.1_DRAFT.docx</code></div>
-      <div style="margin-bottom:8px"><span class="bd bg">Published</span> <code style="background:var(--bg);padding:2px 6px;border-radius:4px">POL-001_Foundational_Governance_Policy_v1.0.docx</code></div>
-      <div><span class="bd bgy">Archived</span> <code style="background:var(--bg);padding:2px 6px;border-radius:4px">POL-001_Foundational_Governance_Policy_v1.0_ARCHIVED_2026-04-01.docx</code></div>
-    </div></div>
-  </section>
-
   <!-- ── GOVERNANCE HUB ── -->
   <section id="sec-hub" class="sec">
     <div class="slabel">Quick Access</div>
@@ -848,7 +814,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
       <button class="btn btn-sec btn-sm" onclick="exportXlsx('ack')">⬇ XLSX</button>
     </div>
   </div>
-  <div class="sh" style="margin-bottom:8px;margin-top:8px">
+  <div class="sh" style="margin-bottom:8px;margin-top:4px">
     <div style="font-size:12px;font-weight:600;color:var(--tx3)">Summary</div>
     <div id="ack-summary" style="font-size:12px;color:var(--tx3)"></div>
   </div>
@@ -928,6 +894,40 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
     <div id="trainingContent"></div>
   </section>
 
+  <!-- ── DOCUMENT LIBRARIES ── (admin only) -->
+  <section id="sec-docs" class="sec adm-b">
+    <div class="slabel">SharePoint Document Library Architecture</div>
+    <div class="g3">
+      <div class="card"><div class="card-hd" style="background:var(--gn-bg);color:var(--gn-tx);border-color:#c8e6c9">📁 Governance Published</div>
+        <div style="padding:12px;font-size:12px">
+          <div style="font-weight:600;margin-bottom:6px">Contains:</div>
+          <div style="color:var(--tx2);line-height:1.7">All <strong>Approved</strong>, <strong>New</strong>, and <strong>Published</strong> documents<br>View link visible to all users (trustees, personnel, admin)</div>
+          <div style="margin-top:10px;font-size:11px;background:var(--gn-bg);padding:6px 9px;border-radius:5px;color:var(--gn-tx)"><strong>Permissions:</strong> Dashboards - Governance-Admins → Contribute<br>Dashboards - Board-of-Trustees → Read<br>All Personnel → Read</div>
+        </div>
+      </div>
+      <div class="card"><div class="card-hd" style="background:var(--am-bg);color:var(--am-tx);border-color:#ffe082">📁 Governance Drafts</div>
+        <div style="padding:12px;font-size:12px">
+          <div style="font-weight:600;margin-bottom:6px">Contains:</div>
+          <div style="color:var(--tx2);line-height:1.7">All <strong>Draft</strong>, <strong>Consult</strong>, <strong>PTT Review</strong> documents<br>Edit links visible to admins only</div>
+          <div style="margin-top:10px;font-size:11px;background:var(--am-bg);padding:6px 9px;border-radius:5px;color:var(--am-tx)"><strong>Permissions:</strong> Dashboards - Governance-Admins → Contribute<br>Dashboards - Board-of-Trustees → No access<br>All Personnel → No access</div>
+        </div>
+      </div>
+      <div class="card"><div class="card-hd" style="background:var(--bg);border-color:var(--bdr)">🗄 Governance Archive</div>
+        <div style="padding:12px;font-size:12px">
+          <div style="font-weight:600;margin-bottom:6px">Contains:</div>
+          <div style="color:var(--tx2);line-height:1.7">All <strong>Archived</strong> (retired) documents<br>5-year retention per Trust Deed Part 3<br>Archive links visible to admins only</div>
+          <div style="margin-top:10px;font-size:11px;background:var(--bg);padding:6px 9px;border-radius:5px;color:var(--tx2)"><strong>Permissions:</strong> Dashboards - Governance-Admins → Read<br>Dashboards - Board-of-Trustees → No access<br>All Personnel → No access</div>
+        </div>
+      </div>
+    </div>
+    <div class="slabel">File Naming Convention</div>
+    <div class="card"><div style="padding:14px;font-size:12px">
+      <div style="margin-bottom:8px"><span class="bd ba">Draft</span> <code style="background:var(--bg);padding:2px 6px;border-radius:4px">POL-001_Foundational_Governance_Policy_v0.1_DRAFT.docx</code></div>
+      <div style="margin-bottom:8px"><span class="bd bg">Published</span> <code style="background:var(--bg);padding:2px 6px;border-radius:4px">POL-001_Foundational_Governance_Policy_v1.0.docx</code></div>
+      <div><span class="bd bgy">Archived</span> <code style="background:var(--bg);padding:2px 6px;border-radius:4px">POL-001_Foundational_Governance_Policy_v1.0_ARCHIVED_2026-04-01.docx</code></div>
+    </div></div>
+  </section>
+
 </div><!-- /content -->
 
 <div class="dash-footer">StudyTrust Governance Hub v4 &nbsp;·&nbsp; 000-601 NPO &nbsp;·&nbsp; IT3895/11(T) &nbsp;·&nbsp; Policies &amp; SOPs subject to formal approval processes</div>
@@ -942,18 +942,6 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
       <div style="margin-bottom:12px;font-size:12px;color:var(--tx2)">Current status: <span id="status-current" class="bd"></span></div>
       <div class="f-row"><label>Advance to:</label><div id="status-opts" style="display:flex;gap:7px;flex-wrap:wrap;margin-top:6px"></div></div>
       <div class="f-row"><label>Change Notes (mandatory for audit trail)</label><textarea id="f-status-note" rows="3" placeholder="Describe the reason for this status change…"></textarea></div>
-
-      <!-- APPROVAL STEP — shown only when target status is Approved -->
-      <div id="approval-step" style="display:none;margin-top:12px;background:#e0f2f1;border:1px solid #80cbc4;border-radius:var(--r);padding:14px">
-        <div style="font-size:12px;font-weight:700;color:#00695c;margin-bottom:8px">✅ Approval Step — Confirmation Document Required</div>
-        <div style="font-size:12px;color:#00695c;line-height:1.7;margin-bottom:10px">
-          Paste the link to the signed approval confirmation document (e.g., approval email, signed cover sheet, or minute extract).
-        </div>
-        <div class="f-row" style="margin-bottom:0"><label>Approval Confirmation Document URL <span style="color:var(--rd-tx)">*</span></label>
-          <input type="url" id="f-approval-url" placeholder="https://studietrust.sharepoint.com/sites/StudyTrustAuditTracker/…">
-          <div class="f-note">Copy the link from SharePoint to the approval confirmation document.</div>
-        </div>
-      </div>
 
       <!-- PUBLISHING STEP — shown only when target status is Published -->
       <div id="publish-step" style="display:none;margin-top:12px;background:#d1fae5;border:1px solid #6ee7b7;border-radius:var(--r);padding:14px">
@@ -1016,12 +1004,6 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
         <div style="display:flex;gap:6px;align-items:center">
           <input type="url" id="f-url-pub" placeholder="https://studietrust.sharepoint.com/…" style="flex:1">
           <button class="btn btn-sec btn-sm" onclick="triggerGovUpload('f-url-pub')" title="Upload the final published document">⬆ Upload</button>
-        </div>
-      </div>
-      <div class="f-row">
-        <label>Approval Confirmation Document URL <span style="font-size:10px;color:var(--tx3);font-weight:400">(signed approval evidence)</span></label>
-        <div style="display:flex;gap:6px;align-items:center">
-          <input type="url" id="f-url-approval" placeholder="https://studietrust.sharepoint.com/…" style="flex:1">
         </div>
       </div>
       <div class="f-row">
@@ -1305,10 +1287,10 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
     <div class="modal-body">
       <div class="info-box info-bl">Create 3 lists in SharePoint. Title exists automatically — do not create it. Use exact column names as shown.</div>
       <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:5px">GovPolicies</p>
-      <div class="cg"><span>Title</span><em> Text (built-in = policy title)</em> · <span>PolicyID</span><em> Text</em> · <span>Category</span><em> Text</em> · <span>Tier</span><em> Text</em> · <span>PolicyVersion</span><em> Text</em> · <span>Status</span><em> Choice*</em> · <span>Risk</span><em> Text</em> · <span>Approver</span><em> Text</em> · <span>ReviewDate</span><em> Date</em> · <span>Owner</span><em> Text</em> · <span>Custodian</span><em> Text</em> · <span>Notes</span><em> Text (ADD — rationale / requestor for Proposed items)</em> · <span>DraftUrl</span><em> Text</em> · <span>PublishedUrl</span><em> Text</em> · <span>ApprovalDocUrl</span><em> Text (ADD — approval confirmation document)</em> · <span>ArchiveUrl</span><em> Text</em></div>
-      <p style="font-size:10px;color:var(--tx3);margin-bottom:10px">*Status choices: Initiated · Draft · Consult · PTT Review · Approved · New · Published · Training · Acknowledgement (where required) · Review Due · Archived</p>
+      <div class="cg"><span>Title</span><em> Text (built-in = policy title)</em> · <span>PolicyID</span><em> Text</em> · <span>Category</span><em> Text</em> · <span>Tier</span><em> Text</em> · <span>PolicyVersion</span><em> Text</em> · <span>Status</span><em> Choice*</em> · <span>Risk</span><em> Text</em> · <span>Approver</span><em> Text</em> · <span>ReviewDate</span><em> Date</em> · <span>Owner</span><em> Text</em> · <span>Custodian</span><em> Text</em> · <span>Notes</span><em> Text (ADD — rationale / requestor for Proposed items)</em> · <span>DraftUrl</span><em> Text</em> · <span>PublishedUrl</span><em> Text</em> · <span>ArchiveUrl</span><em> Text</em></div>
+      <p style="font-size:10px;color:var(--tx3);margin-bottom:10px">*Status choices: Initiated · Draft · Consult · PTT Review · Approved · New · Published · Review Due · Archived</p>
       <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:5px">GovSOPs</p>
-      <div class="cg"><span>Title</span><em> Text (built-in = SOP title)</em> · <span>SopID</span><em> Text</em> · <span>Category</span><em> Text</em> · <span>LinkedPolicy</span><em> Text</em> · <span>SopVersion</span><em> Text</em> · <span>Status</span><em> Choice*</em> · <span>ReviewDate</span><em> Date</em> · <span>Owner</span><em> Text</em> · <span>Custodian</span><em> Text (ADD this column)</em> · <span>Notes</span><em> Text (ADD — rationale / requestor for Proposed items)</em> · <span>DraftUrl</span><em> Text</em> · <span>PublishedUrl</span><em> Text</em> · <span>ApprovalDocUrl</span><em> Text (ADD — approval confirmation document)</em> · <span>ArchiveUrl</span><em> Text</em></div>
+      <div class="cg"><span>Title</span><em> Text (built-in = SOP title)</em> · <span>SopID</span><em> Text</em> · <span>Category</span><em> Text</em> · <span>LinkedPolicy</span><em> Text</em> · <span>SopVersion</span><em> Text</em> · <span>Status</span><em> Choice*</em> · <span>ReviewDate</span><em> Date</em> · <span>Owner</span><em> Text</em> · <span>Custodian</span><em> Text (ADD this column)</em> · <span>Notes</span><em> Text (ADD — rationale / requestor for Proposed items)</em> · <span>DraftUrl</span><em> Text</em> · <span>PublishedUrl</span><em> Text</em> · <span>ArchiveUrl</span><em> Text</em></div>
       <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:5px">GovChangelog</p>
       <div class="cg"><span>Title</span><em> Text (built-in = change note)</em> · <span>DocID</span><em> Text</em> · <span>DocType</span><em> Text (pol/sop)</em> · <span>FromStatus</span><em> Text</em> · <span>ToStatus</span><em> Text</em> · <span>ChangedBy</span><em> Text</em> · <span>ChangeDate</span><em> Date</em></div>
     </div>
@@ -1345,14 +1327,12 @@ const STATUS_FLOW = {
   'PTT Review':['Approved','Consult','Draft'],
   Approved:    ['Published','Draft'],
   New:         ['Published','Draft'],
-  Published:   ['Training','Review Due','Archived'],
-  Training:    ['Acknowledgement (where required)','Review Due','Archived'],
-  'Acknowledgement (where required)': ['Review Due','Archived'],
+  Published:   ['Review Due','Archived'],
   'Review Due':['Draft','Archived'],
   Archived:    []
 };
 const DRAFT_STATUSES     = ['Initiated','Draft','Consult','PTT Review'];
-const PUBLISHED_STATUSES = ['Approved','New','Published','Training','Acknowledgement (where required)'];
+const PUBLISHED_STATUSES = ['Approved','New','Published'];
 
 // ════════════════════════════════════════════
 // MSAL + GRAPH API
@@ -1626,8 +1606,8 @@ async function spPatchResilient(listName, itemId, fields, docType) {
 // ════════════════════════════════════════════
 // FIELD MAPPINGS
 // ════════════════════════════════════════════
-const POL_MAP={title:'Title',polId:'PolicyID',category:'Category',tier:'Tier',version:'PolicyVersion',status:'Status',risk:'Risk',approver:'Approver',reviewDate:'ReviewDate',owner:'Owner',custodian:'Custodian',notes:'Notes',draftUrl:'DraftUrl',publishedUrl:'PublishedUrl',approvalDocUrl:'ApprovalDocUrl',archiveUrl:'ArchiveUrl'};
-const SOP_MAP={title:'Title',sopId:'SopID',category:'Category',linkedPolicy:'LinkedPolicy',version:'SopVersion',status:'Status',reviewDate:'ReviewDate',owner:'Owner',custodian:'Custodian',notes:'Notes',draftUrl:'DraftUrl',publishedUrl:'PublishedUrl',approvalDocUrl:'ApprovalDocUrl',archiveUrl:'ArchiveUrl',sobCompliant:'SOBCompliant',sobReviewDate:'SOBReviewDate',sobReviewedBy:'SOBReviewedBy'};
+const POL_MAP={title:'Title',polId:'PolicyID',category:'Category',tier:'Tier',version:'PolicyVersion',status:'Status',risk:'Risk',approver:'Approver',reviewDate:'ReviewDate',owner:'Owner',custodian:'Custodian',notes:'Notes',draftUrl:'DraftUrl',publishedUrl:'PublishedUrl',archiveUrl:'ArchiveUrl'};
+const SOP_MAP={title:'Title',sopId:'SopID',category:'Category',linkedPolicy:'LinkedPolicy',version:'SopVersion',status:'Status',reviewDate:'ReviewDate',owner:'Owner',custodian:'Custodian',notes:'Notes',draftUrl:'DraftUrl',publishedUrl:'PublishedUrl',archiveUrl:'ArchiveUrl',sobCompliant:'SOBCompliant',sobReviewDate:'SOBReviewDate',sobReviewedBy:'SOBReviewedBy'};
 const LOG_MAP={note:'Title',docId:'DocID',docType:'DocType',fromStatus:'FromStatus',toStatus:'ToStatus',changedBy:'ChangedBy',changeDate:'ChangeDate'};
 
 // Hyperlink columns: SharePoint "Hyperlink or Picture" type returns/accepts {Url, Description} objects via Graph.
@@ -1902,10 +1882,10 @@ async function seedData(){
 const td=()=>new Date().toISOString().slice(0,10);
 const esc=t=>String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const isOverdue=d=>d&&new Date(d)<new Date();
-const isPublished=s=>['Approved','New','Published','Training','Acknowledgement (where required)'].includes(s);
+const isPublished=s=>['Approved','New','Published'].includes(s);
 const isDraft=s=>['Initiated','Draft','Consult','PTT Review'].includes(s);
 
-function sbadge(s){const m={Initiated:'bpr',Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg',Training:'bt','Acknowledgement (where required)':'bp','Review Due':'ba',Archived:'bgy'};return`<span class="bd ${m[s]||'bgy'}">${esc(s)}</span>`;}
+function sbadge(s){const m={Initiated:'bpr',Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg','Review Due':'ba',Archived:'bgy'};return`<span class="bd ${m[s]||'bgy'}">${esc(s)}</span>`;}
 function tbadge(t){return`<span class="bd bb">${esc(t)}</span>`;}
 function rbadge(r){const c=r==='High Strategic'||r==='High Operational'?'br':r==='Medium'?'ba':'bg';return`<span class="bd ${c}">${esc(r)}</span>`;}
 function datecell(d){if(!d)return'—';return isOverdue(d)?`<span class="overdue">${esc(d)} ⚠</span>`:esc(d);}
@@ -2145,8 +2125,6 @@ function renderExec(){
     {label:'PTT REVIEW',statuses:['PTT Review'],color:var2('--st-a')},
     {label:'APPROVED',statuses:['Approved','New'],color:'#388e3c',bg:'#e8f5e9'},
     {label:'PUBLISHED',statuses:['Published'],color:'#2e7d32',bg:'#c8e6c9'},
-    {label:'TRAINING',statuses:['Training'],color:'#00695c',bg:'#e0f2f1'},
-    {label:'ACKNOWLEDGEMENT',statuses:['Acknowledgement (where required)'],color:'#6a1b9a',bg:'#f3e5f5'},
     {label:'REVIEW DUE',statuses:['Review Due'],color:'#f57f17',bg:var2('--am-bg')},
   ];
   function var2(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
@@ -2331,19 +2309,17 @@ function openStatusModal(docId,type,currentStatus){
   statusTarget={id:docId,type};
   document.getElementById('status-modal-title').textContent='Change Status — '+docId;
   const cur=document.getElementById('status-current');
-  cur.textContent=currentStatus; cur.className='bd '+(({Initiated:'bpr',Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg',Training:'bt','Acknowledgement (where required)':'bp','Review Due':'ba',Archived:'bgy'})[currentStatus]||'bgy');
+  cur.textContent=currentStatus; cur.className='bd '+(({Initiated:'bpr',Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg','Review Due':'ba',Archived:'bgy'})[currentStatus]||'bgy');
   document.getElementById('f-status-note').value='';
   document.getElementById('status-warn').style.display='none';
   // Reset step panels
   const pubStep=document.getElementById('publish-step');
   const archStep=document.getElementById('archive-step');
-  const apprStep=document.getElementById('approval-step');
   if(pubStep)  pubStep.style.display='none';
   if(archStep) archStep.style.display='none';
-  if(apprStep) apprStep.style.display='none';
-  ['f-pub-url','f-arch-url','f-arch-url-arch','f-approval-url'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['f-pub-url','f-arch-url','f-arch-url-arch'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const next=allowedTransitions(currentStatus,currentRole);
-  const badges={Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg',Training:'bt','Acknowledgement (where required)':'bp','Review Due':'ba',Archived:'bgy'};
+  const badges={Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg','Review Due':'ba',Archived:'bgy'};
   document.getElementById('status-opts').innerHTML=next.length?next.map(s=>`<button class="bd ${badges[s]||'bgy'}" style="cursor:pointer;border:2px solid transparent" onclick="selectStatus(this,'${s}')" data-s="${s}">${s}</button>`).join(''):'<span style="font-size:12px;color:var(--tx3)">No transitions available for your role.</span>';
   openM('m-status');
 }
@@ -2356,13 +2332,11 @@ function selectStatus(btn,s){
   // Show/hide contextual step panels
   const pubStep  = document.getElementById('publish-step');
   const archStep = document.getElementById('archive-step');
-  const apprStep = document.getElementById('approval-step');
   if(pubStep)  pubStep.style.display  = s==='Published' ? 'block' : 'none';
   if(archStep) archStep.style.display = s==='Archived'  ? 'block' : 'none';
-  if(apprStep) apprStep.style.display = s==='Approved'  ? 'block' : 'none';
 
   // Clear URL fields when switching
-  ['f-pub-url','f-arch-url','f-arch-url-arch','f-approval-url'].forEach(id=>{
+  ['f-pub-url','f-arch-url','f-arch-url-arch'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
 
@@ -2385,10 +2359,6 @@ async function applyStatus(){
     const archUrl=(document.getElementById('f-arch-url-arch')||{}).value||'';
     if(!archUrl){toast('Please paste the Archive document URL before applying.','warning');return;}
   }
-  if(selStatus==='Approved'){
-    const apprUrl=(document.getElementById('f-approval-url')||{}).value||'';
-    if(!apprUrl){toast('Please paste the Approval Confirmation Document URL before applying.','warning');return;}
-  }
 
   const {id,type}=statusTarget;
   const arr=type==='pol'?polData:sopData;
@@ -2409,10 +2379,6 @@ async function applyStatus(){
     const archUrl=(document.getElementById('f-arch-url-arch')||{}).value.trim()||'';
     if(archUrl){ doc.archiveUrl=archUrl; spFields.ArchiveUrl=spWriteValue('archiveUrl',archUrl,doc); }
     doc.publishedUrl=''; spFields.PublishedUrl=null;
-  }
-  if(selStatus==='Approved'){
-    const apprUrl=(document.getElementById('f-approval-url')||{}).value.trim()||'';
-    if(apprUrl){ doc.approvalDocUrl=apprUrl; spFields.ApprovalDocUrl=spWriteValue('approvalDocUrl',apprUrl,doc); }
   }
 
   if(type==='sop'&&!validateSOBBeforeTransition(doc,selStatus))return;
@@ -2441,7 +2407,6 @@ function openUrlModal(docId,type){
   const doc=arr.find(d=>(type==='pol'?d.polId:d.sopId)===docId);
   document.getElementById('f-url-draft').value=doc?.draftUrl||'';
   document.getElementById('f-url-pub').value=doc?.publishedUrl||'';
-  document.getElementById('f-url-approval').value=doc?.approvalDocUrl||'';
   document.getElementById('f-url-arch').value=doc?.archiveUrl||'';
   // PTT scope: lock Published and Archive URL fields (read-only)
   const isP = currentRole === 'ptt';
@@ -2474,13 +2439,11 @@ async function saveUrls(){
   }
   doc.draftUrl=document.getElementById('f-url-draft').value.trim();
   doc.publishedUrl=document.getElementById('f-url-pub').value.trim();
-  doc.approvalDocUrl=document.getElementById('f-url-approval').value.trim();
   doc.archiveUrl=document.getElementById('f-url-arch').value.trim();
   try{
     await spPatch(type==='pol'?LISTS.pol:LISTS.sop,doc._spId,{
       DraftUrl: spWriteValue('draftUrl', doc.draftUrl, doc),
       PublishedUrl: spWriteValue('publishedUrl', doc.publishedUrl, doc),
-      ApprovalDocUrl: spWriteValue('approvalDocUrl', doc.approvalDocUrl, doc),
       ArchiveUrl: spWriteValue('archiveUrl', doc.archiveUrl, doc)
     });
     renderAll(); closeM('m-urls');
@@ -2682,7 +2645,7 @@ function exportSopCsv(){
 // ════════════════════════════════════════════
 // TABS & ROLE
 // ════════════════════════════════════════════
-const TABS_ADMIN=[{id:'sec-exec',l:'Executive Overview'},{id:'sec-workflow',l:'Approval Workflow'},{id:'sec-pol',l:'Policy Register'},{id:'sec-sop',l:'SOP Register'},{id:'sec-mat',l:'Maturity Tracker'},{id:'sec-docs',l:'Document Libraries'},{id:'sec-trustees',l:'Board of Trustees'},{id:'sec-ack',l:'✅ Acknowledgements'},{id:'sec-training',l:'🎓 Training'},{id:'sec-hub',l:'Governance Hub'}];
+const TABS_ADMIN=[{id:'sec-exec',l:'📊 Executive Overview'},{id:'sec-workflow',l:'🔄 Approval Workflow'},{id:'sec-pol',l:'📋 Policy Register'},{id:'sec-sop',l:'📑 SOP Register'},{id:'sec-mat',l:'📈 Maturity Tracker'},{id:'sec-docs',l:'📁 Document Libraries'},{id:'sec-trustees',l:'🏛️ Board of Trustees'},{id:'sec-ack',l:'✅ Acknowledgements'},{id:'sec-training',l:'🎓 Training'},{id:'sec-hub',l:'🏠 Governance Hub'}];
 const TABS_TRUSTEE=[{id:'sec-exec',l:'Governance Overview'},{id:'sec-pol',l:'Policy Register'},{id:'sec-sop',l:'SOP Register'},{id:'sec-workflow',l:'Approval Framework'},{id:'sec-mat',l:'Maturity Overview'},{id:'sec-trustees',l:'Board of Trustees'},{id:'sec-hub',l:'Governance Hub'}];
 const TABS_AUDITOR=[{id:'sec-aud-docs',l:'Policy & SOP Documents'},{id:'sec-aud-overview',l:'Governance Overview'},{id:'sec-aud-request',l:'Document Requests'}];
 const TABS_PTT=[{id:'sec-exec',l:'Governance Overview'},{id:'sec-workflow',l:'Approval Workflow'},{id:'sec-pol',l:'Policy Register'},{id:'sec-sop',l:'SOP Register'},{id:'sec-mat',l:'Maturity Tracker'},{id:'sec-docs',l:'Document Libraries'},{id:'sec-hub',l:'Quick Access'}];
@@ -2775,18 +2738,18 @@ function checkReviewReminders(){
 // ── BOARD REPORT ──────────────────────────────────────────────────
 function generateBoardReport(){
   const today=new Date().toLocaleDateString('en-ZA',{year:'numeric',month:'long',day:'numeric'});
-  const statuses=['Initiated','Draft','Consult','PTT Review','Approved','Published','Training','Acknowledgement (where required)','Review Due','Archived'];
+  const statuses=['Initiated','Draft','Consult','PTT Review','Approved','Published','Review Due','Archived'];
   const counts={};
   statuses.forEach(s=>counts[s]=0);
   [...polData,...sopData].forEach(d=>{counts[d.status]=(counts[d.status]||0)+1;});
-  const published=polData.filter(p=>isPublished(p.status)||p.status==='Review Due').length;
+  const published=polData.filter(p=>p.status==='Published'||p.status==='Review Due').length;
   const overdue=[...polData,...sopData].filter(d=>isOverdue(d.reviewDate)&&d.status!=='Archived');
-  const hiRisk=polData.filter(p=>p.risk==='High Strategic'&&(isPublished(p.status)||p.status==='Review Due'||p.status==='Approved'));
+  const hiRisk=polData.filter(p=>p.risk==='High Strategic'&&(p.status==='Published'||p.status==='Review Due'||p.status==='Approved'));
   const initiated=[...polData,...sopData].filter(d=>d.status==='Initiated');
   const matPct=Math.round((published/Math.max(polData.length+sopData.length,1))*100);
 
   const catCounts={};
-  polData.filter(p=>isPublished(p.status)||p.status==='Review Due').forEach(p=>{
+  polData.filter(p=>p.status==='Published'||p.status==='Review Due').forEach(p=>{
     catCounts[p.category]=(catCounts[p.category]||0)+1;
   });
 
@@ -2849,8 +2812,8 @@ tr:nth-child(even) td{background:#f8fafc}
 <h2>Published Policies by Category</h2>
 <table><tr><th>Category</th><th>Published</th><th>SOPs</th></tr>
 ${['Governance','Personnel','Finance','IT','Bursaries','Funders','Operations'].map(cat=>{
-  const pols=polData.filter(p=>(isPublished(p.status)||p.status==='Review Due')&&p.category===cat).length;
-  const sops=sopData.filter(s=>(isPublished(s.status)||s.status==='Review Due')&&s.category===cat).length;
+  const pols=polData.filter(p=>(p.status==='Published'||p.status==='Review Due')&&p.category===cat).length;
+  const sops=sopData.filter(s=>(s.status==='Published'||s.status==='Review Due')&&s.category===cat).length;
   return pols||sops?`<tr><td>${cat}</td><td>${pols}</td><td>${sops}</td></tr>`:'';
 }).join('')}
 </table>
@@ -2991,7 +2954,7 @@ function renderPendingAck(){
   const email=typeof msalApp!=='undefined'?
     (msalApp.getAllAccounts()[0]?.username||'') : '';
   const myAcked=new Set(ackData.filter(a=>a.userEmail===email).map(a=>a.title+'::'+a.version));
-  const toAck=polData.filter(p=>(isPublished(p.status)||p.status==='Review Due')&&
+  const toAck=polData.filter(p=>(p.status==='Published'||p.status==='Review Due')&&
     !myAcked.has(p.polId+'::'+p.version));
   if(!toAck.length){
     sec.style.display='block';
@@ -3268,7 +3231,7 @@ function renderAudOverview(){
     <div class="kpi"><div class="kpi-l">My Requests</div><div class="kpi-v" style="color:#065f46">${audReqs.length}</div><div class="kpi-s">${audReqs.filter(r=>r.status==='Pending').length} pending</div></div>`;
 
   // Status summary table
-  const statuses=['Published','Approved','New','Training','Acknowledgement (where required)','Review Due','Draft','PTT Review','Consult','Archived'];
+  const statuses=['Published','Approved','New','Review Due','Draft','PTT Review','Consult','Archived'];
   const allDocs=[...polData,...sopData];
   const sb=document.getElementById('aud-status-body');
   if(sb) sb.innerHTML=statuses.map(s=>{
@@ -3284,7 +3247,7 @@ function renderAudOverview(){
   // Pipeline (auditor sees published only)
   const pp=document.getElementById('aud-pipeline');
   if(pp){
-    const stages=[{label:'DRAFT',statuses:['Draft','Consult','PTT Review'],color:'#90a4ae',bg:'#eceff1'},{label:'APPROVED',statuses:['Approved','New'],color:'#388e3c',bg:'#e8f5e9'},{label:'PUBLISHED',statuses:['Published'],color:'#2e7d32',bg:'#c8e6c9'},{label:'TRAINING',statuses:['Training'],color:'#00695c',bg:'#e0f2f1'},{label:'ACKNOWLEDGEMENT',statuses:['Acknowledgement (where required)'],color:'#6a1b9a',bg:'#f3e5f5'},{label:'REVIEW DUE',statuses:['Review Due'],color:'#f57f17',bg:'#fff8e1'},{label:'ARCHIVED',statuses:['Archived'],color:'#757575',bg:'#f5f5f5'}];
+    const stages=[{label:'DRAFT',statuses:['Draft','Consult','PTT Review'],color:'#90a4ae',bg:'#eceff1'},{label:'APPROVED',statuses:['Approved','New'],color:'#388e3c',bg:'#e8f5e9'},{label:'PUBLISHED',statuses:['Published'],color:'#2e7d32',bg:'#c8e6c9'},{label:'REVIEW DUE',statuses:['Review Due'],color:'#f57f17',bg:'#fff8e1'},{label:'ARCHIVED',statuses:['Archived'],color:'#757575',bg:'#f5f5f5'}];
     pp.innerHTML=stages.map(st=>{const n=allDocs.filter(d=>st.statuses.includes(d.status)).length;return`<div class="ps" style="background:${st.bg};border:1px solid ${st.color}20"><div class="ps-l" style="color:${st.color}">${st.label}</div><div class="ps-v" style="color:${st.color}">${n}</div></div>`;}).join('<div style="display:flex;align-items:center;color:#bbb;font-size:14px;padding:0 2px">›</div>');
   }
 }
@@ -3567,8 +3530,7 @@ async function fireStatusChangeNotif(docId, docTitle, fromStatus, toStatus, chan
   // Push to in-app bell for current user
   pushNotif('status-change', title, `${fromStatus} → ${toStatus} · by ${changedBy}`);
 
-  //   trustee → only Published, Training, Acknowledgement (where required), Review Due, Archived
-  const trusteeStatuses = ['Published','Training','Acknowledgement (where required)','Review Due','Archived'];
+  const trusteeStatuses = ['Published','Review Due','Archived'];
   const auditorStatuses = ['Published'];
   // PTT is interested in drafts moving through review-relevant states
   const pttStatuses     = ['Consult','PTT Review'];
@@ -4300,6 +4262,4 @@ function _closeModal(id) {
   
 </script>
 <input type="file" id="gov-file-input" style="display:none" onchange="handleGovFileUpload(this)">
-<input type="file" id="gov-multi-input" style="display:none" multiple onchange="handleGovMultiUpload(this)">
-</body>
-</html>
+<input type="file" id="gov-multi-input" style="display:none" multiple onchange="ha
