@@ -817,6 +817,18 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
       <div class="f-row"><label>Advance to:</label><div id="status-opts" style="display:flex;gap:7px;flex-wrap:wrap;margin-top:6px"></div></div>
       <div class="f-row"><label>Change Notes (mandatory for audit trail)</label><textarea id="f-status-note" rows="3" placeholder="Describe the reason for this status change…"></textarea></div>
 
+      <!-- APPROVAL STEP — shown only when target status is Approved -->
+      <div id="approval-step" style="display:none;margin-top:12px;background:#e0f2f1;border:1px solid #80cbc4;border-radius:var(--r);padding:14px">
+        <div style="font-size:12px;font-weight:700;color:#00695c;margin-bottom:8px">✅ Approval Step — Confirmation Document Required</div>
+        <div style="font-size:12px;color:#00695c;line-height:1.7;margin-bottom:10px">
+          Paste the link to the signed approval confirmation document (e.g., approval email, signed cover sheet, or minute extract).
+        </div>
+        <div class="f-row" style="margin-bottom:0"><label>Approval Confirmation Document URL <span style="color:var(--rd-tx)">*</span></label>
+          <input type="url" id="f-approval-url" placeholder="https://studietrust.sharepoint.com/sites/StudyTrustAuditTracker/…">
+          <div class="f-note">Copy the link from SharePoint to the approval confirmation document.</div>
+        </div>
+      </div>
+
       <!-- PUBLISHING STEP — shown only when target status is Published -->
       <div id="publish-step" style="display:none;margin-top:12px;background:#d1fae5;border:1px solid #6ee7b7;border-radius:var(--r);padding:14px">
         <div style="font-size:12px;font-weight:700;color:#065f46;margin-bottom:8px">📁 Publishing Step — File Movement Required</div>
@@ -866,6 +878,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
       <div class="info-box info-am">Paste the full SharePoint URL to each version of this document. Draft URLs open in Office Online edit mode. Published URLs are visible to all users.</div>
       <div class="f-row"><label>Draft / Review URL (opens in edit mode)</label><input type="url" id="f-url-draft" placeholder="https://studietrust.sharepoint.com/…"></div>
       <div class="f-row"><label>Published URL (visible to all users)</label><input type="url" id="f-url-pub" placeholder="https://studietrust.sharepoint.com/…"></div>
+      <div class="f-row"><label>Approval Confirmation Document URL</label><input type="url" id="f-url-approval" placeholder="https://studietrust.sharepoint.com/…"></div>
       <div class="f-row"><label>Archive URL (admin only)</label><input type="url" id="f-url-arch" placeholder="https://studietrust.sharepoint.com/…"></div>
     </div>
     <div class="modal-actions"><button class="btn btn-sec" onclick="closeM('m-urls')">Cancel</button><button class="btn btn-pri" onclick="saveUrls()">Save URLs to SharePoint</button></div>
@@ -1029,7 +1042,7 @@ body{font-family:Aptos,'Segoe UI',Calibri,sans-serif;font-size:14px;color:var(--
       <div class="info-box info-bl">Create 3 lists in SharePoint. Title exists automatically — do not create it. Use exact column names as shown.</div>
       <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:5px">GovPolicies</p>
       <div class="cg"><span>Title</span><em> Text (built-in = policy title)</em> · <span>PolicyID</span><em> Text</em> · <span>Category</span><em> Text</em> · <span>Tier</span><em> Text</em> · <span>PolicyVersion</span><em> Text</em> · <span>Status</span><em> Choice*</em> · <span>Risk</span><em> Text</em> · <span>Approver</span><em> Text</em> · <span>ReviewDate</span><em> Date</em> · <span>Owner</span><em> Text</em> · <span>Custodian</span><em> Text</em> · <span>DraftUrl</span><em> Text</em> · <span>PublishedUrl</span><em> Text</em> · <span>ArchiveUrl</span><em> Text</em></div>
-      <p style="font-size:10px;color:var(--tx3);margin-bottom:10px">*Status choices: Draft · Consult · PTT Review · Approved · New · Published · Review Due · Archived</p>
+      <p style="font-size:10px;color:var(--tx3);margin-bottom:10px">*Status choices: Draft · Consult · PTT Review · Approved · New · Published · Training · Acknowledgement (where required) · Review Due · Archived</p>
       <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:5px">GovSOPs</p>
       <div class="cg"><span>Title</span><em> Text (built-in = SOP title)</em> · <span>SopID</span><em> Text</em> · <span>Category</span><em> Text</em> · <span>LinkedPolicy</span><em> Text</em> · <span>SopVersion</span><em> Text</em> · <span>Status</span><em> Choice*</em> · <span>ReviewDate</span><em> Date</em> · <span>Owner</span><em> Text</em> · <span>DraftUrl</span><em> Text</em> · <span>PublishedUrl</span><em> Text</em> · <span>ArchiveUrl</span><em> Text</em></div>
       <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:5px">GovChangelog</p>
@@ -1067,12 +1080,14 @@ const STATUS_FLOW = {
   'PTT Review':['Approved','Consult','Draft'],
   Approved:    ['Published','Draft'],
   New:         ['Published','Draft'],
-  Published:   ['Review Due','Archived'],
+  Published:   ['Training','Review Due','Archived'],
+  Training:    ['Acknowledgement (where required)','Review Due','Archived'],
+  'Acknowledgement (where required)':['Review Due','Archived'],
   'Review Due':['Draft','Archived'],
   Archived:    []
 };
 const DRAFT_STATUSES     = ['Draft','Consult','PTT Review'];
-const PUBLISHED_STATUSES = ['Approved','New','Published'];
+const PUBLISHED_STATUSES = ['Approved','New','Published','Training','Acknowledgement (where required)'];
 
 // ════════════════════════════════════════════
 // MSAL + GRAPH API
@@ -1158,8 +1173,8 @@ async function spPatch(listName,itemId,fields){
 // ════════════════════════════════════════════
 // FIELD MAPPINGS
 // ════════════════════════════════════════════
-const POL_MAP={title:'Title',polId:'PolicyID',category:'Category',tier:'Tier',version:'PolicyVersion',status:'Status',risk:'Risk',approver:'Approver',reviewDate:'ReviewDate',owner:'Owner',custodian:'Custodian',draftUrl:'DraftUrl',publishedUrl:'PublishedUrl',archiveUrl:'ArchiveUrl'};
-const SOP_MAP={title:'Title',sopId:'SopID',category:'Category',linkedPolicy:'LinkedPolicy',version:'SopVersion',status:'Status',reviewDate:'ReviewDate',owner:'Owner',draftUrl:'DraftUrl',publishedUrl:'PublishedUrl',archiveUrl:'ArchiveUrl'};
+const POL_MAP={title:'Title',polId:'PolicyID',category:'Category',tier:'Tier',version:'PolicyVersion',status:'Status',risk:'Risk',approver:'Approver',reviewDate:'ReviewDate',owner:'Owner',custodian:'Custodian',draftUrl:'DraftUrl',publishedUrl:'PublishedUrl',archiveUrl:'ArchiveUrl',approvalDocUrl:'ApprovalDocUrl'};
+const SOP_MAP={title:'Title',sopId:'SopID',category:'Category',linkedPolicy:'LinkedPolicy',version:'SopVersion',status:'Status',reviewDate:'ReviewDate',owner:'Owner',draftUrl:'DraftUrl',publishedUrl:'PublishedUrl',archiveUrl:'ArchiveUrl',approvalDocUrl:'ApprovalDocUrl'};
 const LOG_MAP={note:'Title',docId:'DocID',docType:'DocType',fromStatus:'FromStatus',toStatus:'ToStatus',changedBy:'ChangedBy',changeDate:'ChangeDate'};
 
 function toSpPol(p){const f={};for(const[ak,sk]of Object.entries(POL_MAP)){const v=p[ak];f[sk]=ak==='reviewDate'?(v?v+'T00:00:00Z':null):(v||null);}return f;}
@@ -1389,10 +1404,11 @@ async function seedData(){
 const td=()=>new Date().toISOString().slice(0,10);
 const esc=t=>String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const isOverdue=d=>d&&new Date(d)<new Date();
-const isPublished=s=>['Approved','New','Published'].includes(s);
+const isPublished=s=>PUBLISHED_STATUSES.includes(s);
 const isDraft=s=>['Draft','Consult','PTT Review'].includes(s);
 
-function sbadge(s){const m={Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg','Review Due':'ba',Archived:'bgy'};return`<span class="bd ${m[s]||'bgy'}">${esc(s)}</span>`;}
+const SBADGE_MAP={Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg',Training:'bt','Acknowledgement (where required)':'bp','Review Due':'ba',Archived:'bgy'};
+function sbadge(s){return`<span class="bd ${SBADGE_MAP[s]||'bgy'}">${esc(s)}</span>`;}
 function tbadge(t){return`<span class="bd bb">${esc(t)}</span>`;}
 function rbadge(r){const c=r==='High Strategic'||r==='High Operational'?'br':r==='Medium'?'ba':'bg';return`<span class="bd ${c}">${esc(r)}</span>`;}
 function datecell(d){if(!d)return'—';return isOverdue(d)?`<span class="overdue">${esc(d)} ⚠</span>`:esc(d);}
@@ -1413,6 +1429,7 @@ function docLinks(doc,type){
     if(doc.archiveUrl) h+=`<a class="doc-btn arch" href="${esc(doc.archiveUrl)}" target="_blank">🗄 Archive</a>`;
     else h+='<span style="font-size:11px;color:var(--tx3)">No archive URL</span>';
   }
+  if(isA&&doc.approvalDocUrl) h+=`<a class="doc-btn" style="background:#e0f2f1;color:#00695c;border-color:#80cbc4" href="${esc(doc.approvalDocUrl)}" target="_blank">✅ Approval Doc</a>`;
   const id=doc.polId||doc.sopId||doc._spId;
   if(isA) h+=`<button class="doc-btn" style="background:var(--st-p);color:var(--st);border-color:var(--st-l)" onclick="openUrlModal('${esc(id)}','${type}')">⚙ URLs</button>`;
   h+='</div>'; return h;
@@ -1567,6 +1584,8 @@ function renderExec(){
     {label:'PTT REVIEW',statuses:['PTT Review'],color:var2('--st-a')},
     {label:'APPROVED',statuses:['Approved','New'],color:'#388e3c',bg:'#e8f5e9'},
     {label:'PUBLISHED',statuses:['Published'],color:'#2e7d32',bg:'#c8e6c9'},
+    {label:'TRAINING',statuses:['Training'],color:'#00695c',bg:'#e0f2f1'},
+    {label:'ACKNOWLEDGEMENT',statuses:['Acknowledgement (where required)'],color:'#6a1b9a',bg:'#f3e5f5'},
     {label:'REVIEW DUE',statuses:['Review Due'],color:'#f57f17',bg:var2('--am-bg')},
   ];
   function var2(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
@@ -1640,18 +1659,19 @@ function openStatusModal(docId,type,currentStatus){
   statusTarget={id:docId,type};
   document.getElementById('status-modal-title').textContent='Change Status — '+docId;
   const cur=document.getElementById('status-current');
-  cur.textContent=currentStatus; cur.className='bd '+(({Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg','Review Due':'ba',Archived:'bgy'})[currentStatus]||'bgy');
+  cur.textContent=currentStatus; cur.className='bd '+(SBADGE_MAP[currentStatus]||'bgy');
   document.getElementById('f-status-note').value='';
   document.getElementById('status-warn').style.display='none';
   // Reset step panels
   const pubStep=document.getElementById('publish-step');
   const archStep=document.getElementById('archive-step');
+  const apprStep=document.getElementById('approval-step');
   if(pubStep)  pubStep.style.display='none';
   if(archStep) archStep.style.display='none';
-  ['f-pub-url','f-arch-url','f-arch-url-arch'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  if(apprStep) apprStep.style.display='none';
+  ['f-pub-url','f-arch-url','f-arch-url-arch','f-approval-url'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const next=STATUS_FLOW[currentStatus]||[];
-  const badges={Draft:'ba',Consult:'ba','PTT Review':'bt',Approved:'bt',New:'bb',Published:'bg','Review Due':'ba',Archived:'bgy'};
-  document.getElementById('status-opts').innerHTML=next.length?next.map(s=>`<button class="bd ${badges[s]||'bgy'}" style="cursor:pointer;border:2px solid transparent" onclick="selectStatus(this,'${s}')" data-s="${s}">${s}</button>`).join(''):'<span style="font-size:12px;color:var(--tx3)">No transitions available.</span>';
+  document.getElementById('status-opts').innerHTML=next.length?next.map(s=>`<button class="bd ${SBADGE_MAP[s]||'bgy'}" style="cursor:pointer;border:2px solid transparent" onclick="selectStatus(this,'${s}')" data-s="${s}">${s}</button>`).join(''):'<span style="font-size:12px;color:var(--tx3)">No transitions available.</span>';
   openM('m-status');
 }
 
@@ -1663,11 +1683,13 @@ function selectStatus(btn,s){
   // Show/hide contextual step panels
   const pubStep  = document.getElementById('publish-step');
   const archStep = document.getElementById('archive-step');
+  const apprStep = document.getElementById('approval-step');
   if(pubStep)  pubStep.style.display  = s==='Published' ? 'block' : 'none';
   if(archStep) archStep.style.display = s==='Archived'  ? 'block' : 'none';
+  if(apprStep) apprStep.style.display = s==='Approved'  ? 'block' : 'none';
 
   // Clear URL fields when switching
-  ['f-pub-url','f-arch-url','f-arch-url-arch'].forEach(id=>{
+  ['f-pub-url','f-arch-url','f-arch-url-arch','f-approval-url'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
 
@@ -1690,6 +1712,10 @@ async function applyStatus(){
     const archUrl=(document.getElementById('f-arch-url-arch')||{}).value||'';
     if(!archUrl){toast('Please paste the Archive document URL before applying.','warning');return;}
   }
+  if(selStatus==='Approved'){
+    const apprUrl=(document.getElementById('f-approval-url')||{}).value||'';
+    if(!apprUrl){toast('Please paste the Approval Confirmation Document URL before applying.','warning');return;}
+  }
 
   const {id,type}=statusTarget;
   const arr=type==='pol'?polData:sopData;
@@ -1710,6 +1736,10 @@ async function applyStatus(){
     const archUrl=(document.getElementById('f-arch-url-arch')||{}).value.trim()||'';
     if(archUrl){ doc.archiveUrl=archUrl; spFields.ArchiveUrl=archUrl; }
     doc.publishedUrl=''; spFields.PublishedUrl=null;
+  }
+  if(selStatus==='Approved'){
+    const apprUrl=(document.getElementById('f-approval-url')||{}).value.trim()||'';
+    if(apprUrl){ doc.approvalDocUrl=apprUrl; spFields.ApprovalDocUrl=apprUrl; }
   }
 
   try{
@@ -1737,6 +1767,7 @@ function openUrlModal(docId,type){
   const doc=arr.find(d=>(type==='pol'?d.polId:d.sopId)===docId);
   document.getElementById('f-url-draft').value=doc?.draftUrl||'';
   document.getElementById('f-url-pub').value=doc?.publishedUrl||'';
+  document.getElementById('f-url-approval').value=doc?.approvalDocUrl||'';
   document.getElementById('f-url-arch').value=doc?.archiveUrl||'';
   openM('m-urls');
 }
@@ -1748,9 +1779,10 @@ async function saveUrls(){
   if(!doc){closeM('m-urls');return;}
   doc.draftUrl=document.getElementById('f-url-draft').value.trim();
   doc.publishedUrl=document.getElementById('f-url-pub').value.trim();
+  doc.approvalDocUrl=document.getElementById('f-url-approval').value.trim();
   doc.archiveUrl=document.getElementById('f-url-arch').value.trim();
   try{
-    await spPatch(type==='pol'?LISTS.pol:LISTS.sop,doc._spId,{DraftUrl:doc.draftUrl||null,PublishedUrl:doc.publishedUrl||null,ArchiveUrl:doc.archiveUrl||null});
+    await spPatch(type==='pol'?LISTS.pol:LISTS.sop,doc._spId,{DraftUrl:doc.draftUrl||null,PublishedUrl:doc.publishedUrl||null,ApprovalDocUrl:doc.approvalDocUrl||null,ArchiveUrl:doc.archiveUrl||null});
     renderAll(); closeM('m-urls');
     toast('Document URLs saved for '+id,'success');
   }catch(e){toast('Failed to save URLs: '+e.message,'error');}
@@ -2096,7 +2128,7 @@ function renderAudOverview(){
     <div class="kpi"><div class="kpi-l">My Requests</div><div class="kpi-v" style="color:#065f46">${audReqs.length}</div><div class="kpi-s">${audReqs.filter(r=>r.status==='Pending').length} pending</div></div>`;
 
   // Status summary table
-  const statuses=['Published','Approved','New','Review Due','Draft','PTT Review','Consult','Archived'];
+  const statuses=['Published','Training','Acknowledgement (where required)','Approved','New','Review Due','Draft','PTT Review','Consult','Archived'];
   const allDocs=[...polData,...sopData];
   const sb=document.getElementById('aud-status-body');
   if(sb) sb.innerHTML=statuses.map(s=>{
@@ -2112,7 +2144,7 @@ function renderAudOverview(){
   // Pipeline (auditor sees published only)
   const pp=document.getElementById('aud-pipeline');
   if(pp){
-    const stages=[{label:'DRAFT',statuses:['Draft','Consult','PTT Review'],color:'#90a4ae',bg:'#eceff1'},{label:'APPROVED',statuses:['Approved','New'],color:'#388e3c',bg:'#e8f5e9'},{label:'PUBLISHED',statuses:['Published'],color:'#2e7d32',bg:'#c8e6c9'},{label:'REVIEW DUE',statuses:['Review Due'],color:'#f57f17',bg:'#fff8e1'},{label:'ARCHIVED',statuses:['Archived'],color:'#757575',bg:'#f5f5f5'}];
+    const stages=[{label:'DRAFT',statuses:['Draft','Consult','PTT Review'],color:'#90a4ae',bg:'#eceff1'},{label:'APPROVED',statuses:['Approved','New'],color:'#388e3c',bg:'#e8f5e9'},{label:'PUBLISHED',statuses:['Published'],color:'#2e7d32',bg:'#c8e6c9'},{label:'TRAINING',statuses:['Training'],color:'#00695c',bg:'#e0f2f1'},{label:'ACKNOWLEDGEMENT',statuses:['Acknowledgement (where required)'],color:'#6a1b9a',bg:'#f3e5f5'},{label:'REVIEW DUE',statuses:['Review Due'],color:'#f57f17',bg:'#fff8e1'},{label:'ARCHIVED',statuses:['Archived'],color:'#757575',bg:'#f5f5f5'}];
     pp.innerHTML=stages.map(st=>{const n=allDocs.filter(d=>st.statuses.includes(d.status)).length;return`<div class="ps" style="background:${st.bg};border:1px solid ${st.color}20"><div class="ps-l" style="color:${st.color}">${st.label}</div><div class="ps-v" style="color:${st.color}">${n}</div></div>`;}).join('<div style="display:flex;align-items:center;color:#bbb;font-size:14px;padding:0 2px">›</div>');
   }
 }
@@ -2381,7 +2413,7 @@ async function sendAdaptiveCard(webhookUrl, title, subtitle, body, audience){
 // ── Fire notifications for a status change event ──
 // audience rules:
 //   admin   → all status changes
-//   trustee → only Published, Review Due, Archived
+//   trustee → only Published, Training, Acknowledgement (where required), Review Due, Archived
 //   auditor → only Published
 async function fireStatusChangeNotif(docId, docTitle, fromStatus, toStatus, changedBy){
   const wh = loadWebhooks();
@@ -2392,7 +2424,7 @@ async function fireStatusChangeNotif(docId, docTitle, fromStatus, toStatus, chan
   // Push to in-app bell for current user
   pushNotif('status-change', title, `${fromStatus} → ${toStatus} · by ${changedBy}`);
 
-  const trusteeStatuses = ['Published','Review Due','Archived'];
+  const trusteeStatuses = ['Published','Training','Acknowledgement (where required)','Review Due','Archived'];
   const auditorStatuses = ['Published'];
 
   const sends = [];
