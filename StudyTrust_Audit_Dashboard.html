@@ -558,6 +558,7 @@ td.dc{min-width:220px;width:260px}.ita{width:100%;min-width:200px;min-height:42p
     <div class="dc2 info-bl" style="margin-bottom:12px;padding:12px 14px">
       <strong>What this tab is for.</strong>
       Use this tab for information that auditors request verbally or in writing, where the answer is text only — no document to upload. Each row has a Question, a Source, an Answer, a Status, and a Responsible person.
+      <span id="q-auditor-note" style="display:none"><br><br><strong>For auditors:</strong> use <em>+ Add</em> to submit a new question for the StudyTrust team to answer here — no document upload needed. Once StudyTrust responds, the answer will appear in the Answer / Response column.</span>
     </div>
     <div class="fb" style="margin-bottom:8px">
       <input type="text" id="f-questions-q" placeholder="Search questions…" oninput="filterTab('questions')" style="max-width:280px">
@@ -1186,9 +1187,11 @@ function setRole(role){
     banner.className='admin-mode'; banner.textContent='Admin Mode — Changes save live to SharePoint';
     badge.className='admin'; badge.textContent='Admin';
   } else {
-    banner.className='auditor-mode'; banner.textContent='Auditor View — Read only';
+    banner.className='auditor-mode'; banner.textContent='Auditor View — Read only, except submitting new Questions';
     badge.className='auditor'; badge.textContent='Auditor';
   }
+  const qNote=document.getElementById('q-auditor-note');
+  if(qNote) qNote.style.display=(role==='auditor')?'inline':'none';
   buildTabBar(); renderAll();
 }
 
@@ -1215,6 +1218,7 @@ function buildTabBar(){
     {id:'aud-overview',    label:'📊 Overview'},
     {id:'aud-docs',        label:'📄 Documents'},
     {id:'aud-my-requests', label:'📨 My Requests'},
+    {id:'questions',       label:'❓ Questions', count:questItems.length},
   ];
   const tabs=userRole==='admin'?adminTabs:auditorTabs;
   tabs.forEach(t=>{
@@ -1449,13 +1453,16 @@ function renderQuestions(items,body){
   body.innerHTML=items.map((it,i)=>{
     const sSel=userRole==='auditor'?`<span>${it.status||''}</span>`:`<select class="ie is" onchange="quickSave('questions','${it.id}','status',this.value,this)">${qStatuses.map(s=>`<option${s===it.status?' selected':''}>${s}</option>`).join('')}</select>`;
     const srcSel=userRole==='auditor'?`<span>${it.source||''}</span>`:`<select class="ie is" onchange="quickSave('questions','${it.id}','source',this.value,this)">${qSources.map(s=>`<option${s===it.source?' selected':''}>${s}</option>`).join('')}</select>`;
+    const ansCell=userRole==='auditor'
+      ?`<div style="white-space:pre-wrap">${(it.answer||'').replace(/</g,'&lt;')||'<span style="color:#aaa">Pending response…</span>'}</div>`
+      :`<textarea class="ie" style="min-height:40px;width:100%;resize:vertical" onchange="quickSave('questions','${it.id}','answer',this.value,this)">${(it.answer||'').replace(/</g,'&lt;')}</textarea>`;
     return `<tr>
       <td class="n">${i+1}</td>
       <td class="dc">${textIn(it.desc,'questions',it.id,'desc','it')}</td>
       <td>${srcSel}</td>
       <td>${sSel}</td>
       <td>${textIn(it.responsible,'questions',it.id,'responsible','it')}</td>
-      <td><textarea class="ie" style="min-height:40px;width:100%;resize:vertical" onchange="quickSave('questions','${it.id}','answer',this.value,this)">${(it.answer||'').replace(/</g,'&lt;')}</textarea></td>
+      <td>${ansCell}</td>
       <td>${textIn(it.notes,'questions',it.id,'notes','it')}${delBtn('questions',it.id)}</td>
     </tr>`;
   }).join('')||`<tr><td colspan="7" style="text-align:center;color:#aaa;padding:14px">No questions yet.</td></tr>`;
@@ -1596,7 +1603,20 @@ function quickSave(tab, id, field, value, el){
 // CRUD — ADD ROW
 // ════════════════════════════════════════════════
 async function addRow(tab){
-  if(userRole==='auditor'){showToast('Switch to Admin mode to add items','err');return;}
+  if(userRole==='auditor'){
+    if(tab!=='questions'){showToast('Switch to Admin mode to add items','err');return;}
+    const q=prompt('Enter your question for the StudyTrust team (text only — no document needed):');
+    if(!q||!q.trim())return;
+    try{
+      showLoad('Submitting question…');
+      const r=await spPost(getListName('questions'),{Status:'Open',Source:'Auditor',Year:currentYear,Title:q.trim()});
+      const newItem=fromSpItem('questions',r);
+      getItems('questions').push(newItem);
+      renderTab('questions');
+      showToast('Question submitted','ok');
+    }catch(e){showToast(e.message,'err');}finally{hideLoad();}
+    return;
+  }
   let fields={};
   if(tab==='auditorRequests') fields={RequestDate:today(),Status:'Open',Year:currentYear,Title:'New request'};
   else if(tab==='register') fields={DateRequested:today(),Year:currentYear,Title:'New document'};
