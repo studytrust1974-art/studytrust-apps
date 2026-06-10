@@ -2135,17 +2135,21 @@ function loadWebhookFromStorage(){
   _webhookUrl=localStorage.getItem('at_webhookUrl')||'';
 }
 function loadWebhookUI(){
-  document.getElementById('webhook-url-1').value=_webhookUrl;
+  document.getElementById('wh-auditor-url').value=_webhookUrl;
+  const dot=document.getElementById('wh-dot');
+  if(dot){dot.classList.toggle('wh-ok',!!_webhookUrl);dot.classList.toggle('wh-empty',!_webhookUrl);}
   openM('m-webhook');
 }
 function saveWebhooks(){
-  _webhookUrl=(document.getElementById('webhook-url-1')?.value||'').trim();
+  _webhookUrl=(document.getElementById('wh-auditor-url')?.value||'').trim();
   localStorage.setItem('at_webhookUrl',_webhookUrl);
+  const dot=document.getElementById('wh-dot');
+  if(dot){dot.classList.toggle('wh-ok',!!_webhookUrl);dot.classList.toggle('wh-empty',!_webhookUrl);}
   closeM('m-webhook');
   showToast('Webhook saved','ok');
 }
 async function testWebhook(){
-  const url=(document.getElementById('webhook-url-1')?.value||'').trim();
+  const url=(document.getElementById('wh-auditor-url')?.value||'').trim();
   if(!url){showToast('Enter a webhook URL first','err');return;}
   try{
     await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
