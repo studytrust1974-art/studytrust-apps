@@ -1645,12 +1645,34 @@ async function getDriveId(libraryName){
 // Encode path segments individually — spaces→%20, slashes preserved
 function encodeSpPath(segments){ return segments.map(s=>encodeURIComponent(s)).join('/'); }
 
+// Sanitize a string for use as a SharePoint file or folder name:
+// - strip characters SharePoint disallows: " * : < > ? / \ | and control chars
+// - trim trailing/leading spaces and periods (SharePoint rejects names ending in '.' or ' ')
+// - collapse whitespace and cap length (SharePoint path limit is 400 chars total)
+function sanitizeSpName(name, maxLen){
+  maxLen = maxLen || 100;
+  let s = String(name||'')
+    .replace(/[":*<>?/\\|]/g,'-')
+    .replace(/[\x00-\x1f]/g,'')
+    .replace(/\s+/g,' ')
+    .trim();
+  // Strip trailing dots/spaces (can be left after trim if name ended with ". ")
+  s = s.replace(/[. ]+$/,'');
+  if(s.length>maxLen) s = s.slice(0,maxLen).replace(/[. ]+$/,'');
+  return s;
+}
+
 // Upload file via Graph API PUT to correct library/folder
 async function spUploadFile(libraryName, folderPath, file){
   const driveId = await getDriveId(libraryName);
   const token   = await getToken();
   const siteId  = await getSiteId();
-  const parts   = folderPath ? [...folderPath.split('/'), file.name] : [file.name];
+  // Sanitize the file name but preserve its extension
+  const dot = file.name.lastIndexOf('.');
+  const ext = dot>0 ? file.name.slice(dot) : '';
+  const base = dot>0 ? file.name.slice(0,dot) : file.name;
+  const safeName = sanitizeSpName(base, 150) + ext;
+  const parts   = folderPath ? [...folderPath.split('/'), safeName] : [safeName];
   const encodedPath = encodeSpPath(parts);
   const r = await fetch(`${GRAPH_BASE}/sites/${siteId}/drives/${driveId}/root:/${encodedPath}:/content`,{
     method:'PUT',
@@ -1741,7 +1763,8 @@ async function handleFolderUpload(input){
   const catObj=DOC_CATEGORIES.find(c=>c.label===item.docName);
   const libName=catObj?docLibForYear(catObj,currentYear):'Audit '+currentYear;
   const basePath=catObj?catObj.path:'';
-  const folderName=item.notes||item.desc||'Multi_'+today();
+  const rawFolderName=item.notes||item.desc||'Multi_'+today();
+  const folderName=sanitizeSpName(rawFolderName,60)||'Multi_'+today();
   const subPath=basePath?basePath+'/'+folderName:folderName;
   try{
     showLoad('Uploading '+files.length+' files…');
