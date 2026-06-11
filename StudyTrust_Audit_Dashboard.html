@@ -223,6 +223,7 @@ td.dc{min-width:220px;width:260px}.ita{width:100%;min-width:200px;min-height:42p
 .sb-Requires-Attention{background:var(--att-bg);color:var(--att)}
 .sb-Not-Started{background:var(--ns-bg);color:var(--ns)}
 .sb-Awaiting-Approval{background:var(--wait-bg);color:var(--wait)}
+.sb-Not-Applicable{background:var(--ns-bg);color:var(--ns)}
 .bl{display:inline-flex;align-items:center;gap:2px;background:var(--late-bg);color:var(--late);border:1px solid var(--late-border);border-radius:9px;font-size:9px;font-weight:800;padding:1px 5px}
 .bn{display:inline-flex;align-items:center;gap:2px;background:var(--new-bg);color:var(--new);border:1px solid var(--new-border);border-radius:9px;font-size:9px;font-weight:800;padding:1px 5px}
 
@@ -802,7 +803,7 @@ function spReadValue(field, v){
 // ════════════════════════════════════════════════
 // STATUSES & DOC CATEGORIES
 // ════════════════════════════════════════════════
-const STATUSES = ['Completed','Awaiting Approval','In progress','Requires Attention','Not Started'];
+const STATUSES = ['Completed','Awaiting Approval','In progress','Requires Attention','Not Applicable','Not Started'];
 const REQ_STATUSES = ['Open','Submitted','In Progress','Resolved','Closed'];
 
 const DOC_CATEGORIES = [
