@@ -711,7 +711,7 @@ td.dc{min-width:220px;width:260px}.ita{width:100%;min-width:200px;min-height:42p
     <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditResponseLinks</p>
     <div class="cg"><span>Year</span> · <span>RequestID</span><em> Text</em> · <span>DocName</span> · <span>DocLink</span><em> Hyperlink</em> · <span>UploadedBy</span> · <span>UploadedDate</span> · <span>Notes</span></div>
     <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditPersonnel (restricted)</p>
-    <div class="cg"><span>Year</span> · <span>Title</span> · <span>DueDate</span> · <span>Uploaded</span> · <span>Status</span> · <span>Responsible</span> · <span>DocName</span> · <span>DocLink</span> · <span>Notes</span> · <span>AccessLevel</span><em> Choice: Internal Only | Grant Auditor Access</em></div>
+    <div class="cg"><span>Title</span> · <span>DueDate</span> · <span>Uploaded</span> · <span>Status</span> · <span>Responsible</span> · <span>DocName</span> · <span>DocLink0</span> · <span>Notes</span> · <span>AccessLevel</span><em> Choice: Internal Only | Grant Auditor Access</em></div>
     <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditQuestions</p>
     <div class="cg"><span>Year</span> · <span>Title</span><em> (Question)</em> · <span>Source</span><em> Choice (Anticipated · Prior Year · Auditor)</em> · <span>Answer</span><em> Multi-text</em> · <span>Status</span><em> Choice (Open · In Progress · Answered · Referred)</em> · <span>Responsible</span> · <span>Notes</span></div>
   </div>
@@ -1165,7 +1165,7 @@ async function loadAllTabs(){
       spGet(LISTS.responseLinks,currentYear).then(r=>r.map(x=>fromSpItem('responseLinks',x))),
       spGet(LISTS.questions,currentYear).then(r=>r.map(x=>fromSpItem('questions',x))),
     ]);
-    if(hasPersonnelAccess){ persItems=(await spGet(LISTS.personnel,currentYear)).map(x=>fromSpItem('personnel',x)); }
+    if(hasPersonnelAccess){ persItems=(await spGet(LISTS.personnel)).map(x=>fromSpItem('personnel',x)); }
     renderAll();
     const hasSeedBanner=!planItems.length&&!execItems.length;
     document.getElementById('seed-banner').classList.toggle('show',hasSeedBanner);
@@ -1645,7 +1645,7 @@ async function addRow(tab){
   else if(tab==='teams') fields={DateRequested:today(),Status:'Open',Year:currentYear,Email:''};
   else if(tab==='sampling') fields={DateRequested:today(),Status:'Not Started',Year:currentYear,Title:'New sample'};
   else if(tab==='questions') fields={Status:'Open',Year:currentYear,Title:'New question'};
-  else if(tab==='personnel') fields={Status:'Not Started',AccessLevel:'Internal Only',Year:currentYear,Title:'New document'};
+  else if(tab==='personnel') fields={Status:'Not Started',AccessLevel:'Internal Only',Title:'New document'};
   else fields={Status:'Not Started',Year:currentYear,Title:'New item'};
   try{
     showLoad('Adding row…');
