@@ -1188,7 +1188,8 @@ async function detectPersonnelAccess(){
   try{
     const token=await getToken();
     const me=await graphFetch('/me');
-    const groups=await graphFetch('/me/memberOf?$top=100');
+    // Use transitiveMemberOf so nested group membership is also detected
+    const groups=await graphFetch('/me/transitiveMemberOf?$top=999');
     hasPersonnelAccess=(groups.value||[]).some(g=>(g.displayName||'').includes('HR-Authorised-Personnel'));
   }catch(e){ hasPersonnelAccess=false; }
 }
@@ -1479,7 +1480,7 @@ function renderQuestions(items,body){
       :`<textarea class="ie" style="min-height:40px;width:100%;resize:vertical" onchange="quickSave('questions','${it.id}','answer',this.value,this)">${(it.answer||'').replace(/</g,'&lt;')}</textarea>`;
     return `<tr>
       <td class="n">${i+1}</td>
-      <td class="dc">${textIn(it.desc,'questions',it.id,'desc','it')}</td>
+      <td class="dc">${textIn(it.desc,'questions',it.id,'desc','dc')}</td>
       <td>${srcSel}</td>
       <td>${sSel}</td>
       <td>${textIn(it.responsible,'questions',it.id,'responsible','it')}</td>
