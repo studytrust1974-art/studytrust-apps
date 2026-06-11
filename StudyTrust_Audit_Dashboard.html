@@ -625,6 +625,22 @@ td.dc{min-width:220px;width:260px}.ita{width:100%;min-width:200px;min-height:42p
     </div>
   </div>
 
+  <!-- RESPONSE LINKS -->
+  <div id="sec-links" class="section">
+    <div class="sh">
+      <h2>Response Links</h2>
+      <div class="sa" id="links-admin-actions"><button class="btn btn-p" onclick="addRow('links')">+ Add Link</button></div>
+    </div>
+    <div class="dc2 info-bl" style="margin-bottom:12px;padding:12px 14px">
+      <strong>What this tab is for.</strong>
+      Links to key SharePoint folders and documents that are referenced repeatedly during the audit — for example the organisation's main SharePoint site, the annual report, and the financial statements — are stored here instead of being shared by email each time. Add a short description for each link so everyone knows what it points to.
+    </div>
+    <div class="tw"><table><thead><tr>
+      <th class="n">#</th><th style="min-width:180px">Name / Description</th>
+      <th style="min-width:280px">Link</th><th style="min-width:200px">Notes</th><th></th>
+    </tr></thead><tbody id="body-links"></tbody></table></div>
+  </div>
+
 </div><!-- /content -->
 
 <!-- ═══ FOOTER ═══ -->
@@ -764,7 +780,7 @@ const LISTS = {
   config:'AuditConfig', planning:'AuditPlanning', execution:'AuditExecution',
   recommendations:'AuditRecommendations', sampling:'AuditSampling', teams:'AuditTeams',
   register:'AuditRegister', auditorRequests:'AuditRequests', responseLinks:'AuditResponseLinks',
-  personnel:'AuditPersonnel', questions:'AuditQuestions'
+  personnel:'AuditPersonnel', questions:'AuditQuestions', links:'AuditResponseLinks'
 };
 
 // ── Field mapping: app key → SharePoint column name ──
@@ -777,6 +793,7 @@ const F = {
   register:        { dateRequested:'DateRequested', doc:'Title', requester:'Requester', requestedFrom:'RequestedFrom', submitter:'Submitter', dateSubmitted:'DateSubmitted', docName:'DocName', docLink:'DocLink0', comment:'Comment' },
   auditorRequests: { date:'RequestDate', requestedBy:'RequestedBy', description:'Title', urgency:'Urgency', status:'Status', assignedTo:'AssignedTo', dateResolved:'DateResolved', responseLink:'ResponseLink', notes:'Notes' },
   responseLinks:   { requestId:'RequestID', docName:'DocName', docLink:'DocLink0', uploadedBy:'UploadedBy', uploadedDate:'UploadedDate', notes:'Notes' },
+  links:           { requestId:'RequestID', docName:'DocName', docLink:'DocLink0', uploadedBy:'UploadedBy', uploadedDate:'UploadedDate', notes:'Notes' },
   questions:       { desc:'Title', source:'Source', answer:'Answer', status:'Status', responsible:'Responsible', notes:'Notes' },
   personnel:       { desc:'Title', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', docName:'DocName', docLink:'DocLink0', notes:'Notes', accessLevel:'AccessLevel' },
   config:          { id:'Year', label:'Label', fyEnd:'FYEnd', deadline:'Deadline', auditStart:'AuditStart', shadower:'Shadower', firm:'Firm' }
@@ -1226,6 +1243,7 @@ function buildTabBar(){
   const bar=document.getElementById('tab-bar');
   bar.innerHTML='';
   const reqCount=reqItems.filter(x=>x.status==='Open'||x.status==='In Progress').length;
+  const linkCount=rlItems.filter(x=>x.requestId==='GENERAL').length;
   const adminTabs=[
     {id:'dashboard', label:'📊 Dashboard'},
     {id:'planning',   label:'📋 Planning',  count:planItems.length},
@@ -1235,6 +1253,7 @@ function buildTabBar(){
     {id:'teams',      label:'👥 Teams Access'},
     {id:'register',   label:'📝 Register'},
     {id:'aud-requests', label:'📨 Auditor Requests', count:reqCount, reqStyle:true},
+    {id:'links',      label:'🔗 Response Links', count:linkCount},
     {id:'questions',  label:'❓ Questions',  count:questItems.length},
   ];
   if(hasPersonnelAccess) adminTabs.push({id:'personnel', label:'🔒 Personnel', count:persItems.length});
@@ -1242,6 +1261,7 @@ function buildTabBar(){
     {id:'aud-overview',    label:'📊 Overview'},
     {id:'aud-docs',        label:'📄 Documents'},
     {id:'aud-my-requests', label:'📨 My Requests'},
+    {id:'links',           label:'🔗 Response Links', count:linkCount},
     {id:'questions',       label:'❓ Questions', count:questItems.length},
   ];
   const tabs=userRole==='admin'?adminTabs:auditorTabs;
@@ -1276,6 +1296,7 @@ function activateTab(id){
   else if(id==='aud-requests') renderAudRequests();
   else if(id==='questions') renderTab('questions');
   else if(id==='personnel') renderTab('personnel');
+  else if(id==='links') renderTab('links');
   else if(id==='aud-overview') renderAudOverview();
   else if(id==='aud-docs') renderAudDocs();
   else if(id==='aud-my-requests') renderAudMyRequests();
@@ -1355,6 +1376,7 @@ function renderTab(tab, filterFn){
   else if(tab==='register') renderRegister(items,body);
   else if(tab==='questions') renderQuestions(items,body);
   else if(tab==='personnel') renderPersonnel(items,body);
+  else if(tab==='links') renderLinks(items,body);
   // update pct labels
   if(tab==='planning'){ const el=document.getElementById('plan-pct');if(el)el.textContent=pct(planItems)+'%'; }
   if(tab==='execution'){ const el=document.getElementById('exec-pct');if(el)el.textContent=pct(execItems)+'%'; }
@@ -1511,6 +1533,29 @@ function renderPersonnel(items,body){
   }).join('')||`<tr><td colspan="9" style="text-align:center;color:#aaa;padding:14px">No personnel documents.</td></tr>`;
 }
 
+function renderLinks(items,body){
+  const adminActions=document.getElementById('links-admin-actions');
+  if(adminActions) adminActions.style.display=userRole==='admin'?'':'none';
+  const general=items.filter(x=>x.requestId==='GENERAL');
+  body.innerHTML=general.map((it,i)=>{
+    let linkCell;
+    if(userRole==='admin'){
+      linkCell=textIn(it.docLink,'links',it.id,'docLink','it');
+    } else {
+      const url=(it.docLink||'').replace(/"/g,'&quot;');
+      const label=(it.docLink||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      linkCell=it.docLink?`<a href="${url}" target="_blank" rel="noopener">${label}</a>`:'';
+    }
+    return `<tr>
+      <td class="n">${i+1}</td>
+      <td class="dc">${textIn(it.docName,'links',it.id,'docName','it')}</td>
+      <td>${linkCell}</td>
+      <td class="dc">${textIn(it.notes,'links',it.id,'notes','it')}</td>
+      <td>${delBtn('links',it.id)}</td>
+    </tr>`;
+  }).join('')||`<tr><td colspan="5" style="text-align:center;color:#aaa;padding:14px">No reference links added yet.</td></tr>`;
+}
+
 
 // ════════════════════════════════════════════════
 // AUDITOR VIEW RENDERING
@@ -1649,6 +1694,7 @@ async function addRow(tab){
   else if(tab==='sampling') fields={DateRequested:today(),Status:'Not Started',Year:currentYear,Title:'New sample'};
   else if(tab==='questions') fields={Status:'Open',Year:currentYear,Title:'New question'};
   else if(tab==='personnel') fields={Status:'Not Started',AccessLevel:'Internal Only',Title:'New document'};
+  else if(tab==='links') fields={RequestID:'GENERAL',Year:currentYear,DocName:'New link',DocLink0:'',Notes:''};
   else fields={Status:'Not Started',Year:currentYear,Title:'New item'};
   try{
     showLoad('Adding row…');
@@ -2262,7 +2308,7 @@ function getListName(tab){ return LISTS[tab]||tab; }
 function getItems(tab){
   return({planning:planItems,execution:execItems,recommendations:recItems,sampling:sampItems,
     teams:teamsItems,register:regItems,auditorRequests:reqItems,responseLinks:rlItems,
-    questions:questItems,personnel:persItems})[tab]||[];
+    questions:questItems,personnel:persItems,links:rlItems})[tab]||[];
 }
 function setItems(tab,arr){
   if(tab==='planning') planItems=arr;
@@ -2275,6 +2321,7 @@ function setItems(tab,arr){
   else if(tab==='responseLinks') rlItems=arr;
   else if(tab==='questions') questItems=arr;
   else if(tab==='personnel') persItems=arr;
+  else if(tab==='links') rlItems=arr;
 }
 
 
