@@ -198,6 +198,18 @@ td{padding:6px 8px;vertical-align:top;line-height:1.45}
 td.n{text-align:center;color:#aaa;font-size:11px;font-weight:700}
 td.dc{min-width:220px;width:260px}.ita{width:100%;min-width:200px;min-height:42px;resize:vertical;box-sizing:border-box}
 
+/* ── FIXED-WIDTH TABLES (Planning / Execution) — fit all columns to viewport, no horizontal scroll ── */
+.tbl-fit{table-layout:fixed}
+.tbl-fit th{white-space:normal;word-wrap:break-word;line-height:1.25}
+.tbl-fit td.dc{min-width:0;width:auto}
+.tbl-fit td{overflow:hidden;word-wrap:break-word}
+.tbl-fit .ie{box-sizing:border-box;width:100%}
+.tbl-fit .id,.tbl-fit .it,.tbl-fit .il{width:100%;min-width:0;max-width:none}
+.tbl-fit .ita{min-width:0;min-height:36px}
+.tbl-fit .itn{min-width:0}
+.tbl-fit .lb{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+.tbl-fit .ul-wrap{display:flex;flex-wrap:wrap;gap:3px;align-items:center}
+
 /* ── INLINE CONTROLS ── */
 .ie{border:1px solid #d8dde5;border-radius:4px;padding:3px 5px;font-size:11px;background:#fff;color:#333;max-width:100%}
 .ie:focus{outline:none;border-color:var(--st);box-shadow:0 0 0 2px var(--st-l)}
@@ -407,8 +419,12 @@ td.dc{min-width:220px;width:260px}.ita{width:100%;min-width:200px;min-height:42p
       <input type="date" id="f-planning-ut" onchange="filterTab('planning')" title="Uploaded to">
       <button class="btn" onclick="clearFilters('planning')" style="padding:4px 9px;font-size:11px">Clear</button>
     </div>
-    <div class="tw"><table><thead><tr>
-      <th class="n">#</th><th style="min-width:160px">Description</th><th>Compliance Date</th>
+    <div class="tw"><table class="tbl-fit"><colgroup>
+      <col style="width:2.5%"><col style="width:17%"><col style="width:8%">
+      <col style="width:8%"><col style="width:9%"><col style="width:7%"><col style="width:7%">
+      <col style="width:11%"><col style="width:11%"><col style="width:10%"><col style="width:9.5%">
+    </colgroup><thead><tr>
+      <th class="n">#</th><th>Description</th><th>Compliance Date</th>
       <th>Date Uploaded</th><th>Status</th><th>Responsible</th><th>Shadower</th>
       <th>Document Category</th><th>Upload / Link</th><th>Notes</th><th>Comments</th>
     </tr></thead><tbody id="body-planning"></tbody></table></div>
@@ -433,8 +449,12 @@ td.dc{min-width:220px;width:260px}.ita{width:100%;min-width:200px;min-height:42p
       <input type="date" id="f-execution-ut" onchange="filterTab('execution')" title="Uploaded to">
       <button class="btn" onclick="clearFilters('execution')" style="padding:4px 9px;font-size:11px">Clear</button>
     </div>
-    <div class="tw"><table><thead><tr>
-      <th class="n">#</th><th style="min-width:160px">Description</th><th>Compliance Date</th>
+    <div class="tw"><table class="tbl-fit"><colgroup>
+      <col style="width:2.5%"><col style="width:17%"><col style="width:8%">
+      <col style="width:8%"><col style="width:9%"><col style="width:7%"><col style="width:7%">
+      <col style="width:11%"><col style="width:11%"><col style="width:10%"><col style="width:9.5%">
+    </colgroup><thead><tr>
+      <th class="n">#</th><th>Description</th><th>Compliance Date</th>
       <th>Date Uploaded</th><th>Status</th><th>Responsible</th><th>Shadower</th>
       <th>Document Category</th><th>Upload / Link</th><th>Notes</th><th>Comments</th>
     </tr></thead><tbody id="body-execution"></tbody></table></div>
@@ -1350,7 +1370,8 @@ function textIn(val,tab,id,field,cls=''){
     const esc=(val||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     return `<textarea class="ie ita" rows="2" onchange="quickSave('${tab}','${id}','${field}',this.value,this)" onblur="quickSave('${tab}','${id}','${field}',this.value,this)">${esc}</textarea>`;
   }
-  return `<input class="ie it" value="${(val||'').replace(/"/g,'&quot;')}" onchange="quickSave('${tab}','${id}','${field}',this.value,this)" onblur="quickSave('${tab}','${id}','${field}',this.value,this)">`;
+  const extra=cls&&cls!=='it'?' '+cls:'';
+  return `<input class="ie it${extra}" value="${(val||'').replace(/"/g,'&quot;')}" onchange="quickSave('${tab}','${id}','${field}',this.value,this)" onblur="quickSave('${tab}','${id}','${field}',this.value,this)">`;
 }
 function dateIn(val,tab,id,field){
   if(userRole==='auditor') return `<span>${fmt(val)}</span>`;
@@ -1364,7 +1385,7 @@ function docCatSel(val,tab,id){
 function uploadBtn(item,tab){
   if(userRole==='auditor') return '';
   const link=item.docLink?`<a class="lb" href="${item.docLink}" target="_blank">🔗 Open</a>`:`<span class="lb empty">No link</span>`;
-  return `${link}<button class="btn" style="padding:2px 6px;font-size:10px" onclick="triggerUpload('${tab}','${item.id}',false)">📎 Upload</button><button class="btn" style="padding:2px 6px;font-size:10px" title="Multi-file folder upload" onclick="triggerUpload('${tab}','${item.id}',true)">📁 Multi</button>`;
+  return `<div class="ul-wrap">${link}<button class="btn" style="padding:2px 6px;font-size:10px" onclick="triggerUpload('${tab}','${item.id}',false)">📎 Upload</button><button class="btn" style="padding:2px 6px;font-size:10px" title="Multi-file folder upload" onclick="triggerUpload('${tab}','${item.id}',true)">📁 Multi</button></div>`;
 }
 function delBtn(tab,id){ if(userRole==='auditor')return ''; return `<button class="btn" style="padding:2px 5px;font-size:10px;color:var(--att)" onclick="deleteRow('${tab}','${id}')">✕</button>`; }
 
@@ -1379,12 +1400,12 @@ function renderPlanExec(tab,items,body){
       <td>${dateIn(it.dueDate,tab,it.id,'dueDate')}</td>
       <td>${dateIn(it.uploaded,tab,it.id,'uploaded')}</td>
       <td>${statusSel(it.status,tab,it.id)}</td>
-      <td>${textIn(it.responsible,tab,it.id,'responsible','it')}</td>
-      <td>${textIn(it.shadower,tab,it.id,'shadower','it')}</td>
+      <td>${textIn(it.responsible,tab,it.id,'responsible','itn')}</td>
+      <td>${textIn(it.shadower,tab,it.id,'shadower','itn')}</td>
       <td>${docCatSel(it.docName,tab,it.id)}</td>
-      <td style="white-space:nowrap">${uploadBtn(it,tab)}</td>
-      <td>${textIn(it.notes,tab,it.id,'notes','it')}</td>
-      <td>${textIn(it.comments,tab,it.id,'comments','it')}${delBtn(tab,it.id)}</td>
+      <td>${uploadBtn(it,tab)}</td>
+      <td class="dc">${textIn(it.notes,tab,it.id,'notes','dc')}</td>
+      <td class="dc">${textIn(it.comments,tab,it.id,'comments','dc')}${delBtn(tab,it.id)}</td>
     </tr>`;
   }).join('')||`<tr><td colspan="11" style="text-align:center;color:#aaa;padding:14px;font-size:12px">No items yet. Click + Add to create one.</td></tr>`;
 }
