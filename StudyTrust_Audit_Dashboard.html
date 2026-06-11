@@ -728,7 +728,7 @@ td.dc{min-width:220px;width:260px}.ita{width:100%;min-width:200px;min-height:42p
     <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditRequests</p>
     <div class="cg"><span>Year</span> · <span>RequestDate</span><em> Date</em> · <span>RequestedBy</span> · <span>Title</span><em> (Description)</em> · <span>Urgency</span><em> Choice</em> · <span>Status</span><em> Choice</em> · <span>AssignedTo</span> · <span>DateResolved</span> · <span>ResponseLink</span><em> Hyperlink</em> · <span>Notes</span></div>
     <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditResponseLinks</p>
-    <div class="cg"><span>Year</span> · <span>RequestId</span><em> Text</em> · <span>DocName</span> · <span>DocLink</span><em> Hyperlink</em> · <span>UploadedBy</span> · <span>UploadedDate</span> · <span>Notes</span></div>
+    <div class="cg"><span>Year</span> · <span>RequestId</span><em> Text</em> · <span>DocName</span> · <span>DocLink</span><em> Text</em> · <span>UploadedBy</span> · <span>UploadedDate</span> · <span>Notes</span></div>
     <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditPersonnel (restricted)</p>
     <div class="cg"><span>Title</span> · <span>DueDate</span> · <span>Uploaded</span> · <span>Status</span> · <span>Responsible</span> · <span>DocName</span> · <span>DocLink0</span> · <span>Notes</span> · <span>AccessLevel</span><em> Choice: Internal Only | Grant Auditor Access</em></div>
     <p style="font-size:11px;font-weight:700;color:var(--st);margin-bottom:4px">AuditQuestions</p>
@@ -792,8 +792,8 @@ const F = {
   teams:           { email:'Email', requestedBy:'RequestedBy', dateRequested:'DateRequested', dateConnected:'DateConnected', status:'Status', responsible:'Responsible', remarks:'Remarks' },
   register:        { dateRequested:'DateRequested', doc:'Title', requester:'Requester', requestedFrom:'RequestedFrom', submitter:'Submitter', dateSubmitted:'DateSubmitted', docName:'DocName', docLink:'DocLink0', comment:'Comment' },
   auditorRequests: { date:'RequestDate', requestedBy:'RequestedBy', description:'Title', urgency:'Urgency', status:'Status', assignedTo:'AssignedTo', dateResolved:'DateResolved', responseLink:'ResponseLink', notes:'Notes' },
-  responseLinks:   { requestId:'RequestId', docName:'DocName', docLink:'DocLink0', uploadedBy:'UploadedBy', uploadedDate:'UploadedDate', notes:'Notes' },
-  links:           { requestId:'RequestId', docName:'DocName', docLink:'DocLink0', uploadedBy:'UploadedBy', uploadedDate:'UploadedDate', notes:'Notes' },
+  responseLinks:   { requestId:'RequestId', docName:'DocName', docLink:'DocLink', uploadedBy:'UploadedBy', uploadedDate:'UploadedDate', notes:'Notes' },
+  links:           { requestId:'RequestId', docName:'DocName', docLink:'DocLink', uploadedBy:'UploadedBy', uploadedDate:'UploadedDate', notes:'Notes' },
   questions:       { desc:'Title', source:'Source', answer:'Answer', status:'Status', responsible:'Responsible', notes:'Notes' },
   personnel:       { desc:'Title', dueDate:'DueDate', uploaded:'Uploaded', status:'Status', responsible:'Responsible', docName:'DocName', docLink:'DocLink0', notes:'Notes', accessLevel:'AccessLevel' },
   config:          { id:'Year', label:'Label', fyEnd:'FYEnd', deadline:'Deadline', auditStart:'AuditStart', shadower:'Shadower', firm:'Firm' }
@@ -1694,7 +1694,7 @@ async function addRow(tab){
   else if(tab==='sampling') fields={DateRequested:today(),Status:'Not Started',Year:currentYear,Title:'New sample'};
   else if(tab==='questions') fields={Status:'Open',Year:currentYear,Title:'New question'};
   else if(tab==='personnel') fields={Status:'Not Started',AccessLevel:'Internal Only',Title:'New document'};
-  else if(tab==='links') fields={RequestId:'GENERAL',Year:currentYear,DocName:'New link',DocLink0:'',Notes:''};
+  else if(tab==='links') fields={RequestId:'GENERAL',Year:currentYear,DocName:'New link',DocLink:'',Notes:''};
   else fields={Status:'Not Started',Year:currentYear,Title:'New item'};
   try{
     showLoad('Adding row…');
@@ -1819,7 +1819,7 @@ async function handleFileUpload(input){
       const folder='Auditor Requests/'+pu.id;
       await spCreateFolder(libName,folder);
       const link=await spUploadFile(libName,folder,file);
-      const rl=await spPost(LISTS.responseLinks,{Year:currentYear,RequestId:String(pu.id),DocName:file.name,DocLink0:link,UploadedBy:userName,UploadedDate:today()+'T00:00:00Z'});
+      const rl=await spPost(LISTS.responseLinks,{Year:currentYear,RequestId:String(pu.id),DocName:file.name,DocLink:link,UploadedBy:userName,UploadedDate:today()+'T00:00:00Z'});
       rlItems.push(fromSpItem('responseLinks',rl));
       renderAudRequests();
       showToast('Uploaded: '+file.name,'ok');
