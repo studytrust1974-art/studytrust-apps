@@ -1482,7 +1482,13 @@ let msalApp, graphToken, graphSiteId;
 async function initMsal(){
   msalApp = new msal.PublicClientApplication(MSAL_CFG);
   await msalApp.initialize();
-  const redir = await msalApp.handleRedirectPromise();
+  let redir = null;
+  try{
+    redir = await msalApp.handleRedirectPromise();
+  }catch(e){
+    try{ msalApp.clearCache(); }catch(_){}
+    try{ sessionStorage.clear(); }catch(_){}
+  }
   if(redir) graphToken = redir.accessToken;
   const accs = msalApp.getAllAccounts();
   if(accs.length){
